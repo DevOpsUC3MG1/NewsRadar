@@ -1,0 +1,10 @@
+## #ADR-005: Estrategia de Contenerización y CI/CD
+**Estado:** Aceptado
+
+**Contexto:** El proyecto requiere despliegues automatizados tipo "One-Click" en entornos limpios y la validación continua de la calidad del código, asegurando un mínimo del 70% de cobertura de pruebas.
+
+**Decisión:** Todo el ecosistema se orquestará localmente y en producción mediante **Docker Compose**. La Integración y Entrega Continua (CI/CD) se delegará a **GitHub Actions**, integrando análisis estático de código mediante **SonarCloud** (o SonarQube).
+
+**Consecuencias:**
+* **Positivas:** Garantiza que el código en la rama `main` siempre compila, supera los tests y es desplegable de forma idéntica en cualquier máquina. Centraliza las métricas de calidad.
+* **Ejemplo Práctico:** Al hacer `git push`, el pipeline de GitHub Actions levantará contenedores efímeros, ejecutará `pytest`, medirá la cobertura y enviará el reporte a SonarCloud. Solo si todo está en verde, se generará la imagen Docker definitiva.
