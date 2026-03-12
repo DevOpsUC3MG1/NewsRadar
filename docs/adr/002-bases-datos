@@ -6,5 +6,5 @@
 **Decisión:** Se utilizará **PostgreSQL (15+)** para el modelo relacional (usuarios, configuración de alertas, canales) y MongoDB como motor analítico y documental para almacenar y buscar las noticias.
 
 **Consecuencias:**
-* **Positivas:** Elasticsearch resuelve la funcionalidad de la "nube de palabras" (cálculo de frecuencias de términos) y la búsqueda de sinónimos de manera nativa y con latencias mínimas, protegiendo a PostgreSQL de bloqueos por consultas analíticas pesadas.
+* **Positivas:** MongoDB resuelve la funcionalidad de la "nube de palabras" (cálculo de frecuencias de términos) y la búsqueda de sinónimos de manera nativa y con latencias mínimas, protegiendo a PostgreSQL de bloqueos por consultas analíticas pesadas.
 * **Negativas:** Aumenta la complejidad del despliegue en Docker y exige mayor consumo de recursos (memoria RAM) en los servidores y máquinas de desarrollo.
