@@ -1,0 +1,8 @@
+.venv
+
+.qodo
+
+__pycache__/
+*.pyc
+
+*.DS_Store
