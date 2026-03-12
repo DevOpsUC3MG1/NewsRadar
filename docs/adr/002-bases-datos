@@ -1,0 +1,10 @@
+## #ADR-002: Arquitectura de Base de Datos Dual
+**Estado:** Aceptado
+
+**Contexto:** El sistema prohíbe usar un único motor de base de datos debido a la naturaleza heterogénea de los datos. Necesitamos integridad referencial estricta para el dominio (usuarios, configuración de alertas, canales RSS) y, simultáneamente, capacidades extremas de búsqueda de texto completo y cálculo de frecuencias para miles de noticias.
+
+**Decisión:** Se utilizará **PostgreSQL (15+)** para el modelo relacional (usuarios, configuración de alertas, canales) y **Elasticsearch (8+)** como motor analítico y documental para almacenar y buscar las noticias.
+
+**Consecuencias:**
+* **Positivas:** Elasticsearch resuelve la funcionalidad de la "nube de palabras" (cálculo de frecuencias de términos) y la búsqueda de sinónimos de manera nativa y con latencias mínimas, protegiendo a PostgreSQL de bloqueos por consultas analíticas pesadas.
+* **Negativas:** Aumenta la complejidad del despliegue en Docker y exige mayor consumo de recursos (memoria RAM) en los servidores y máquinas de desarrollo.
