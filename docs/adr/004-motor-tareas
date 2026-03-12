@@ -1,0 +1,11 @@
+## #ADR-004: Motor de Tareas Programadas (Cron) Integrado
+**Estado:** Aceptado
+
+**Contexto:** Es imperativo ejecutar tareas de recolección de noticias basándose en la expresión cron configurada por el usuario para cada alerta (RF-03). Se necesita un motor en segundo plano que no añada demasiada complejidad de infraestructura (como requeriría un clúster de RabbitMQ + Celery) dado el alcance del proyecto.
+
+**Decisión:** Se implementará **APScheduler (AsyncIOScheduler)** ejecutándose dentro del *lifespan* del propio contenedor de FastAPI.
+
+**Consecuencias:**
+* **Positivas:** Es una solución ligera, 100% nativa en Python y que no requiere levantar contenedores adicionales. Funciona perfectamente de forma asíncrona junto a FastAPI.
+* **Negativas:** Si en el futuro la aplicación escala a múltiples réplicas del contenedor FastAPI para balancear carga, los trabajos programados podrían duplicarse y requerirían refactorizarse hacia un gestor de colas externo.
+* **Ejemplo Práctico:** Cuando un usuario programa una alerta "Ciberseguridad" cada hora (`0 * * * *`), APScheduler despierta una corrutina en segundo plano que actualiza Elasticsearch sin interrumpir la navegación del usuario en el Dashboard.
