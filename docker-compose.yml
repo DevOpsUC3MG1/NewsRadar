@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  api:
+    image: alpine
+    command: ["sh", "-c", "echo api placeholder"]
+  frontend:
+    image: alpine
+    command: ["sh", "-c", "echo frontend placeholder"]
+  postgres:
+    image: alpine
+    command: ["sh", "-c", "echo postgres placeholder"]
+  mongodb:
+    image: alpine
+    command: ["sh", "-c", "echo mongodb placeholder"]
