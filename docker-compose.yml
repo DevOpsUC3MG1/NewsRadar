@@ -1,14 +1,69 @@
-version: "3.9"
+version: '3.8'
+
 services:
-  api:
-    image: alpine
-    command: ["sh", "-c", "echo api placeholder"]
+  # 1. Base de Datos Relacional (Usuarios, Alertas, Configuración)
+  db_relational:
+    image: postgres:15-alpine
+    container_name: nr_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+      POSTGRES_DB: newsradar_core
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nr_network
+
+  # 2. Base de Datos Documental (Noticias, Logs e Indexación)
+  db_documental:
+    image: mongo:6.0
+    container_name: nr_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - nr_network
+
+  # 3. Backend (FastAPI + Worker)
+  backend:
+    build: ./backend
+    container_name: nr_backend
+    restart: always
+    depends_on:
+      - db_relational
+      - db_documental
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@db_relational:5432/newsradar_core
+      - MONGO_URL=mongodb://db_documental:27017/newsradar_archive
+      - FEATURE_IA_ENABLED=true  # ADR-006: Feature Flag para competición
+    ports:
+      - "8000:8000"
+    networks:
+      - nr_network
+
+  # 4. Frontend (React + Nginx)
   frontend:
-    image: alpine
-    command: ["sh", "-c", "echo frontend placeholder"]
-  postgres:
-    image: alpine
-    command: ["sh", "-c", "echo postgres placeholder"]
-  mongodb:
-    image: alpine
-    command: ["sh", "-c", "echo mongodb placeholder"]
+    build: ./frontend
+    container_name: nr_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    networks:
+      - nr_network
+
+networks:
+  nr_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongo_data:
