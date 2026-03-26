@@ -1,54 +1,7 @@
-import { useState } from 'react';
-import Button from './components/button';
-import Input from './components/input';
-import Card from './components/card';
-import Badge from './components/badge';
-import Table from './components/table';
-import Modal from './components/modal';
-
-function App() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-
-  const tableHeaders = ["Fuente", "Categoría", "Estado"];
-  const tableData = [
-    { fuente: "El País", categoria: "Política", estado: <Badge text="Activo" color="#28a745" /> },
-    { fuente: "X/Twitter", categoria: "Tecnología", estado: <Badge text="Inactivo" color="#dc3545" /> },
-  ];
-
-  return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      <h1>UI Testing - NewsRadar</h1>
-      
-      <Card title="Prueba de Input y Botón">
-        <Input 
-          label="Buscar nueva fuente RSS" 
-          placeholder="Ej: https://rss.nytimes.com..." 
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-        />
-        <Button onClick={() => alert(`Buscando: ${inputValue}`)}>Buscar Fuente</Button>
-      </Card>
-
-      <Card title="Prueba de Tabla y Badges">
-        <Table headers={tableHeaders} data={tableData} />
-      </Card>
-
-      <Card title="Prueba de Modal">
-        <Button onClick={() => setIsModalOpen(true)}>Abrir Modal de Confirmación</Button>
-      </Card>
-
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Confirmar Acción">
-        <p>¿Estás seguro de que deseas eliminar esta alerta?</p>
-        <Button onClick={() => setIsModalOpen(false)}>Sí, eliminar</Button>
-      </Modal>
-    </div>
-  );
-}
-
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
-import About from './pages/About' // Asegúrate de tener este archivo creado
+import About from './pages/About'
+import UiTesting from './pages/UiTesting' // 👇 1. Importamos la nueva página de pruebas
 
 function App() {
   return (
@@ -57,6 +10,8 @@ function App() {
       <nav style={{ padding: '20px', textAlign: 'center', background: '#1a1a1a', marginBottom: '20px' }}>
         <Link to="/" style={{ margin: '0 15px', color: '#646cff', fontWeight: 'bold' }}>Inicio</Link>
         <Link to="/about" style={{ margin: '0 15px', color: '#646cff', fontWeight: 'bold' }}>Acerca de</Link>
+        {/* 👇 2. Añadimos el enlace para ir a ver los componentes */}
+        <Link to="/ui-testing" style={{ margin: '0 15px', color: '#42b883', fontWeight: 'bold' }}>Componentes</Link>
       </nav>
 
       {/* Contenedor donde se cargarán las páginas */}
@@ -64,6 +19,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          {/* 👇 3. Añadimos la ruta que carga la página */}
+          <Route path="/ui-testing" element={<UiTesting />} />
         </Routes>
       </main>
     </BrowserRouter>
