@@ -1,5 +1,7 @@
 import pytest
 from datetime import datetime
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 # --- FIXTURES DE USUARIOS (RF-09) ---
 
@@ -74,3 +76,26 @@ def db_engine():
     # Por ahora solo simulamos la preparación
     yield "engine_ready"
     print("\nCerrando conexión de test...")
+
+    from fastapi.testclient import TestClient
+# Asegúrate de que puedes importar tu 'app' desde main
+# from main import app 
+
+@pytest.fixture
+def client():
+    """Fixture para simular peticiones a la API"""
+    # Si aún no tienes la app real, puedes comentar la línea de arriba y usar:
+    from fastapi import FastAPI
+    app = FastAPI() 
+    with TestClient(app) as c:
+        yield c
+
+@pytest.fixture
+def load_valid_users():
+    """Lee el archivo JSON de usuarios válidos y lo devuelve como diccionario"""
+    # Construimos la ruta absoluta al archivo JSON
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(base_dir, "fixtures", "users_valid.json")
+    
+    with open(json_path, "r", encoding="utf-8") as file:
+        return json.load(file)

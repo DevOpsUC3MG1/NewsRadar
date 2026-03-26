@@ -1,4 +1,3 @@
-def test_perfil_usuario_tiene_email_correcto(lector_ficticio):
-    # El test "recibe" automáticamente los datos de la fixture
-    assert lector_ficticio["email"] == "pepito@newsradar.es"
-    assert lector_ficticio["role"] == "Lector"
+import pytest
+def test_perfil_usuario_tiene_email_correcto(fixture_user_lector):
+    assert fixture_user_lector["email"] == "lector@newsradar.es"

@@ -1,4 +1,6 @@
 # tests/test_smoke.py
+from fastapi.testclient import TestClient
+
 def test_system_up_and_running(client):
     """Test crítico de despliegue: ¿responde la API?"""
     response = client.get("/api/v1/health")
