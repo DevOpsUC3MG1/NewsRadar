@@ -65,3 +65,12 @@ def mock_headers_auth(fixture_user_gestor):
         "Authorization": "Bearer token_ficticio_gestor",
         "Content-Type": "application/json"
     }
+@pytest.fixture(scope="session")
+def db_engine():
+    """
+    Configuración de la conexión a DB para todos los tests.
+    Avisar al M1 cuando elija el ORM (SQLAlchemy/Tortoise) para completar.
+    """
+    # Por ahora solo simulamos la preparación
+    yield "engine_ready"
+    print("\nCerrando conexión de test...")
