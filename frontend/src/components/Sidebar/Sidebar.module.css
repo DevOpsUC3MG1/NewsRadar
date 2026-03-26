@@ -1,0 +1,126 @@
+/* Sidebar.module.css */
+
+.sidebar {
+  width: 260px; /* Ancho estimado por la imagen */
+  height: 100vh; /* Ocupa todo el alto de la pantalla */
+  background-color: #0c0d11; /* Color de fondo muy oscuro */
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* El menú arriba, cerrar sesión abajo */
+  padding: 30px 15px; /* Espaciado interno */
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 15px;
+  margin-bottom: 20px;
+}
+
+.logoIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.logoText {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.navList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1; /* Ocupa el espacio disponible */
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Para separar texto de la badge */
+  padding: 12px 15px;
+  cursor: pointer;
+  border-radius: 8px; /* Bordes redondeados */
+  transition: background-color 0.2s;
+  margin-bottom: 5px;
+  text-decoration: none; /* Si se usa un Link */
+  color: inherit;
+}
+
+/* Efecto Hover */
+.navItem:hover {
+  background-color: #1a1c24; /* Color de fondo del hover */
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Espacio entre icono y texto */
+}
+
+.icon {
+  width: 20px; /* Tamaño del icono */
+  height: 20px;
+  color: #8c909c; /* Color de icono inactivo */
+}
+
+/* Color del icono al hacer hover sobre el item */
+.navItem:hover .icon {
+  color: #ffffff;
+}
+
+.label {
+  font-size: 0.95rem;
+  color: #8c909c; /* Color de texto inactivo */
+}
+
+/* Color del texto al hacer hover */
+.navItem:hover .label {
+  color: #ffffff;
+}
+
+/* Badge de notificaciones (el círculo rojo con el 3) */
+.badge {
+  background-color: #d11212; /* Color de fondo rojo */
+  color: #ffffff;
+  border-radius: 50%; /* Círculo perfecto */
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Línea divisoria */
+.divider {
+  border: 0;
+  border-top: 1px solid #1a1c24; /* Color de la línea */
+  margin: 20px 0;
+}
+
+/* Sección inferior de Cerrar Sesión */
+.logoutArea {
+  padding-top: 15px;
+}
+
+.logoutItem {
+  color: #8c909c; /* Texto gris de cerrar sesión */
+  font-size: 0.9rem;
+}
+
+.logoutItem:hover {
+  background-color: #1a1c24;
+}
+
+.logoutItem:hover .label,
+.logoutItem:hover .icon {
+  color: #ffffff;
+}
