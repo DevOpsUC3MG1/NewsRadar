@@ -1,45 +1,21 @@
-from fastapi import FastAPI, HTTPException
-from motor.motor_asyncio import AsyncIOMotorClient
-from sqlalchemy import create_engine, text
-import os
-from app.schemas.alert import AlertaCreate, AlertaResponse
-import uuid
-from datetime import datetime
+from fastapi import FastAPI
+from app.routers import auth
+# from app.routers import alerts, sources (Se añadirán en S2/S3)
 
-app = FastAPI(title="NewsRadar API", version="0.1.0")
+app = FastAPI(
+    title="NewsRadar API",
+    description="Sistema de monitorización con persistencia dual",
+    version="1.0.0"
+)
 
-# Configuración desde variables de entorno
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:pass@localhost:5432/newsradar")
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+# Incluir los routers modularizados
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
 
-@app.get("/health")
-async def health():
-    """Verifica la salud del sistema para el Pipeline de CI/CD"""
-    status = {"api": "ok", "databases": {}}
-    try:
-        # Test Postgres
-        engine = create_engine(DATABASE_URL)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        status["databases"]["postgres"] = "connected"
-        
-        # Test Mongo
-        client = AsyncIOMotorClient(MONGO_URL)
-        await client.admin.command('ping')
-        status["databases"]["mongodb"] = "connected"
-    except Exception as e:
-        status["api"] = "error"
-        raise HTTPException(status_code=500, detail=str(e))
-    return status
-
-@app.post("/api/v1/alerts", response_model=AlertaResponse, tags=["Alertas"])
-async def create_mock_alert(alerta: AlertaCreate):
-    """Mock para que Frontend pueda empezar a trabajar en la S0"""
+@app.get("/api/v1/config", tags=["Infraestructura"])
+async def get_feature_flags():
+    """ Cumple con ASR-04 y ADR-006: Exponer Feature Flags al Frontend """
+    import os
     return {
-        **alerta.model_dump(),
-        "id": str(uuid.uuid4()),
-        "user_id": "user_demo_001",
-        "descriptores_ia": [alerta.palabra_clave, "ia-keyword-1", "ia-keyword-2"],
-        "created_at": datetime.now(),
-        "is_active": True
+        "wordcloud_enabled": os.getenv("FEATURE_WORDCLOUD_ENABLED", "true").lower() == "true",
+        "ia_suggestions_enabled": os.getenv("FEATURE_IA_ENABLED", "true").lower() == "true"
     }
