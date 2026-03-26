@@ -1,30 +1,18 @@
 version: "3.9"
 
 services:
-  # Backend FastAPI
   api:
-    build: ./backend
-    container_name: newsradar_api
     volumes:
       - ./backend:/app
     environment:
       - ENV=development
-      - DATABASE_URL=${DATABASE_URL}
-      - MONGODB_URL=${MONGODB_URL}
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db_postgres
-      - db_mongodb
+      # Esto permite que FastAPI se reinicie solo al guardar cambios
+      - RELOAD=true 
 
-  # Frontend React
   frontend:
-    build: ./frontend
-    container_name: newsradar_frontend
     volumes:
       - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
+      # Evitamos que los node_modules locales pisen los del contenedor
+      - /app/node_modules 
     environment:
       - VITE_API_URL=http://localhost:8000

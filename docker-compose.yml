@@ -1,7 +1,6 @@
 version: "3.9"
 
 services:
-  # Base de datos para Usuarios y Alertas
   db_postgres:
     image: postgres:15-alpine
     container_name: newsradar_postgres
@@ -14,7 +13,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # Base de datos para Noticias (MongoDB)
   db_mongodb:
     image: mongo:7.0
     container_name: newsradar_mongodb
@@ -25,6 +23,28 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+
+  # Backend: Se encarga de la lógica y conexión a BD
+  api:
+    build: ./backend
+    container_name: newsradar_api
+    depends_on:
+      - db_postgres
+      - db_mongodb
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - MONGODB_URL=${MONGODB_URL}
+    ports:
+      - "8000:8000"
+
+  # Frontend: La interfaz de usuario
+  frontend:
+    build: ./frontend
+    container_name: newsradar_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
