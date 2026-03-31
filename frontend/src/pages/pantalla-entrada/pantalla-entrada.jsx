@@ -30,7 +30,7 @@ export default function PantallaEntrada() {
       await login(username, password);
       
       // Si el código llega hasta aquí, el login fue un éxito. Redirigimos al Home.
-      navigate('/');
+      navigate('/app');
     } catch (err) {
       // Si el login falla (contraseña incorrecta, servidor caído, etc.)
       setError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');

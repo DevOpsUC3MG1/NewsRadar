@@ -6,22 +6,32 @@ import UiTesting from './pages/UiTesting'
 import MainLayout from './components/MainLayout'
 import Prueba from './pages/prueba.jsx'
 
+// 1. Importamos nuestro componente protector
+import ProtectedRoute from './components/ProtectedRoute' 
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* === RUTAS PÚBLICAS === */}
+        {/* Cualquiera puede ver estas páginas sin iniciar sesión */}
         <Route path="/" element={<Prueba />} />
-        <Route path="/logout" element={<PantallaEntrada />} />
+        <Route path="/pantalla-entrada" element={<PantallaEntrada />} />
 
-        {/* Envolvemos todas las rutas dentro del MainLayout */}
-        <Route path="/app" element={<MainLayout />}>
-
-          {/* El index significa que Home se carga por defecto en la ruta "/app" */}
+        {/* === RUTAS PROTEGIDAS === */}
+        {/* Envolvemos el MainLayout con ProtectedRoute */}
+        <Route 
+          path="/app" 
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* Todas estas rutas ahora están protegidas gracias al padre */}
           <Route index element={<Home />} />
-
           <Route path="about" element={<About />} />
           <Route path="ui-testing" element={<UiTesting />} />
-
         </Route>
       </Routes>
     </BrowserRouter>
