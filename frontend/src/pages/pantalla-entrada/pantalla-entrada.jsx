@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+import { useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
 import styles from './PantallaEntrada.module.css';
 
 // Importamos los SVGs
@@ -7,6 +9,35 @@ import newsSvg from './News.svg';
 import documentarySvg from './Documentary.svg';
 
 export default function PantallaEntrada() {
+  // Estados para controlar lo que escribe el usuario y si hay errores
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Extraemos la función login del contexto y preparamos la navegación
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  // 4. Esta función se ejecuta al darle al botón de Iniciar Sesión
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Evita que la página se recargue por defecto
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      // Llamamos a la API a través de nuestro contexto
+      await login(username, password);
+      
+      // Si el código llega hasta aquí, el login fue un éxito. Redirigimos al Home.
+      navigate('/');
+    } catch (err) {
+      // Si el login falla (contraseña incorrecta, servidor caído, etc.)
+      setError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className={styles.container}>
       {/* Barra superior */}
