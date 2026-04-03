@@ -1,6 +1,11 @@
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+// Importamos las nuevas herramientas
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
 import styles from './PantallaEntrada.module.css';
 
 // Importamos los SVGs
@@ -8,47 +13,59 @@ import systemTaskSvg from './SystemTask.svg';
 import newsSvg from './News.svg';
 import documentarySvg from './Documentary.svg';
 
+// 1. EL "GORILA": Definimos las reglas de validación con Zod
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'El email es obligatorio')
+    .email('Debe ser un formato de correo válido'),
+  password: z
+    .string()
+    .min(6, 'La contraseña debe tener al menos 6 caracteres'),
+});
+
 export default function PantallaEntrada() {
-  // Estados para controlar lo que escribe el usuario y si hay errores
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  // Solo dejamos los estados que NO son del formulario
+  const [apiError, setApiError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Extraemos la función login del contexto y preparamos la navegación
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // 4. Esta función se ejecuta al darle al botón de Iniciar Sesión
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Evita que la página se recargue por defecto
-    setError(null);
+  // 2. EL "ASISTENTE": Configuramos React Hook Form
+  const {
+    register, // Para "conectar" los inputs
+    handleSubmit, // Para manejar el envío
+    formState: { errors }, // Para leer los errores que Zod detecte
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  });
+
+  // 3. Esta función SOLO se ejecuta si Zod dice que todo está correcto
+  const onSubmitForm = async (data) => {
+    setApiError(null);
     setIsLoading(true);
 
     try {
-      // Llamamos a la API a través de nuestro contexto
-      await login(username, password);
-      
-      // Si el código llega hasta aquí, el login fue un éxito. Redirigimos al Home.
+      // Pasamos los datos validados a la API
+      await login(data.email, data.password);
+      // Redirigimos al Dashboard
       navigate('/app');
     } catch (err) {
-      // Si el login falla (contraseña incorrecta, servidor caído, etc.)
-      setError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');
+      setApiError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
     }
   };
+
   return (
     <div className={styles.container}>
-      {/* Barra superior */}
       <header className={styles.topbar}>
         <span className={styles.topbarLogo}>◪</span> NEWSRADAR
       </header>
 
-      {/* Cuerpo principal */}
       <div className={styles.splitLayout}>
-
-        {/* Mitad Izquierda */}
+        {/* --- Mitad Izquierda --- */}
         <div className={styles.leftPanel}>
           <div className={styles.brandArea}>
             <span style={{ fontSize: '3rem', color: '#4b6a9b' }}>◪</span>
@@ -56,8 +73,8 @@ export default function PantallaEntrada() {
           </div>
 
           <p className={styles.subtitle}>
-            Sistema de monitorización<br/>
-            de noticias en medios<br/>
+            Sistema de monitorización<br />
+            de noticias en medios<br />
             de comunicación y fuentes oficiales
           </p>
 
@@ -68,7 +85,7 @@ export default function PantallaEntrada() {
           </div>
         </div>
 
-        {/* Mitad Derecha */}
+        {/* --- Mitad Derecha --- */}
         <div className={styles.rightPanel}>
           <div className={styles.rightPanelHeader}>
             <h2 className={styles.welcomeTitle}>BIENVENIDO</h2>
@@ -76,23 +93,56 @@ export default function PantallaEntrada() {
           </div>
 
           <div className={styles.formContainer}>
-            <form onSubmit={(e) => e.preventDefault()}>
+            {/* Conectamos el form con handleSubmit de React Hook Form */}
+            <form onSubmit={handleSubmit(onSubmitForm)}>
+
+              {/* CAMPO EMAIL */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>EMAIL</label>
-                <input type="email" className={styles.input} />
+                <input
+                  type="email"
+                  className={styles.input}
+                  {...register('email')} // Conectamos el input
+                />
+                {/* Mostramos el error si Zod lo detecta */}
+                {errors.email && (
+                  <span style={{ color: '#e74c3c', fontSize: '0.8rem', marginTop: '5px' }}>
+                    {errors.email.message}
+                  </span>
+                )}
               </div>
 
+              {/* CAMPO CONTRASEÑA */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>CONTRASEÑA</label>
-                <input type="password" className={styles.input} />
+                <input
+                  type="password"
+                  className={styles.input}
+                  {...register('password')} // Conectamos el input
+                />
+                {/* Mostramos el error si Zod lo detecta */}
+                {errors.password && (
+                  <span style={{ color: '#e74c3c', fontSize: '0.8rem', marginTop: '5px' }}>
+                    {errors.password.message}
+                  </span>
+                )}
               </div>
 
-              {/* Botón de inicio que de momento redirige al Home (Dashboard) */}
-              <Link to="/">
-                <button type="button" className={styles.loginButton}>
-                  INICIAR SESIÓN
-                </button>
-              </Link>
+              {/* Mostrar errores que vienen del backend (ej. contraseña mal) */}
+              {apiError && (
+                <div style={{ color: '#e74c3c', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
+                  {apiError}
+                </div>
+              )}
+
+              {/* Botón de envío. Ahora es type="submit" y sin <Link> */}
+              <button
+                type="submit"
+                className={styles.loginButton}
+                disabled={isLoading}
+              >
+                {isLoading ? 'CARGANDO...' : 'INICIAR SESIÓN'}
+              </button>
 
               <a href="#" className={styles.forgotPassword}>
                 ¿OLVIDASTE TU CONTRASEÑA?
@@ -107,7 +157,6 @@ export default function PantallaEntrada() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

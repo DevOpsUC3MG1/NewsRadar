@@ -3,9 +3,9 @@ import axios from 'axios';
 // AJUSTA ESTA URL a la ruta real de tu backend local (por ejemplo, http://localhost:8000/api)
 const API_URL = 'http://localhost:8000/api'; 
 
-const login = async (username, password) => {
+const login = async (email, password) => {
   // Hacemos la petición POST al backend
-  const response = await axios.post(`${API_URL}/login`, { username, password });
+  const response = await axios.post(`${API_URL}/v1/auth/login`, { email, password });
   
   // Si el backend nos devuelve el token, lo guardamos en el navegador
   if (response.data.access_token) {

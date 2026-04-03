@@ -15,23 +15,23 @@ function App() {
       <Routes>
         {/* === RUTAS PÚBLICAS === */}
         {/* Cualquiera puede ver estas páginas sin iniciar sesión */}
-        <Route path="/" element={<Prueba />} />
-        <Route path="/pantalla-entrada" element={<PantallaEntrada />} />
+          { /* <Route path="/" element={<Prueba />} /> */ }
+        <Route path="/" element={<PantallaEntrada />} />
 
         {/* === RUTAS PROTEGIDAS === */}
         {/* Envolvemos el MainLayout con ProtectedRoute */}
         <Route 
-          path="/app" 
           element={
             <ProtectedRoute>
               <MainLayout />
             </ProtectedRoute>
           }
         >
-          {/* Todas estas rutas ahora están protegidas gracias al padre */}
-          <Route index element={<Home />} />
-          <Route path="about" element={<About />} />
-          <Route path="ui-testing" element={<UiTesting />} />
+          {/* Ahora sí, las URLs serán directas */}
+          <Route path="/app" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/ui-testing" element={<UiTesting />} />
+          <Route path="/pr" element={<Prueba />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children }) {
 
   // Si no hay usuario logueado, lo expulsamos a la pantalla de entrada
   if (!user) {
-    return <Navigate to="/pantalla-entrada" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Si todo está bien, renderizamos el componente que intentaba ver (ej. Home)

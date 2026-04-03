@@ -1,28 +1,29 @@
-// Sidebar.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext } from 'react'; // 1. Importamos useContext
+import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, PieChart, Bell, Rss, User, LogOut } from 'lucide-react';
+// 2. Importamos tu AuthContext (asegúrate de que la ruta sea la correcta)
+import { AuthContext } from '../../context/AuthContext';
 import styles from './Sidebar.module.css';
 
-// Usamos iconos de SVG o cualquier librería de iconos como 'react-icons'
-// Aquí simularemos los iconos para que puedas ver el diseño.
-const MockIcon = () => (
-  <div style={{ width: 20, height: 20, backgroundColor: '#333', borderRadius: 4 }}></div>
-);
-
 export default function Sidebar() {
+  const location = useLocation();
+
+  // 3. Extraemos la función logout de tu compañero
+  const { logout } = useContext(AuthContext);
+
   const menuItems = [
-    { label: 'Dashboard', icon: <MockIcon />, path: '/', logo: true },
-    { label: 'Resumen', icon: <MockIcon />, path: '/resumen' },
-    { label: 'Alertas', icon: <MockIcon />, path: '/alertas' },
-    { label: 'Fuentes y RSS', icon: <MockIcon />, path: '/fuentes' },
+    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/app' },
+    { label: 'Resumen', icon: <PieChart size={20} />, path: '/resumen' },
+    { label: 'Alertas', icon: <Bell size={20} />, path: '/alertas' },
+    { label: 'Fuentes y RSS', icon: <Rss size={20} />, path: '/fuentes' },
     {
       label: 'Notificaciones',
-      icon: <MockIcon />,
+      icon: <Bell size={20} />,
       path: '/notificaciones',
       notifications: 3
     },
     { divider: true },
-    { label: 'Mi perfil', icon: <MockIcon />, path: '/perfil' },
+    { label: 'Mi perfil', icon: <User size={20} />, path: '/perfil' },
   ];
 
   return (
@@ -33,22 +34,15 @@ export default function Sidebar() {
             return <hr key={index} className={styles.divider} />;
           }
 
-          // Renderizar el logo
-          if (item.logo) {
-            return (
-              <li key={index} className={styles.logoArea}>
-                {item.icon}
-                <h1 className={styles.logoText}>{item.label}</h1>
-              </li>
-            );
-          }
+          const isActive = location.pathname === item.path;
 
-          // Renderizar el resto de ítems
           return (
             <li key={index}>
-              <Link to={item.path} className={styles.navItem}>
+              <Link
+                to={item.path}
+                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+              >
                 <div className={styles.content}>
-                  {/* Asegurar que el icono reciba la clase styles.icon */}
                   {React.cloneElement(item.icon, { className: styles.icon })}
                   <span className={styles.label}>{item.label}</span>
                 </div>
@@ -63,10 +57,15 @@ export default function Sidebar() {
 
       {/* Sección inferior de Cerrar Sesión */}
       <div className={styles.logoutArea}>
-        <Link to="/logout" className={`${styles.navItem} ${styles.logoutItem}`}>
+        {/* 4. Añadimos el evento onClick para ejecutar la función antes de navegar */}
+        <Link
+          to="/"
+          onClick={logout}
+          className={`${styles.navItem} ${styles.logoutItem}`}
+        >
           <div className={styles.content}>
-            <MockIcon /> {/* Icono de salir */}
-            <span className={styles.label}>Cerrar sesión</span>
+            <LogOut size={20} className={styles.icon} />
+            <span className={styles.logoutLabel}>Cerrar sesión</span>
           </div>
         </Link>
       </div>
