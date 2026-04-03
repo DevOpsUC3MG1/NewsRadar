@@ -32,8 +32,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Función que usaremos desde el formulario de Login
-  const login = async (username, password) => {
-    const data = await authService.login(username, password);
+  const login = async (email, password) => {
+    const data = await authService.login(email, password);
     const decoded = jwtDecode(data.access_token);
     setUser(decoded);
   };

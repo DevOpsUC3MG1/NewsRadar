@@ -1,0 +1,142 @@
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #1f2122;
+  font-family: var(--sans);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px; /* Reducido al mínimo para pantallas pequeñas */
+}
+
+.formCard {
+  width: 100%;
+  max-width: 500px; /* Un poco más estrecha para que se vea más estilizada */
+  background-color: #f4f6f8;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.cardHeader {
+  background-color: #0d0f12;
+  padding: 25px 30px; /* Más bajita */
+  color: white;
+}
+
+.title {
+  font-size: 1.8rem; /* Más pequeño para ahorrar altura */
+  margin: 0 0 5px 0;
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+  margin: 0;
+}
+
+.cardBody {
+  padding: 25px 30px; /* Menos relleno interno */
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px; 
+}
+
+.formGroup {
+  margin-bottom: 12px; /* Reducimos el salto entre campos */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0; /* ✨ ESTA ES LA CLAVE MÁGICA PARA QUE EL GRID NO SE DESBORDE ✨ */
+}
+
+.label {
+  font-size: 0.75rem; /* Más pequeño para que quepa "CONFIRMAR CONTRASEÑA" */
+  color: #111;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: normal; /* Permite que el texto baje a otra línea si no cabe */
+}
+
+.input {
+  width: 100%; 
+  box-sizing: border-box; 
+  padding: 10px 12px; 
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  outline: none;
+  background-color: white;
+}
+
+.input:focus {
+  border-color: #4e8df5;
+}
+
+.errorText {
+  color: #e74c3c;
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.submitButton {
+  background-color: #0a0b0e;
+  color: white;
+  border: none;
+  padding: 12px 40px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: block;
+  margin: 15px auto; /* Centrado y con menos aire arriba/abajo */
+  width: 100%;
+  max-width: 300px;
+}
+
+.submitButton:hover {
+  background-color: #222;
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.footerSection {
+  text-align: center;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 15px;
+  margin-top: 5px;
+}
+
+.footerText {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.loginButton {
+  background-color: transparent;
+  color: #4e8df5;
+  border: 1px solid #4e8df5;
+  padding: 6px 30px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.loginButton:hover {
+  background-color: rgba(78, 141, 245, 0.1);
+}

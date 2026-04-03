@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import styles from './PantallaEntrada.module.css';
+import styles from './login.module.css';
 
 // Importamos los SVGs
 import systemTaskSvg from './SystemTask.svg';

@@ -1,0 +1,30 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 30px;
+  background-color: var(--color-header); /* Fondo oscuro general */
+  border-bottom: 1px solid #1a1c24; /* Línea sutil para separar el header del contenido */
+  font-family: var(--sans, sans-serif);
+}
+
+/* --- SECCIÓN IZQUIERDA (LOGO) --- */
+.logoSection {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  gap: 12px;
+}
+
+.logoIcon {
+  width: 28px;
+  height: 28px;
+}
+
+.logoText {
+  color: #FFFFFF;
+  font-weight: bold;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+}
