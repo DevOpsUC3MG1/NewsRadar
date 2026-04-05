@@ -25,7 +25,7 @@
 }
 
 .cardHeader {
-  background-color: #0d0f12;
+  background-color: #09090F;
   padding: 25px 30px;
   color: white;
 }
@@ -94,7 +94,7 @@
 }
 
 .submitButton {
-  background-color: #0a0b0e;
+  background-color: #09090F;
   color: white;
   border: none;
   padding: 12px 40px;
@@ -108,7 +108,7 @@
 }
 
 .submitButton:hover {
-  background-color: #222;
+  background-color: #1a1a24;
 }
 
 .submitButton:disabled {
