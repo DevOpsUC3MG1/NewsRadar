@@ -6,7 +6,7 @@ import * as z from 'zod';
 
 // Importamos el nuevo Header sin usuario
 import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
-import styles from './Registro.module.css';
+import styles from './registro.module.css';
 
 // Esquema de validación con Zod
 const registerSchema = z.object({

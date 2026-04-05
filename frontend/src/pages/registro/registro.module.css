@@ -1,3 +1,4 @@
+/* registro.module.css */
 .pageContainer {
   display: flex;
   flex-direction: column;
@@ -11,12 +12,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px 20px; /* Reducido al mínimo para pantallas pequeñas */
+  padding: 10px 20px;
 }
 
 .formCard {
   width: 100%;
-  max-width: 500px; /* Un poco más estrecha para que se vea más estilizada */
+  max-width: 500px;
   background-color: #f4f6f8;
   border-radius: 8px;
   overflow: hidden;
@@ -25,12 +26,12 @@
 
 .cardHeader {
   background-color: #0d0f12;
-  padding: 25px 30px; /* Más bajita */
+  padding: 25px 30px;
   color: white;
 }
 
 .title {
-  font-size: 1.8rem; /* Más pequeño para ahorrar altura */
+  font-size: 1.8rem;
   margin: 0 0 5px 0;
   letter-spacing: 1px;
 }
@@ -42,37 +43,39 @@
 }
 
 .cardBody {
-  padding: 25px 30px; /* Menos relleno interno */
+  padding: 25px 30px;
 }
 
 .gridRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px; 
+  gap: 15px;
 }
 
 .formGroup {
-  margin-bottom: 12px; /* Reducimos el salto entre campos */
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-width: 0; /* ✨ ESTA ES LA CLAVE MÁGICA PARA QUE EL GRID NO SE DESBORDE ✨ */
+  min-width: 0;
 }
 
 .label {
-  font-size: 0.75rem; /* Más pequeño para que quepa "CONFIRMAR CONTRASEÑA" */
+  font-size: 0.75rem;
   color: #111;
   margin-bottom: 4px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  white-space: normal; /* Permite que el texto baje a otra línea si no cabe */
+  white-space: normal;
 }
 
+/* --- AQUÍ ESTÁN TUS CAMBIOS --- */
 .input {
-  width: 100%; 
-  box-sizing: border-box; 
-  padding: 10px 12px; 
-  border: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #000000; /* Borde cambiado a negro */
+  color: #000000; /* Texto cambiado a negro para que sea visible */
   border-radius: 4px;
   font-size: 0.9rem;
   outline: none;
@@ -81,6 +84,7 @@
 
 .input:focus {
   border-color: #4e8df5;
+  box-shadow: 0 0 0 1px #4e8df5; /* Le añado un pequeño resplandor azul al hacer foco, igual que en el login */
 }
 
 .errorText {
@@ -98,7 +102,7 @@
   font-size: 0.95rem;
   cursor: pointer;
   display: block;
-  margin: 15px auto; /* Centrado y con menos aire arriba/abajo */
+  margin: 15px auto;
   width: 100%;
   max-width: 300px;
 }

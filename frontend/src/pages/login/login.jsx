@@ -1,19 +1,18 @@
+// login.jsx
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-// Importamos las nuevas herramientas
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
+// Importamos el Header sin usuario
+import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
 import styles from './login.module.css';
 
-// Importamos los SVGs
-import systemTaskSvg from './SystemTask.svg';
-import newsSvg from './News.svg';
-import documentarySvg from './Documentary.svg';
+// Importamos la ÚNICA imagen SVG agrupada
+import imgInicioSvg from './img-inicio.svg';
 
-// 1. EL "GORILA": Definimos las reglas de validación con Zod
 const loginSchema = z.object({
   email: z
     .string()
@@ -25,31 +24,26 @@ const loginSchema = z.object({
 });
 
 export default function PantallaEntrada() {
-  // Solo dejamos los estados que NO son del formulario
   const [apiError, setApiError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // 2. EL "ASISTENTE": Configuramos React Hook Form
   const {
-    register, // Para "conectar" los inputs
-    handleSubmit, // Para manejar el envío
-    formState: { errors }, // Para leer los errores que Zod detecte
+    register,
+    handleSubmit,
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
   });
 
-  // 3. Esta función SOLO se ejecuta si Zod dice que todo está correcto
   const onSubmitForm = async (data) => {
     setApiError(null);
     setIsLoading(true);
 
     try {
-      // Pasamos los datos validados a la API
       await login(data.email, data.password);
-      // Redirigimos al Dashboard
       navigate('/app');
     } catch (err) {
       setApiError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');
@@ -60,9 +54,7 @@ export default function PantallaEntrada() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.topbar}>
-        <span className={styles.topbarLogo}>◪</span> NEWSRADAR
-      </header>
+      <HeaderNoUser />
 
       <div className={styles.splitLayout}>
         {/* --- Mitad Izquierda --- */}
@@ -78,10 +70,9 @@ export default function PantallaEntrada() {
             de comunicación y fuentes oficiales
           </p>
 
-          <div className={styles.imageCluster}>
-            <img src={systemTaskSvg} alt="Monitor" className={styles.imgTask} />
-            <img src={newsSvg} alt="Periódico" className={styles.imgNews} />
-            <img src={documentarySvg} alt="Cámara" className={styles.imgDoc} />
+          {/* Contenedor actualizado para una sola imagen */}
+          <div className={styles.imageContainer}>
+            <img src={imgInicioSvg} alt="Ilustración de monitorización" className={styles.mainImage} />
           </div>
         </div>
 
@@ -93,18 +84,15 @@ export default function PantallaEntrada() {
           </div>
 
           <div className={styles.formContainer}>
-            {/* Conectamos el form con handleSubmit de React Hook Form */}
             <form onSubmit={handleSubmit(onSubmitForm)}>
-
               {/* CAMPO EMAIL */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>EMAIL</label>
                 <input
                   type="email"
                   className={styles.input}
-                  {...register('email')} // Conectamos el input
+                  {...register('email')}
                 />
-                {/* Mostramos el error si Zod lo detecta */}
                 {errors.email && (
                   <span style={{ color: '#e74c3c', fontSize: '0.8rem', marginTop: '5px' }}>
                     {errors.email.message}
@@ -118,9 +106,8 @@ export default function PantallaEntrada() {
                 <input
                   type="password"
                   className={styles.input}
-                  {...register('password')} // Conectamos el input
+                  {...register('password')}
                 />
-                {/* Mostramos el error si Zod lo detecta */}
                 {errors.password && (
                   <span style={{ color: '#e74c3c', fontSize: '0.8rem', marginTop: '5px' }}>
                     {errors.password.message}
@@ -128,14 +115,12 @@ export default function PantallaEntrada() {
                 )}
               </div>
 
-              {/* Mostrar errores que vienen del backend (ej. contraseña mal) */}
               {apiError && (
                 <div style={{ color: '#e74c3c', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
                   {apiError}
                 </div>
               )}
 
-              {/* Botón de envío. Ahora es type="submit" y sin <Link> */}
               <button
                 type="submit"
                 className={styles.loginButton}
