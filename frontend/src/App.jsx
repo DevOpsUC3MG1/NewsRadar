@@ -2,7 +2,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import PantallaEntrada from './pages/login/login.jsx'
 import Registro from './pages/registro/registro.jsx'
-import ChangePwd from './pages/change_pwd/change_pwd.jsx' // <-- 1. Importamos la nueva pantalla
+import ChangePwd from './pages/change_pwd/change_pwd.jsx'
+import VerifyAcc from './pages/verify_acc/verify_acc.jsx' // <-- 1. Importamos la nueva pantalla
 import Home from './pages/Home'
 import About from './pages/About'
 import UiTesting from './pages/UiTesting'
@@ -20,7 +21,10 @@ function App() {
         {/* Cualquiera puede ver estas páginas sin iniciar sesión */}
         <Route path="/" element={<PantallaEntrada />} />
         <Route path="/registro" element={<Registro />} />
-        <Route path="/recuperar-password" element={<ChangePwd />} /> {/* <-- 2. Añadimos la ruta */}
+        <Route path="/recuperar-password" element={<ChangePwd />} />
+
+        {/* <-- 2. Añadimos la ruta de verificación aquí temporalmente para depurar --> */}
+        <Route path="/verificar-cuenta" element={<VerifyAcc />} />
 
         {/* === RUTAS PROTEGIDAS === */}
         {/* Envolvemos el MainLayout con ProtectedRoute */}

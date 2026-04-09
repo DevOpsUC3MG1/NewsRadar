@@ -48,7 +48,7 @@ export default function PantallaEntrada() {
       await login(data.email, data.password);
       
       // Si llega aquí sin dar error, el usuario y el token ya están guardados
-      navigate('/app'); 
+      navigate('/app');
     } catch (err) {
       console.error(err);
       setApiError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');
