@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { AuthContext } from '../../context/AuthContext';
 
-// Importamos el nuevo Header sin usuario
 import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
 import styles from './registro.module.css';
 
-// Esquema de validación con Zod
 const registerSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   apellidos: z.string().min(1, 'Los apellidos son obligatorios'),
@@ -25,6 +24,8 @@ export default function Registro() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const navigate = useNavigate();
+  
+  const { registerUser } = useContext(AuthContext);
 
   const {
     register,
@@ -39,17 +40,28 @@ export default function Registro() {
     setIsLoading(true);
 
     try {
-      // AQUÍ IRÁ LA LLAMADA AL BACKEND:
-      // await authService.register(data);
-      console.log("Datos del nuevo usuario:", data);
+      // Adaptado exactamente a UserCreate de main.py
+      const apiPayload = {
+        email: data.email,
+        first_name: data.nombre, 
+        last_name: data.apellidos, 
+        organization: data.organizacion,
+        password: data.password,
+        role_ids: [] 
+      };
+
+      // Esto registra y hace auto-login
+      await registerUser(apiPayload);
       
-      // Simulamos carga
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Ya está logueado, lo mandamos al panel principal (cambia la ruta si es distinta)
+      navigate('/dashboard'); 
       
-      // Redirigir al login tras un registro exitoso
-      navigate('/pantalla-entrada');
     } catch (err) {
-      setApiError('Error al crear la cuenta. Inténtalo de nuevo.');
+      if (err.response && err.response.status === 409) {
+        setApiError('El email ya está registrado.');
+      } else {
+        setApiError('Error al crear la cuenta. Inténtalo de nuevo.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -57,24 +69,19 @@ export default function Registro() {
 
   return (
     <div className={styles.pageContainer}>
-      
-      {/* Nuestro header modularizado */}
       <HeaderNoUser />
-
-      {/* Contenedor principal */}
       <main className={styles.mainContent}>
         <div className={styles.formCard}>
           
-          {/* Cabecera de la tarjeta */}
           <div className={styles.cardHeader}>
             <h1 className={styles.title}>CREA TU CUENTA</h1>
             <p className={styles.subtitle}>Regístrate para acceder a NEWSRADAR</p>
           </div>
 
-          {/* Cuerpo de la tarjeta */}
           <div className={styles.cardBody}>
             <form onSubmit={handleSubmit(onSubmitForm)}>
               
+              {/* --- RESTO DE TU CÓDIGO HTML/JSX (No cambia nada) --- */}
               <div className={styles.gridRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.label}>NOMBRE</label>
@@ -127,7 +134,7 @@ export default function Registro() {
 
             <div className={styles.footerSection}>
               <p className={styles.footerText}>¿Ya tienes cuenta?</p>
-              <Link to="/" className={styles.loginButton}>
+              <Link to="/pantalla-entrada" className={styles.loginButton}>
                 Iniciar sesión
               </Link>
             </div>

@@ -14,6 +14,23 @@ const login = async (email, password) => {
   return response.data;
 };
 
+const register = async (userData) => {
+  // userData debe coincidir con el esquema 'UserCreate' de FastAPI
+  const response = await axios.post(`${API_URL}/v1/auth/register`, userData);
+  return response.data;
+};
+
+const getUserByEmail = async (email, token) => {
+  const response = await axios.get(`${API_URL}/users`, {
+    headers: {
+      Authorization: `Bearer ${token}` // Enviamos el token UUID en la cabecera
+    }
+  });
+  
+  // Filtramos la lista de usuarios para devolver solo el nuestro
+  return response.data.find(user => user.email === email);
+};
+
 const logout = () => {
   // Para cerrar sesión, simplemente borramos el token
   localStorage.removeItem('token');
@@ -23,4 +40,4 @@ const getToken = () => {
   return localStorage.getItem('token');
 };
 
-export default { login, logout, getToken };
+export default { login, logout, register, getUserByEmail, getToken };

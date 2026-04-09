@@ -1,5 +1,4 @@
 import { createContext, useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode';
 import authService from '../services/authService';
 
 // Creamos el contexto
@@ -12,30 +11,46 @@ export const AuthProvider = ({ children }) => {
   // Al cargar la app, comprobamos si ya hay un token guardado de antes
   useEffect(() => {
     const token = authService.getToken();
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        // Comprobamos si el token ha caducado ("exp" es expiration)
-        if (decoded.exp * 1000 < Date.now()) {
-          authService.logout();
-          setUser(null);
-        } else {
-          // El token es válido, guardamos los datos del usuario (id, roles, etc)
-          setUser(decoded);
-        }
-      } catch (error) {
-        console.error("Token inválido");
-        authService.logout();
-      }
+    const storedUser = localStorage.getItem('user');
+
+    // Comprobamos si hay token y datos de usuario guardados
+    if (token && storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      authService.logout();
     }
     setLoading(false);
   }, []);
 
-  // Función que usaremos desde el formulario de Login
+  // Función que usaremos desde login.jsx
   const login = async (email, password) => {
+    // 1. Hacemos login en la API y conseguimos el token UUID
     const data = await authService.login(email, password);
-    const decoded = jwtDecode(data.access_token);
-    setUser(decoded);
+    
+    // 2. Con el token en mano, buscamos los datos del perfil usando el email
+    const userData = await authService.getUserByEmail(email, data.access_token);
+    
+    if (userData) {
+      // 3. Guardamos el usuario en el estado y en LocalStorage
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+    } else {
+      // Si por algún motivo no encontramos el usuario, forzamos error
+      throw new Error("No se pudo recuperar el perfil del usuario.");
+    }
+  };
+
+  const registerUser = async (userData) => {
+    // Registramos en la API
+    const newUser = await authService.register(userData);
+    
+    // Auto-login silencioso para conseguir el token
+    await authService.login(userData.email, userData.password);
+
+    // Guardamos el usuario
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+    return newUser;
   };
 
   const logout = () => {
@@ -44,7 +59,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, registerUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -27,6 +27,7 @@ export default function PantallaEntrada() {
   const [apiError, setApiError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Traemos la nueva función login que hemos creado en AuthContext
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -43,9 +44,13 @@ export default function PantallaEntrada() {
     setIsLoading(true);
 
     try {
+      // Enviamos email y password al AuthContext
       await login(data.email, data.password);
-      navigate('/app');
+      
+      // Si llega aquí sin dar error, el usuario y el token ya están guardados
+      navigate('/app'); 
     } catch (err) {
+      console.error(err);
       setApiError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
