@@ -1,79 +1,20 @@
+# main.py
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
-from bson import ObjectId
+from uuid import uuid4
 
-import jwt
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db, engine, AsyncSessionLocal
+from database import get_db, Base, engine  # Asegúrate de que database.py esté en el path
 from database_mongodb import get_mongo_db
-from motor.motor_asyncio import AsyncIOMotorDatabase
-
-# ─── Modelos SQLAlchemy (ORM) ────────────────────────────────────────────────
-from sqlalchemy.orm import DeclarativeBase, relationship
-from sqlalchemy import Column, Integer, String, JSON, ForeignKey
-
-class Base(DeclarativeBase):
-    pass
-
-class RoleORM(Base):
-    __tablename__ = "roles"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-
-class UserORM(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, nullable=False)
-    first_name = Column(String(120))
-    last_name = Column(String(120))
-    organization = Column(String(180))
-    password = Column(String(128))
-    role_ids = Column(JSON, default=list)
-    alerts = relationship("AlertORM", back_populates="user", cascade="all, delete-orphan")
-
-class AlertORM(Base):
-    __tablename__ = "alerts"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(200))
-    descriptors = Column(JSON, default=list)
-    categories = Column(JSON, default=list)
-    cron_expression = Column(String(120))
-    user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("UserORM", back_populates="alerts")
-
-class CategoryORM(Base):
-    __tablename__ = "categories"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(120))
-    source = Column(String(10), default="IPTC")
-
-class InformationSourceORM(Base):
-    __tablename__ = "information_sources"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(120))
-    url = Column(String(500))
-    channels = relationship("RSSChannelORM", back_populates="source", cascade="all, delete-orphan")
-
-class RSSChannelORM(Base):
-    __tablename__ = "rss_channels"
-    id = Column(Integer, primary_key=True)
-    url = Column(String(500))
-    category_id = Column(Integer, ForeignKey("categories.id"))
-    information_source_id = Column(Integer, ForeignKey("information_sources.id"))
-    source = relationship("InformationSourceORM", back_populates="channels")
-
-
-# ─── Configuración JWT ───────────────────────────────────────────────────────
-SECRET_KEY = "clave-provisional"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+from models import Role as RoleModel, User as UserModel, Alert as AlertModel
+from models import Category as CategoryModel, InformationSource as InformationSourceModel, RSSChannel as RSSChannelModel
 
 app = FastAPI(
     title="NewsRadar API",
@@ -84,8 +25,10 @@ app = FastAPI(
 API_PREFIX = "/api/v1"
 security = HTTPBearer(auto_error=False)
 
+# ------------------------------------------------------------
+# Modelos Pydantic (exactamente igual que en original_main.py)
+# ------------------------------------------------------------
 
-# ─── Schemas Pydantic ────────────────────────────────────────────────────────
 class Metric(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     value: float
@@ -101,8 +44,6 @@ class RoleUpdate(BaseModel):
 
 class Role(RoleBase):
     id: int
-    class Config:
-        from_attributes = True
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -124,8 +65,9 @@ class UserUpdate(BaseModel):
 
 class User(UserBase):
     id: int
-    class Config:
-        from_attributes = True
+
+class UserInDB(User):
+    password: str
 
 class AlertCategoryItem(BaseModel):
     code: str = Field(..., min_length=1, max_length=60)
@@ -149,8 +91,6 @@ class AlertUpdate(BaseModel):
 class Alert(AlertBase):
     id: int
     user_id: int
-    class Config:
-        from_attributes = True
 
 class CategoryBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
@@ -165,8 +105,6 @@ class CategoryUpdate(BaseModel):
 
 class Category(CategoryBase):
     id: int
-    class Config:
-        from_attributes = True
 
 class NotificationBase(BaseModel):
     timestamp: datetime
@@ -180,7 +118,7 @@ class NotificationUpdate(BaseModel):
     metrics: Optional[List[Metric]] = None
 
 class Notification(NotificationBase):
-    id: str
+    id: str  # MongoDB usa _id como string
     alert_id: int
 
 class InformationSourceBase(BaseModel):
@@ -196,8 +134,6 @@ class InformationSourceUpdate(BaseModel):
 
 class InformationSource(InformationSourceBase):
     id: int
-    class Config:
-        from_attributes = True
 
 class RSSChannelBase(BaseModel):
     url: HttpUrl
@@ -213,8 +149,6 @@ class RSSChannelUpdate(BaseModel):
 class RSSChannel(RSSChannelBase):
     id: int
     information_source_id: int
-    class Config:
-        from_attributes = True
 
 class StatsBase(BaseModel):
     metrics: List[Metric] = Field(default_factory=list)
@@ -226,7 +160,7 @@ class StatsUpdate(BaseModel):
     metrics: Optional[List[Metric]] = None
 
 class Stats(StatsBase):
-    id: str
+    id: str  # MongoDB
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -236,541 +170,1011 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+# ------------------------------------------------------------
+# Almacenamiento en memoria para tokens (sin cambios)
+# ------------------------------------------------------------
+active_tokens: Dict[str, int] = {}
 
-# ─── Helpers de autenticación ────────────────────────────────────────────────
+# ------------------------------------------------------------
+# Funciones auxiliares asíncronas para DB
+# ------------------------------------------------------------
+async def ensure_role_ids_exist(db: AsyncSession, role_ids: List[int]) -> None:
+    if not role_ids:
+        return
+    stmt = select(RoleModel).where(RoleModel.id.in_(role_ids))
+    result = await db.execute(stmt)
+    existing_ids = {r.id for r in result.scalars().all()}
+    missing = set(role_ids) - existing_ids
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Roles no encontrados: {list(missing)}",
+        )
+
+async def ensure_user_exists(db: AsyncSession, user_id: int) -> UserModel:
+    user = await db.get(UserModel, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return user
+
+async def ensure_alert_for_user(db: AsyncSession, user_id: int, alert_id: int) -> AlertModel:
+    alert = await db.get(AlertModel, alert_id)
+    if not alert or alert.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
+    return alert
+
+async def ensure_category_exists(db: AsyncSession, category_id: int) -> CategoryModel:
+    category = await db.get(CategoryModel, category_id)
+    if not category:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    return category
+
+async def ensure_information_source_exists(db: AsyncSession, source_id: int) -> InformationSourceModel:
+    source = await db.get(InformationSourceModel, source_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
+    return source
+
+async def ensure_rss_for_source(db: AsyncSession, source_id: int, channel_id: int) -> RSSChannelModel:
+    channel = await db.get(RSSChannelModel, channel_id)
+    if not channel or channel.information_source_id != source_id:
+        raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
+    return channel
+
+def sanitize_user(user: UserModel) -> User:
+    return User(
+        id=user.id,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        organization=user.organization,
+        role_ids=user.role_ids or [],
+    )
+
+# ------------------------------------------------------------
+# Dependencia de autenticación (sin cambios en lógica)
+# ------------------------------------------------------------
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
-) -> UserORM:
+) -> UserModel:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(status_code=401, detail="Token inválido o ausente")
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id_str: str = payload.get("sub")
-        if user_id_str is None:
-            raise HTTPException(status_code=401, detail="Token inválido")
-        user_id = int(user_id_str)
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token inválido")
 
-    user = await db.get(UserORM, user_id)
+    user_id = active_tokens.get(credentials.credentials)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+
+    user = await db.get(UserModel, user_id)
     if not user:
-        raise HTTPException(status_code=401, detail="Usuario no encontrado en base de datos")
+        raise HTTPException(status_code=401, detail="Usuario inválido")
+
     return user
 
-
-async def require_admin(user: UserORM = Depends(get_current_user)) -> UserORM:
-    if 1 not in (user.role_ids or []):
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de Gestor")
-    return user
-
-
-# ─── Startup ─────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------
+# Evento de inicio: crear tablas y datos semilla
+# ------------------------------------------------------------
 @app.on_event("startup")
-async def on_startup() -> None:
-    # Crear tablas en PostgreSQL
+async def on_startup():
+    # Crear tablas si no existen (en producción usarías Alembic)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Seed data si no hay roles
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(select(RoleORM))
+    # Insertar datos semilla si la tabla roles está vacía
+    async with AsyncSession(engine) as db:
+        result = await db.execute(select(RoleModel))
         if not result.scalars().first():
-            admin_role = RoleORM(name="admin")
-            user_role = RoleORM(name="user")
+            admin_role = RoleModel(name="admin")
+            user_role = RoleModel(name="user")
             db.add_all([admin_role, user_role])
-            await db.flush()
+            await db.flush()  # para obtener IDs
 
-            db.add(UserORM(
+            admin_user = UserModel(
                 email="admin@newsradar.com",
                 first_name="Admin",
                 last_name="NewsRadar",
                 organization="NewsRadar",
                 role_ids=[admin_role.id],
-                password="admin123",
-            ))
-            db.add(UserORM(
-                email="lector@newsradar.com",
-                first_name="Lector",
-                last_name="NewsRadar",
-                organization="NewsRadar",
-                role_ids=[user_role.id],
-                password="lector123",
-            ))
+                password="admin123",  # En producción usar hash
+            )
+            db.add(admin_user)
             await db.commit()
 
-
-# ─── Health ───────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------
+# Endpoints (misma estructura, pero con DB)
+# ------------------------------------------------------------
 @app.get(f"{API_PREFIX}/health", tags=["system"])
-def health() -> dict:
+async def health() -> dict:
     return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-
-# ─── Auth ─────────────────────────────────────────────────────────────────────
 @app.post(f"{API_PREFIX}/auth/login", response_model=TokenResponse, tags=["auth"])
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> TokenResponse:
-    result = await db.execute(select(UserORM).where(UserORM.email == payload.email))
-    user = result.scalars().first()
-    if not user or user.password != payload.password:
+    stmt = select(UserModel).where(UserModel.email == payload.email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if user is None or user.password != payload.password:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    token_data = {"sub": str(user.id), "exp": expire, "roles": user.role_ids}
-    token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+    token = str(uuid4())
+    active_tokens[token] = user.id
     return TokenResponse(access_token=token)
-
 
 @app.post(f"{API_PREFIX}/auth/register", response_model=User, tags=["auth"])
 async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
-    existing = await db.execute(select(UserORM).where(UserORM.email == payload.email))
-    if existing.scalars().first():
+    stmt = select(UserModel).where(UserModel.email == payload.email)
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="El email ya está registrado")
 
-    # Validar que los roles existen
-    for role_id in payload.role_ids:
-        role = await db.get(RoleORM, role_id)
-        if not role:
-            raise HTTPException(status_code=400, detail=f"Rol no encontrado: {role_id}")
+    await ensure_role_ids_exist(db, payload.role_ids)
 
-    user = UserORM(**payload.model_dump())
-    db.add(user)
+    user_db = UserModel(**payload.model_dump())
+    db.add(user_db)
+    await db.commit()
+    await db.refresh(user_db)
+    return sanitize_user(user_db)
+
+@app.get(f"{API_PREFIX}/users", response_model=List[User], tags=["users"])
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[User]:
+    result = await db.execute(select(UserModel))
+    users = result.scalars().all()
+    return [sanitize_user(u) for u in users]
+
+@app.post(f"{API_PREFIX}/users", response_model=User, status_code=201, tags=["users"])
+async def create_user(
+    payload: UserCreate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> User:
+    stmt = select(UserModel).where(UserModel.email == payload.email)
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="El email ya está registrado")
+
+    await ensure_role_ids_exist(db, payload.role_ids)
+
+    user_db = UserModel(**payload.model_dump())
+    db.add(user_db)
+    await db.commit()
+    await db.refresh(user_db)
+    return sanitize_user(user_db)
+
+@app.get(f"{API_PREFIX}/users/{{user_id}}", response_model=User, tags=["users"])
+async def get_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> User:
+    user = await ensure_user_exists(db, user_id)
+    return sanitize_user(user)
+
+@app.put(f"{API_PREFIX}/users/{{user_id}}", response_model=User, tags=["users"])
+async def update_user(
+    user_id: int,
+    payload: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> User:
+    user = await ensure_user_exists(db, user_id)
+
+    data = payload.model_dump(exclude_unset=True)
+    if "email" in data:
+        stmt = select(UserModel).where(UserModel.email == data["email"], UserModel.id != user_id)
+        result = await db.execute(stmt)
+        if result.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="El email ya está registrado")
+    if "role_ids" in data:
+        await ensure_role_ids_exist(db, data["role_ids"])
+
+    for field, value in data.items():
+        setattr(user, field, value)
+
     await db.commit()
     await db.refresh(user)
-    return user
+    return sanitize_user(user)
 
+@app.delete(
+    f"{API_PREFIX}/users/{{user_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["users"],
+)
+async def delete_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    user = await ensure_user_exists(db, user_id)
 
-# ─── Roles ────────────────────────────────────────────────────────────────────
+    # Obtener IDs de alertas del usuario
+    stmt = select(AlertModel.id).where(AlertModel.user_id == user_id)
+    result = await db.execute(stmt)
+    alert_ids = [row[0] for row in result.all()]
+
+    # Eliminar notificaciones asociadas en MongoDB
+    if alert_ids:
+        await mongo_db.notifications.delete_many({"alert_id": {"$in": alert_ids}})
+
+    # Eliminar usuario (las alertas se eliminan en cascada por SQLAlchemy)
+    await db.delete(user)
+    await db.commit()
+
+# ------------------------------------------------------------
+# Roles
+# ------------------------------------------------------------
 @app.get(f"{API_PREFIX}/roles", response_model=List[Role], tags=["roles"])
-async def list_roles(_: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(RoleORM))
-    return result.scalars().all()
-
+async def list_roles(
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[Role]:
+    result = await db.execute(select(RoleModel))
+    roles = result.scalars().all()
+    return [Role(id=r.id, name=r.name) for r in roles]
 
 @app.post(f"{API_PREFIX}/roles", response_model=Role, status_code=201, tags=["roles"])
-async def create_role(payload: RoleCreate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    role = RoleORM(**payload.model_dump())
-    db.add(role)
+async def create_role(
+    payload: RoleCreate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Role:
+    role_db = RoleModel(**payload.model_dump())
+    db.add(role_db)
     await db.commit()
-    await db.refresh(role)
-    return role
-
+    await db.refresh(role_db)
+    return Role(id=role_db.id, name=role_db.name)
 
 @app.get(f"{API_PREFIX}/roles/{{role_id}}", response_model=Role, tags=["roles"])
-async def get_role(role_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    role = await db.get(RoleORM, role_id)
+async def get_role(
+    role_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Role:
+    role = await db.get(RoleModel, role_id)
     if not role:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
-    return role
-
+    return Role(id=role.id, name=role.name)
 
 @app.put(f"{API_PREFIX}/roles/{{role_id}}", response_model=Role, tags=["roles"])
-async def update_role(role_id: int, payload: RoleUpdate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    role = await db.get(RoleORM, role_id)
+async def update_role(
+    role_id: int,
+    payload: RoleUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Role:
+    role = await db.get(RoleModel, role_id)
     if not role:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
-    for key, val in payload.model_dump(exclude_unset=True).items():
-        setattr(role, key, val)
+
+    data = payload.model_dump(exclude_unset=True)
+    for field, value in data.items():
+        setattr(role, field, value)
+
     await db.commit()
     await db.refresh(role)
-    return role
+    return Role(id=role.id, name=role.name)
 
-
-@app.delete(f"{API_PREFIX}/roles/{{role_id}}", status_code=204, response_model=None, response_class=Response, tags=["roles"])
-async def delete_role(role_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    role = await db.get(RoleORM, role_id)
+@app.delete(
+    f"{API_PREFIX}/roles/{{role_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["roles"],
+)
+async def delete_role(
+    role_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    role = await db.get(RoleModel, role_id)
     if not role:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
 
-    # No eliminar si hay usuarios con este rol
-    result = await db.execute(select(UserORM))
-    users = result.scalars().all()
-    for user in users:
-        if role_id in (user.role_ids or []):
-            raise HTTPException(status_code=409, detail="No se puede eliminar un rol asignado a usuarios")
+    # Verificar si el rol está asignado a algún usuario
+    stmt = select(UserModel).where(UserModel.role_ids.contains([role_id]))
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede eliminar un rol asignado a usuarios",
+        )
 
     await db.delete(role)
     await db.commit()
 
+# ------------------------------------------------------------
+# Alertas
+# ------------------------------------------------------------
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/alerts",
+    response_model=List[Alert],
+    tags=["alerts"],
+)
+async def list_user_alerts(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[Alert]:
+    await ensure_user_exists(db, user_id)
+    stmt = select(AlertModel).where(AlertModel.user_id == user_id)
+    result = await db.execute(stmt)
+    alerts = result.scalars().all()
+    return [
+        Alert(
+            id=a.id,
+            name=a.name,
+            descriptors=a.descriptors or [],
+            categories=a.categories or [],
+            cron_expression=a.cron_expression,
+            user_id=a.user_id,
+        )
+        for a in alerts
+    ]
 
-# ─── Users ────────────────────────────────────────────────────────────────────
-@app.get(f"{API_PREFIX}/users", response_model=List[User], tags=["users"])
-async def list_users(_: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(UserORM))
-    return result.scalars().all()
+@app.post(
+    f"{API_PREFIX}/users/{{user_id}}/alerts",
+    response_model=Alert,
+    status_code=201,
+    tags=["alerts"],
+)
+async def create_user_alert(
+    user_id: int,
+    payload: AlertCreate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Alert:
+    await ensure_user_exists(db, user_id)
 
-
-@app.post(f"{API_PREFIX}/users", response_model=User, status_code=201, tags=["users"])
-async def create_user(payload: UserCreate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(select(UserORM).where(UserORM.email == payload.email))
-    if existing.scalars().first():
-        raise HTTPException(status_code=409, detail="El email ya está registrado")
-
-    for role_id in payload.role_ids:
-        if not await db.get(RoleORM, role_id):
-            raise HTTPException(status_code=400, detail=f"Rol no encontrado: {role_id}")
-
-    user = UserORM(**payload.model_dump())
-    db.add(user)
+    alert_db = AlertModel(
+        user_id=user_id,
+        name=payload.name,
+        descriptors=payload.descriptors,
+        categories=[c.model_dump() for c in payload.categories],
+        cron_expression=payload.cron_expression,
+    )
+    db.add(alert_db)
     await db.commit()
-    await db.refresh(user)
-    return user
+    await db.refresh(alert_db)
 
+    return Alert(
+        id=alert_db.id,
+        name=alert_db.name,
+        descriptors=alert_db.descriptors or [],
+        categories=alert_db.categories or [],
+        cron_expression=alert_db.cron_expression,
+        user_id=alert_db.user_id,
+    )
 
-@app.get(f"{API_PREFIX}/users/{{user_id}}", response_model=User, tags=["users"])
-async def get_user(user_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    user = await db.get(UserORM, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return user
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}",
+    response_model=Alert,
+    tags=["alerts"],
+)
+async def get_user_alert(
+    user_id: int,
+    alert_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Alert:
+    alert = await ensure_alert_for_user(db, user_id, alert_id)
+    return Alert(
+        id=alert.id,
+        name=alert.name,
+        descriptors=alert.descriptors or [],
+        categories=alert.categories or [],
+        cron_expression=alert.cron_expression,
+        user_id=alert.user_id,
+    )
 
-
-@app.put(f"{API_PREFIX}/users/{{user_id}}", response_model=User, tags=["users"])
-async def update_user(user_id: int, payload: UserUpdate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    user = await db.get(UserORM, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+@app.put(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}",
+    response_model=Alert,
+    tags=["alerts"],
+)
+async def update_user_alert(
+    user_id: int,
+    alert_id: int,
+    payload: AlertUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Alert:
+    alert = await ensure_alert_for_user(db, user_id, alert_id)
 
     data = payload.model_dump(exclude_unset=True)
+    if "categories" in data:
+        data["categories"] = [c.model_dump() for c in payload.categories]
 
-    if "email" in data:
-        dup = await db.execute(select(UserORM).where(UserORM.email == data["email"], UserORM.id != user_id))
-        if dup.scalars().first():
-            raise HTTPException(status_code=409, detail="El email ya está registrado")
+    for field, value in data.items():
+        setattr(alert, field, value)
 
-    if "role_ids" in data:
-        for role_id in data["role_ids"]:
-            if not await db.get(RoleORM, role_id):
-                raise HTTPException(status_code=400, detail=f"Rol no encontrado: {role_id}")
-
-    for key, val in data.items():
-        setattr(user, key, val)
-    await db.commit()
-    await db.refresh(user)
-    return user
-
-
-@app.delete(f"{API_PREFIX}/users/{{user_id}}", status_code=204, response_model=None, response_class=Response, tags=["users"])
-async def delete_user(user_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    user = await db.get(UserORM, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    await db.delete(user)  # cascade elimina sus alertas
-    await db.commit()
-
-
-# ─── Alerts ───────────────────────────────────────────────────────────────────
-@app.get(f"{API_PREFIX}/users/{{user_id}}/alerts", response_model=List[Alert], tags=["alerts"])
-async def list_user_alerts(user_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if not await db.get(UserORM, user_id):
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    result = await db.execute(select(AlertORM).where(AlertORM.user_id == user_id))
-    return result.scalars().all()
-
-
-@app.post(f"{API_PREFIX}/users/{{user_id}}/alerts", response_model=Alert, status_code=201, tags=["alerts"])
-async def create_user_alert(user_id: int, payload: AlertCreate, _: UserORM = Depends(require_admin), db: AsyncSession = Depends(get_db)):
-    if not await db.get(UserORM, user_id):
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    alert = AlertORM(user_id=user_id, **payload.model_dump())
-    db.add(alert)
     await db.commit()
     await db.refresh(alert)
-    return alert
 
+    return Alert(
+        id=alert.id,
+        name=alert.name,
+        descriptors=alert.descriptors or [],
+        categories=alert.categories or [],
+        cron_expression=alert.cron_expression,
+        user_id=alert.user_id,
+    )
 
-@app.get(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}", response_model=Alert, tags=["alerts"])
-async def get_user_alert(user_id: int, alert_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    return alert
+@app.delete(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["alerts"],
+)
+async def delete_user_alert(
+    user_id: int,
+    alert_id: int,
+    db: AsyncSession = Depends(get_db),
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    alert = await ensure_alert_for_user(db, user_id, alert_id)
 
+    # Eliminar notificaciones asociadas en MongoDB
+    await mongo_db.notifications.delete_many({"alert_id": alert_id})
 
-@app.put(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}", response_model=Alert, tags=["alerts"])
-async def update_user_alert(user_id: int, alert_id: int, payload: AlertUpdate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    for key, val in payload.model_dump(exclude_unset=True).items():
-        setattr(alert, key, val)
-    await db.commit()
-    await db.refresh(alert)
-    return alert
-
-
-@app.delete(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}", status_code=204, response_model=None, response_class=Response, tags=["alerts"])
-async def delete_user_alert(user_id: int, alert_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    # Eliminar notificaciones de MongoDB asociadas
-    await mongo.notifications.delete_many({"alert_id": alert_id})
     await db.delete(alert)
     await db.commit()
 
+# ------------------------------------------------------------
+# Notificaciones (MongoDB)
+# ------------------------------------------------------------
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications",
+    response_model=List[Notification],
+    tags=["notifications"],
+)
+async def list_alert_notifications(
+    user_id: int,
+    alert_id: int,
+    db: AsyncSession = Depends(get_db),
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[Notification]:
+    await ensure_alert_for_user(db, user_id, alert_id)
 
-# ─── Notifications (MongoDB) ──────────────────────────────────────────────────
-def _serialize_notification(doc: dict) -> dict:
-    doc["id"] = str(doc.pop("_id"))
-    return doc
+    cursor = mongo_db.notifications.find({"alert_id": alert_id})
+    notifications = []
+    async for doc in cursor:
+        notifications.append(
+            Notification(
+                id=str(doc["_id"]),
+                alert_id=doc["alert_id"],
+                timestamp=doc["timestamp"],
+                metrics=doc.get("metrics", []),
+            )
+        )
+    return notifications
 
+@app.post(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications",
+    response_model=Notification,
+    status_code=201,
+    tags=["notifications"],
+)
+async def create_alert_notification(
+    user_id: int,
+    alert_id: int,
+    payload: NotificationCreate,
+    db: AsyncSession = Depends(get_db),
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> Notification:
+    await ensure_alert_for_user(db, user_id, alert_id)
 
-@app.get(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications", response_model=List[Notification], tags=["notifications"])
-async def list_alert_notifications(user_id: int, alert_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    cursor = mongo.notifications.find({"alert_id": alert_id})
-    docs = await cursor.to_list(length=None)
-    return [_serialize_notification(d) for d in docs]
+    doc = {
+        "alert_id": alert_id,
+        "timestamp": payload.timestamp,
+        "metrics": [m.model_dump() for m in payload.metrics],
+    }
+    result = await mongo_db.notifications.insert_one(doc)
+    doc["_id"] = result.inserted_id
 
+    return Notification(
+        id=str(doc["_id"]),
+        alert_id=doc["alert_id"],
+        timestamp=doc["timestamp"],
+        metrics=doc.get("metrics", []),
+    )
 
-@app.post(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications", response_model=Notification, status_code=201, tags=["notifications"])
-async def create_alert_notification(user_id: int, alert_id: int, payload: NotificationCreate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    doc = {"alert_id": alert_id, **payload.model_dump()}
-    result = await mongo.notifications.insert_one(doc)
-    doc["id"] = str(result.inserted_id)
-    doc.pop("_id", None)
-    return doc
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}",
+    response_model=Notification,
+    tags=["notifications"],
+)
+async def get_alert_notification(
+    user_id: int,
+    alert_id: int,
+    notification_id: str,
+    db: AsyncSession = Depends(get_db),
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> Notification:
+    await ensure_alert_for_user(db, user_id, alert_id)
 
-
-@app.get(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}", response_model=Notification, tags=["notifications"])
-async def get_alert_notification(user_id: int, alert_id: int, notification_id: str, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    doc = await mongo.notifications.find_one({"_id": ObjectId(notification_id), "alert_id": alert_id})
-    if not doc:
+    from bson import ObjectId
+    try:
+        obj_id = ObjectId(notification_id)
+    except:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
-    return _serialize_notification(doc)
 
-
-@app.put(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}", response_model=Notification, tags=["notifications"])
-async def update_alert_notification(user_id: int, alert_id: int, notification_id: str, payload: NotificationUpdate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    update_data = payload.model_dump(exclude_unset=True)
-    await mongo.notifications.update_one({"_id": ObjectId(notification_id)}, {"$set": update_data})
-    doc = await mongo.notifications.find_one({"_id": ObjectId(notification_id)})
+    doc = await mongo_db.notifications.find_one({"_id": obj_id, "alert_id": alert_id})
     if not doc:
+        raise HTTPException(status_code=404, detail="Notificación no encontrada para la alerta")
+
+    return Notification(
+        id=str(doc["_id"]),
+        alert_id=doc["alert_id"],
+        timestamp=doc["timestamp"],
+        metrics=doc.get("metrics", []),
+    )
+
+@app.put(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}",
+    response_model=Notification,
+    tags=["notifications"],
+)
+async def update_alert_notification(
+    user_id: int,
+    alert_id: int,
+    notification_id: str,
+    payload: NotificationUpdate,
+    db: AsyncSession = Depends(get_db),
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> Notification:
+    await ensure_alert_for_user(db, user_id, alert_id)
+
+    from bson import ObjectId
+    try:
+        obj_id = ObjectId(notification_id)
+    except:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
-    return _serialize_notification(doc)
 
+    update_data = {}
+    if payload.timestamp is not None:
+        update_data["timestamp"] = payload.timestamp
+    if payload.metrics is not None:
+        update_data["metrics"] = [m.model_dump() for m in payload.metrics]
 
-@app.delete(f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}", status_code=204, response_model=None, response_class=Response, tags=["notifications"])
-async def delete_alert_notification(user_id: int, alert_id: int, notification_id: str, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    alert = await db.get(AlertORM, alert_id)
-    if not alert or alert.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    await mongo.notifications.delete_one({"_id": ObjectId(notification_id), "alert_id": alert_id})
+    if update_data:
+        await mongo_db.notifications.update_one(
+            {"_id": obj_id, "alert_id": alert_id}, {"$set": update_data}
+        )
 
+    doc = await mongo_db.notifications.find_one({"_id": obj_id, "alert_id": alert_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Notificación no encontrada para la alerta")
 
-# ─── Categories ───────────────────────────────────────────────────────────────
+    return Notification(
+        id=str(doc["_id"]),
+        alert_id=doc["alert_id"],
+        timestamp=doc["timestamp"],
+        metrics=doc.get("metrics", []),
+    )
+
+@app.delete(
+    f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["notifications"],
+)
+async def delete_alert_notification(
+    user_id: int,
+    alert_id: int,
+    notification_id: str,
+    db: AsyncSession = Depends(get_db),
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    await ensure_alert_for_user(db, user_id, alert_id)
+
+    from bson import ObjectId
+    try:
+        obj_id = ObjectId(notification_id)
+    except:
+        raise HTTPException(status_code=404, detail="Notificación no encontrada")
+
+    result = await mongo_db.notifications.delete_one({"_id": obj_id, "alert_id": alert_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Notificación no encontrada para la alerta")
+
+# ------------------------------------------------------------
+# Categorías
+# ------------------------------------------------------------
 @app.get(f"{API_PREFIX}/categories", response_model=List[Category], tags=["categories"])
-async def list_categories(_: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(CategoryORM))
-    return result.scalars().all()
-
+async def list_categories(
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[Category]:
+    result = await db.execute(select(CategoryModel))
+    categories = result.scalars().all()
+    return [Category(id=c.id, name=c.name, source=c.source) for c in categories]
 
 @app.post(f"{API_PREFIX}/categories", response_model=Category, status_code=201, tags=["categories"])
-async def create_category(payload: CategoryCreate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    category = CategoryORM(**payload.model_dump())
-    db.add(category)
+async def create_category(
+    payload: CategoryCreate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Category:
+    cat_db = CategoryModel(**payload.model_dump())
+    db.add(cat_db)
     await db.commit()
-    await db.refresh(category)
-    return category
-
+    await db.refresh(cat_db)
+    return Category(id=cat_db.id, name=cat_db.name, source=cat_db.source)
 
 @app.get(f"{API_PREFIX}/categories/{{category_id}}", response_model=Category, tags=["categories"])
-async def get_category(category_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    category = await db.get(CategoryORM, category_id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    return category
-
+async def get_category(
+    category_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Category:
+    cat = await ensure_category_exists(db, category_id)
+    return Category(id=cat.id, name=cat.name, source=cat.source)
 
 @app.put(f"{API_PREFIX}/categories/{{category_id}}", response_model=Category, tags=["categories"])
-async def update_category(category_id: int, payload: CategoryUpdate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    category = await db.get(CategoryORM, category_id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    for key, val in payload.model_dump(exclude_unset=True).items():
-        setattr(category, key, val)
+async def update_category(
+    category_id: int,
+    payload: CategoryUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> Category:
+    cat = await ensure_category_exists(db, category_id)
+
+    data = payload.model_dump(exclude_unset=True)
+    for field, value in data.items():
+        setattr(cat, field, value)
+
     await db.commit()
-    await db.refresh(category)
-    return category
+    await db.refresh(cat)
+    return Category(id=cat.id, name=cat.name, source=cat.source)
 
+@app.delete(
+    f"{API_PREFIX}/categories/{{category_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["categories"],
+)
+async def delete_category(
+    category_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    cat = await ensure_category_exists(db, category_id)
 
-@app.delete(f"{API_PREFIX}/categories/{{category_id}}", status_code=204, response_model=None, response_class=Response, tags=["categories"])
-async def delete_category(category_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    category = await db.get(CategoryORM, category_id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    # Verificar si hay canales RSS usando esta categoría
-    result = await db.execute(select(RSSChannelORM).where(RSSChannelORM.category_id == category_id))
-    if result.scalars().first():
+    # Verificar si la categoría está asociada a canales RSS
+    stmt = select(RSSChannelModel).where(RSSChannelModel.category_id == category_id)
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Categoría asociada a canales RSS")
-    await db.delete(category)
+
+    await db.delete(cat)
     await db.commit()
 
+# ------------------------------------------------------------
+# Fuentes de información
+# ------------------------------------------------------------
+@app.get(
+    f"{API_PREFIX}/information-sources",
+    response_model=List[InformationSource],
+    tags=["information-sources"],
+)
+async def list_information_sources(
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[InformationSource]:
+    result = await db.execute(select(InformationSourceModel))
+    sources = result.scalars().all()
+    return [InformationSource(id=s.id, name=s.name, url=s.url) for s in sources]
 
-# ─── Information Sources ──────────────────────────────────────────────────────
-@app.get(f"{API_PREFIX}/information-sources", response_model=List[InformationSource], tags=["information-sources"])
-async def list_information_sources(_: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(InformationSourceORM))
-    return result.scalars().all()
+@app.post(
+    f"{API_PREFIX}/information-sources",
+    response_model=InformationSource,
+    status_code=201,
+    tags=["information-sources"],
+)
+async def create_information_source(
+    payload: InformationSourceCreate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> InformationSource:
+    source_db = InformationSourceModel(**payload.model_dump())
+    db.add(source_db)
+    await db.commit()
+    await db.refresh(source_db)
+    return InformationSource(id=source_db.id, name=source_db.name, url=source_db.url)
 
+@app.get(
+    f"{API_PREFIX}/information-sources/{{source_id}}",
+    response_model=InformationSource,
+    tags=["information-sources"],
+)
+async def get_information_source(
+    source_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> InformationSource:
+    source = await ensure_information_source_exists(db, source_id)
+    return InformationSource(id=source.id, name=source.name, url=source.url)
 
-@app.post(f"{API_PREFIX}/information-sources", response_model=InformationSource, status_code=201, tags=["information-sources"])
-async def create_information_source(payload: InformationSourceCreate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    source = InformationSourceORM(name=payload.name, url=str(payload.url))
-    db.add(source)
+@app.put(
+    f"{API_PREFIX}/information-sources/{{source_id}}",
+    response_model=InformationSource,
+    tags=["information-sources"],
+)
+async def update_information_source(
+    source_id: int,
+    payload: InformationSourceUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> InformationSource:
+    source = await ensure_information_source_exists(db, source_id)
+
+    data = payload.model_dump(exclude_unset=True)
+    for field, value in data.items():
+        setattr(source, field, value)
+
     await db.commit()
     await db.refresh(source)
-    return source
+    return InformationSource(id=source.id, name=source.name, url=source.url)
 
+@app.delete(
+    f"{API_PREFIX}/information-sources/{{source_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["information-sources"],
+)
+async def delete_information_source(
+    source_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    source = await ensure_information_source_exists(db, source_id)
+    # Los canales RSS se eliminan en cascada (definido en modelos)
+    await db.delete(source)
+    await db.commit()
 
-@app.get(f"{API_PREFIX}/information-sources/{{source_id}}", response_model=InformationSource, tags=["information-sources"])
-async def get_information_source(source_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    source = await db.get(InformationSourceORM, source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    return source
+# ------------------------------------------------------------
+# Canales RSS
+# ------------------------------------------------------------
+@app.get(
+    f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels",
+    response_model=List[RSSChannel],
+    tags=["rss-channels"],
+)
+async def list_source_channels(
+    source_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[RSSChannel]:
+    await ensure_information_source_exists(db, source_id)
 
+    stmt = select(RSSChannelModel).where(RSSChannelModel.information_source_id == source_id)
+    result = await db.execute(stmt)
+    channels = result.scalars().all()
+    return [
+        RSSChannel(
+            id=c.id,
+            url=c.url,
+            category_id=c.category_id,
+            information_source_id=c.information_source_id,
+        )
+        for c in channels
+    ]
 
-@app.put(f"{API_PREFIX}/information-sources/{{source_id}}", response_model=InformationSource, tags=["information-sources"])
-async def update_information_source(source_id: int, payload: InformationSourceUpdate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    source = await db.get(InformationSourceORM, source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
+@app.post(
+    f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels",
+    response_model=RSSChannel,
+    status_code=201,
+    tags=["rss-channels"],
+)
+async def create_source_channel(
+    source_id: int,
+    payload: RSSChannelCreate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> RSSChannel:
+    await ensure_information_source_exists(db, source_id)
+    await ensure_category_exists(db, payload.category_id)
+
+    channel_db = RSSChannelModel(
+        information_source_id=source_id,
+        url=str(payload.url),
+        category_id=payload.category_id,
+    )
+    db.add(channel_db)
+    await db.commit()
+    await db.refresh(channel_db)
+
+    return RSSChannel(
+        id=channel_db.id,
+        url=channel_db.url,
+        category_id=channel_db.category_id,
+        information_source_id=channel_db.information_source_id,
+    )
+
+@app.get(
+    f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels/{{channel_id}}",
+    response_model=RSSChannel,
+    tags=["rss-channels"],
+)
+async def get_source_channel(
+    source_id: int,
+    channel_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> RSSChannel:
+    await ensure_information_source_exists(db, source_id)
+    channel = await ensure_rss_for_source(db, source_id, channel_id)
+
+    return RSSChannel(
+        id=channel.id,
+        url=channel.url,
+        category_id=channel.category_id,
+        information_source_id=channel.information_source_id,
+    )
+
+@app.put(
+    f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels/{{channel_id}}",
+    response_model=RSSChannel,
+    tags=["rss-channels"],
+)
+async def update_source_channel(
+    source_id: int,
+    channel_id: int,
+    payload: RSSChannelUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> RSSChannel:
+    await ensure_information_source_exists(db, source_id)
+    channel = await ensure_rss_for_source(db, source_id, channel_id)
+
     data = payload.model_dump(exclude_unset=True)
-    if "url" in data:
-        data["url"] = str(data["url"])
-    for key, val in data.items():
-        setattr(source, key, val)
-    await db.commit()
-    await db.refresh(source)
-    return source
+    if "category_id" in data:
+        await ensure_category_exists(db, data["category_id"])
 
+    for field, value in data.items():
+        if field == "url" and value is not None:
+            value = str(value)
+        setattr(channel, field, value)
 
-@app.delete(f"{API_PREFIX}/information-sources/{{source_id}}", status_code=204, response_model=None, response_class=Response, tags=["information-sources"])
-async def delete_information_source(source_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    source = await db.get(InformationSourceORM, source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    await db.delete(source)  # cascade elimina sus canales RSS
-    await db.commit()
-
-
-# ─── RSS Channels ─────────────────────────────────────────────────────────────
-@app.get(f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels", response_model=List[RSSChannel], tags=["rss-channels"])
-async def list_source_channels(source_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if not await db.get(InformationSourceORM, source_id):
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    result = await db.execute(select(RSSChannelORM).where(RSSChannelORM.information_source_id == source_id))
-    return result.scalars().all()
-
-
-@app.post(f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels", response_model=RSSChannel, status_code=201, tags=["rss-channels"])
-async def create_source_channel(source_id: int, payload: RSSChannelCreate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if not await db.get(InformationSourceORM, source_id):
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    if not await db.get(CategoryORM, payload.category_id):
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    channel = RSSChannelORM(information_source_id=source_id, url=str(payload.url), category_id=payload.category_id)
-    db.add(channel)
     await db.commit()
     await db.refresh(channel)
-    return channel
 
+    return RSSChannel(
+        id=channel.id,
+        url=channel.url,
+        category_id=channel.category_id,
+        information_source_id=channel.information_source_id,
+    )
 
-@app.get(f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels/{{channel_id}}", response_model=RSSChannel, tags=["rss-channels"])
-async def get_source_channel(source_id: int, channel_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if not await db.get(InformationSourceORM, source_id):
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    channel = await db.get(RSSChannelORM, channel_id)
-    if not channel or channel.information_source_id != source_id:
-        raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
-    return channel
+@app.delete(
+    f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels/{{channel_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["rss-channels"],
+)
+async def delete_source_channel(
+    source_id: int,
+    channel_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    await ensure_information_source_exists(db, source_id)
+    channel = await ensure_rss_for_source(db, source_id, channel_id)
 
-
-@app.put(f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels/{{channel_id}}", response_model=RSSChannel, tags=["rss-channels"])
-async def update_source_channel(source_id: int, channel_id: int, payload: RSSChannelUpdate, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if not await db.get(InformationSourceORM, source_id):
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    channel = await db.get(RSSChannelORM, channel_id)
-    if not channel or channel.information_source_id != source_id:
-        raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
-    data = payload.model_dump(exclude_unset=True)
-    if "url" in data:
-        data["url"] = str(data["url"])
-    if "category_id" in data and not await db.get(CategoryORM, data["category_id"]):
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    for key, val in data.items():
-        setattr(channel, key, val)
-    await db.commit()
-    await db.refresh(channel)
-    return channel
-
-
-@app.delete(f"{API_PREFIX}/information-sources/{{source_id}}/rss-channels/{{channel_id}}", status_code=204, response_model=None, response_class=Response, tags=["rss-channels"])
-async def delete_source_channel(source_id: int, channel_id: int, _: UserORM = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if not await db.get(InformationSourceORM, source_id):
-        raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    channel = await db.get(RSSChannelORM, channel_id)
-    if not channel or channel.information_source_id != source_id:
-        raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
     await db.delete(channel)
     await db.commit()
 
-
-# ─── Stats (MongoDB) ──────────────────────────────────────────────────────────
-def _serialize_stats(doc: dict) -> dict:
-    doc["id"] = str(doc.pop("_id"))
-    return doc
-
-
+# ------------------------------------------------------------
+# Estadísticas (MongoDB)
+# ------------------------------------------------------------
 @app.get(f"{API_PREFIX}/stats", response_model=List[Stats], tags=["stats"])
-async def list_stats(_: UserORM = Depends(get_current_user), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    docs = await mongo.stats.find().to_list(length=None)
-    return [_serialize_stats(d) for d in docs]
-
+async def list_stats(
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> List[Stats]:
+    cursor = mongo_db.stats.find()
+    stats_list = []
+    async for doc in cursor:
+        stats_list.append(
+            Stats(
+                id=str(doc["_id"]),
+                metrics=doc.get("metrics", []),
+            )
+        )
+    return stats_list
 
 @app.post(f"{API_PREFIX}/stats", response_model=Stats, status_code=201, tags=["stats"])
-async def create_stats(payload: StatsCreate, _: UserORM = Depends(get_current_user), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    doc = payload.model_dump()
-    result = await mongo.stats.insert_one(doc)
-    doc["id"] = str(result.inserted_id)
-    doc.pop("_id", None)
-    return doc
+async def create_stats(
+    payload: StatsCreate,
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> Stats:
+    doc = {
+        "metrics": [m.model_dump() for m in payload.metrics],
+    }
+    result = await mongo_db.stats.insert_one(doc)
+    doc["_id"] = result.inserted_id
 
+    return Stats(
+        id=str(doc["_id"]),
+        metrics=doc["metrics"],
+    )
 
 @app.get(f"{API_PREFIX}/stats/{{stats_id}}", response_model=Stats, tags=["stats"])
-async def get_stats(stats_id: str, _: UserORM = Depends(get_current_user), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    doc = await mongo.stats.find_one({"_id": ObjectId(stats_id)})
+async def get_stats(
+    stats_id: str,
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> Stats:
+    from bson import ObjectId
+    try:
+        obj_id = ObjectId(stats_id)
+    except:
+        raise HTTPException(status_code=404, detail="Stats no encontrados")
+
+    doc = await mongo_db.stats.find_one({"_id": obj_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
-    return _serialize_stats(doc)
 
+    return Stats(
+        id=str(doc["_id"]),
+        metrics=doc.get("metrics", []),
+    )
 
 @app.put(f"{API_PREFIX}/stats/{{stats_id}}", response_model=Stats, tags=["stats"])
-async def update_stats(stats_id: str, payload: StatsUpdate, _: UserORM = Depends(get_current_user), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    update_data = payload.model_dump(exclude_unset=True)
-    await mongo.stats.update_one({"_id": ObjectId(stats_id)}, {"$set": update_data})
-    doc = await mongo.stats.find_one({"_id": ObjectId(stats_id)})
+async def update_stats(
+    stats_id: str,
+    payload: StatsUpdate,
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> Stats:
+    from bson import ObjectId
+    try:
+        obj_id = ObjectId(stats_id)
+    except:
+        raise HTTPException(status_code=404, detail="Stats no encontrados")
+
+    update_data = {}
+    if payload.metrics is not None:
+        update_data["metrics"] = [m.model_dump() for m in payload.metrics]
+
+    if update_data:
+        await mongo_db.stats.update_one({"_id": obj_id}, {"$set": update_data})
+
+    doc = await mongo_db.stats.find_one({"_id": obj_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
-    return _serialize_stats(doc)
 
+    return Stats(
+        id=str(doc["_id"]),
+        metrics=doc.get("metrics", []),
+    )
 
-@app.delete(f"{API_PREFIX}/stats/{{stats_id}}", status_code=204, response_model=None, response_class=Response, tags=["stats"])
-async def delete_stats(stats_id: str, _: UserORM = Depends(get_current_user), mongo: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    result = await mongo.stats.delete_one({"_id": ObjectId(stats_id)})
+@app.delete(
+    f"{API_PREFIX}/stats/{{stats_id}}",
+    status_code=204,
+    response_class=Response,
+    tags=["stats"],
+)
+async def delete_stats(
+    stats_id: str,
+    mongo_db=Depends(get_mongo_db),
+    _: UserModel = Depends(get_current_user)
+) -> None:
+    from bson import ObjectId
+    try:
+        obj_id = ObjectId(stats_id)
+    except:
+        raise HTTPException(status_code=404, detail="Stats no encontrados")
+
+    result = await mongo_db.stats.delete_one({"_id": obj_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
