@@ -1,15 +1,16 @@
+// App.jsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import PantallaEntrada from './pages/login/login.jsx'
 import Registro from './pages/registro/registro.jsx'
+import ChangePwd from './pages/change_pwd/change_pwd.jsx' // <-- 1. Importamos la nueva pantalla
 import Home from './pages/Home'
 import About from './pages/About'
 import UiTesting from './pages/UiTesting'
 import MainLayout from './components/MainLayout'
 import Prueba from './pages/prueba.jsx'
 
-
-// 1. Importamos nuestro componente protector
-import ProtectedRoute from './components/ProtectedRoute' 
+// Importamos nuestro componente protector
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
@@ -17,9 +18,9 @@ function App() {
       <Routes>
         {/* === RUTAS PÚBLICAS === */}
         {/* Cualquiera puede ver estas páginas sin iniciar sesión */}
-          { /* <Route path="/" element={<Prueba />} /> */ }
         <Route path="/" element={<PantallaEntrada />} />
         <Route path="/registro" element={<Registro />} />
+        <Route path="/recuperar-password" element={<ChangePwd />} /> {/* <-- 2. Añadimos la ruta */}
 
         {/* === RUTAS PROTEGIDAS === */}
         {/* Envolvemos el MainLayout con ProtectedRoute */}

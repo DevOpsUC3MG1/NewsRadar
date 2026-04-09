@@ -75,7 +75,6 @@ export default function PantallaEntrada() {
             de comunicación y fuentes oficiales
           </p>
 
-          {/* Contenedor actualizado para una sola imagen */}
           <div className={styles.imageContainer}>
             <img src={imgInicioSvg} alt="Ilustración de monitorización" className={styles.mainImage} />
           </div>
@@ -134,9 +133,10 @@ export default function PantallaEntrada() {
                 {isLoading ? 'CARGANDO...' : 'INICIAR SESIÓN'}
               </button>
 
-              <a href="#" className={styles.forgotPassword}>
+              {/* AQUÍ ESTÁ EL CAMBIO CLAVE: Usamos Link en lugar de a */}
+              <Link to="/recuperar-password" className={styles.forgotPassword}>
                 ¿OLVIDASTE TU CONTRASEÑA?
-              </a>
+              </Link>
             </form>
 
             <div>

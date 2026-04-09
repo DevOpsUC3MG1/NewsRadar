@@ -134,7 +134,7 @@ export default function Registro() {
 
             <div className={styles.footerSection}>
               <p className={styles.footerText}>¿Ya tienes cuenta?</p>
-              <Link to="/pantalla-entrada" className={styles.loginButton}>
+              <Link to="/" className={styles.loginButton}>
                 Iniciar sesión
               </Link>
             </div>
