@@ -13,6 +13,11 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+## Inicio db
+```bash
+chmod +x setup.sh
+./setup.sh
+```
 
 ## Ejecución
 
