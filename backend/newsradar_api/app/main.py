@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -24,6 +27,53 @@ app = FastAPI(
 
 API_PREFIX = "/api/v1"
 security = HTTPBearer(auto_error=False)
+
+# ---------------------------------------------------------------------------
+# Configuración de email para recuperación de contraseña
+# Rellena estas variables con tus credenciales de Gmail.
+# En Gmail: Cuenta → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación
+# ---------------------------------------------------------------------------
+GMAIL_SENDER = "tu_correo@gmail.com"          # TODO: reemplaza con tu correo Gmail
+GMAIL_APP_PASSWORD = "xxxx xxxx xxxx xxxx"    # TODO: reemplaza con tu contraseña de aplicación
+FRONTEND_RESET_URL = "http://localhost:3000/reset-password"  # TODO: URL del frontend
+
+
+def send_reset_password_email(to_email: str, token: str) -> None:
+    """Envía el correo de recuperación de contraseña usando Gmail con contraseña de aplicación."""
+    reset_link = f"{FRONTEND_RESET_URL}?token={token}"
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Recuperación de contraseña - NewsRadar"
+    msg["From"] = GMAIL_SENDER
+    msg["To"] = to_email
+
+    text_body = (
+        f"Haz clic en el siguiente enlace para restablecer tu contraseña:\n"
+        f"{reset_link}\n\nEste enlace expira en 1 hora."
+    )
+    html_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Recuperación de contraseña</h2>
+        <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>NewsRadar</strong>.</p>
+        <p>Haz clic en el botón para continuar:</p>
+        <a href="{reset_link}"
+           style="display:inline-block;padding:12px 24px;background:#1a73e8;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;">
+          Restablecer contraseña
+        </a>
+        <p style="margin-top:24px;color:#666;font-size:13px;">
+          Si no solicitaste este cambio, ignora este correo. El enlace expira en 1 hora.
+        </p>
+      </body>
+    </html>
+    """
+
+    msg.attach(MIMEText(text_body, "plain"))
+    msg.attach(MIMEText(html_body, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
+        server.sendmail(GMAIL_SENDER, to_email, msg.as_string())
 
 
 class Metric(BaseModel):
@@ -213,8 +263,19 @@ class VerificationResponse(BaseModel):
     success: bool
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6, max_length=128)
+
+
 # Token storage (in-memory for simplicity, could be moved to Redis in production)
+# password_reset_tokens almacena {token: user_id} — en producción usar Redis con TTL
 active_tokens: Dict[str, int] = {}
+password_reset_tokens: Dict[str, int] = {}
 
 
 def sanitize_user(user: UserModel) -> User:
@@ -402,6 +463,65 @@ async def resend_verification(
     return VerificationResponse(
         message="Email de verificación reenviado",
         success=True
+    )
+
+
+@app.post(f"{API_PREFIX}/auth/forgot-password", response_model=VerificationResponse, tags=["auth"])
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> VerificationResponse:
+    """Solicita el restablecimiento de contraseña. Si el email existe, envía un correo con el enlace."""
+    result = await db.execute(select(UserModel).where(UserModel.email == payload.email))
+    user = result.scalar_one_or_none()
+
+    # Respuesta genérica para no revelar si el email está registrado
+    if not user:
+        return VerificationResponse(
+            message="Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.",
+            success=True,
+        )
+
+    # Generar token de recuperación y guardarlo en memoria
+    reset_token = str(uuid4())
+    password_reset_tokens[reset_token] = user.id
+
+    # TODO: Enviar email con Gmail — descomenta cuando hayas configurado GMAIL_SENDER y GMAIL_APP_PASSWORD
+    # send_reset_password_email(user.email, reset_token)
+
+    return VerificationResponse(
+        message="Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.",
+        success=True,
+    )
+
+
+@app.post(f"{API_PREFIX}/auth/reset-password", response_model=VerificationResponse, tags=["auth"])
+async def reset_password(
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> VerificationResponse:
+    """Restablece la contraseña usando el token recibido por email."""
+    user_id = password_reset_tokens.get(payload.token)
+    if not user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Token de recuperación inválido o expirado.",
+        )
+
+    result = await db.execute(select(UserModel).where(UserModel.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    user.password = payload.new_password
+    await db.commit()
+
+    # Invalidar el token una vez usado
+    del password_reset_tokens[payload.token]
+
+    return VerificationResponse(
+        message="Contraseña restablecida correctamente.",
+        success=True,
     )
 
 
@@ -1376,3 +1496,4 @@ async def delete_stats(
     result = await mongo_db.stats.delete_one({"_id": stats_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
+<
