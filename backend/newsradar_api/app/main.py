@@ -204,6 +204,15 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class VerifyAccountRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+
+
+class VerificationResponse(BaseModel):
+    message: str
+    success: bool
+
+
 # Token storage (in-memory for simplicity, could be moved to Redis in production)
 active_tokens: Dict[str, int] = {}
 
@@ -287,6 +296,7 @@ async def create_seed_data() -> None:
             organization="NewsRadar",
             role_ids=[admin_role.id],
             password="admin123",
+            is_verified=True
         )
         db.add(admin_user)
         await db.commit()
@@ -322,11 +332,77 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> U
 
     await ensure_role_ids_exist(payload.role_ids, db)
 
-    user = UserModel(**payload.model_dump())
+    verification_token = str(uuid4())
+    user = UserModel(
+        **payload.model_dump(),
+        verification_token=verification_token,
+        is_verified=False
+    )
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    # TODO: Aquí irían las funciones para enviar email con el token de verificación
     return sanitize_user(user)
+
+
+@app.post(f"{API_PREFIX}/auth/verify", response_model=VerificationResponse, tags=["auth"])
+async def verify_account(
+    payload: VerifyAccountRequest,
+    db: AsyncSession = Depends(get_db),
+) -> VerificationResponse:
+    """Verifica la cuenta del usuario usando el token de verificación recibido por email"""
+    result = await db.execute(
+        select(UserModel).where(UserModel.verification_token == payload.token)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Token de verificación inválido o expirado"
+        )
+    
+    if user.is_verified:
+        raise HTTPException(
+            status_code=400,
+            detail="La cuenta ya ha sido verificada"
+        )
+    
+    user.is_verified = True
+    user.verification_token = None
+    await db.commit()
+    
+    return VerificationResponse(
+        message="Cuenta verificada exitosamente",
+        success=True
+    )
+
+
+@app.post(f"{API_PREFIX}/auth/resend-verification", response_model=VerificationResponse, tags=["auth"])
+async def resend_verification(
+    payload: EmailStr,
+    db: AsyncSession = Depends(get_db),
+) -> VerificationResponse:
+    """Reenvía el email de verificación a un usuario"""
+    result = await db.execute(select(UserModel).where(UserModel.email == payload))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="La cuenta ya está verificada")
+    
+    # Regenerar token de verificación
+    new_verification_token = str(uuid4())
+    user.verification_token = new_verification_token
+    await db.commit()
+    
+    # TODO: Aquí iría la función para enviar email con el nuevo token
+    return VerificationResponse(
+        message="Email de verificación reenviado",
+        success=True
+    )
 
 
 @app.get(f"{API_PREFIX}/users", response_model=List[User], tags=["users"])

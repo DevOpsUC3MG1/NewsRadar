@@ -5,6 +5,7 @@ Ejecutar con: python init_db.py
 import asyncio
 import sys
 from pathlib import Path
+from uuid import uuid4
 
 # Añadir el directorio app al path
 sys.path.insert(0, str(Path(__file__).parent / "app"))
@@ -47,7 +48,8 @@ async def init_database():
             last_name="NewsRadar",
             organization="NewsRadar",
             password="admin123",
-            role_ids=[admin_role_id]
+            role_ids=[admin_role_id],
+            is_verified=True
         )
         session.add(admin_user)
         

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -16,6 +16,8 @@ class User(Base):
     organization = Column(String(180))
     password = Column(String(128))
     role_ids = Column(JSON, default=[])   # lista de IDs
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String(128), nullable=True)
     alerts = relationship("Alert", back_populates="user", cascade="all, delete")
 
 class Alert(Base):
