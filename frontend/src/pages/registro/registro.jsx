@@ -33,6 +33,7 @@ export default function Registro() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
+    mode: 'onTouched',
   });
 
   const onSubmitForm = async (data) => {
@@ -54,7 +55,7 @@ export default function Registro() {
       await registerUser(apiPayload);
       
       // Ya está logueado, lo mandamos al panel principal (cambia la ruta si es distinta)
-      navigate('/dashboard'); 
+      navigate('/'); 
       
     } catch (err) {
       if (err.response && err.response.status === 409) {

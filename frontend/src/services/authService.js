@@ -21,9 +21,9 @@ const register = async (userData) => {
 };
 
 const getUserByEmail = async (email, token) => {
-  const response = await axios.get(`${API_URL}/users`, {
+  const response = await axios.get(`${API_URL}/v1/users`, {
     headers: {
-      Authorization: `Bearer ${token}` // Enviamos el token UUID en la cabecera
+      Authorization: `Bearer ${token}`
     }
   });
   
@@ -34,6 +34,7 @@ const getUserByEmail = async (email, token) => {
 const logout = () => {
   // Para cerrar sesión, simplemente borramos el token
   localStorage.removeItem('token');
+  localStorage.removeItem('user');
 };
 
 const getToken = () => {

@@ -53,6 +53,9 @@
 }
 
 .formGroup {
+  position: relative; /* Esto es clave para que el error se posicione respecto a este div */
+  padding-bottom: 20px; /* Reserva el espacio en blanco de antemano para el texto de error */
+  margin-bottom: 15px;
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
@@ -88,6 +91,11 @@
 }
 
 .errorText {
+  position: absolute; /* Saca el texto del flujo normal (ya no empuja nada) */
+  bottom: 0; /* Lo pega abajo del todo del formGroup, en el padding que reservamos */
+  left: 0;
+  color: #e74c3c;
+  font-size: 0.8rem;
   color: #e74c3c;
   font-size: 0.75rem;
   margin-top: 2px;
