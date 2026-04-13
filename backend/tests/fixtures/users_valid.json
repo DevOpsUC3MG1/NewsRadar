@@ -1,0 +1,19 @@
+{
+  "lector_estandar": {
+    "username": "lector_01",
+    "email": "lector1@newsradar.es",
+    "password": "PasswordSegura123!",
+    "role": "Lector"
+  },
+  "gestor_admin": {
+    "username": "admin_principal",
+    "email": "admin@newsradar.es",
+    "password": "AdminPassword456!",
+    "role": "Gestor"
+  },
+  "nuevo_registro": {
+    "username": "nuevo_usuario",
+    "email": "nuevo@newsradar.es",
+    "password": "MiNuevaPassword789!"
+  }
+}

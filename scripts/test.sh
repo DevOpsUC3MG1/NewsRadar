@@ -1,7 +1,11 @@
 #!/bin/bash
-echo "🧪 Ejecutando pruebas unitarias y de integración..."
+# scripts/test.sh
 
-# Ejecutar pytest dentro del contenedor de la API
-docker compose run --rm api pytest --cov=app --cov-report=term-missing
+echo "🚀 Iniciando entorno de pruebas en Docker..."
+docker-compose -f docker-compose.test.yml up -d
 
-echo "📊 Pruebas finalizadas."
+echo "🧪 Ejecutando tests con Pytest..."
+docker-compose -f docker-compose.test.yml exec backend python -m pytest tests/ -v --cov=app
+
+echo "🧹 Limpiando entorno..."
+docker-compose -f docker-compose.test.yml down

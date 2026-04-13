@@ -1,0 +1,15 @@
+{
+  "email_sin_arroba": {
+    "username": "error_user",
+    "email": "correoinvalido.com",
+    "password": "Password123!"
+  },
+  "password_corta": {
+    "username": "short_pass",
+    "email": "short@newsradar.es",
+    "password": "123"
+  },
+  "faltan_datos": {
+    "email": "faltanombre@newsradar.es"
+  }
+}

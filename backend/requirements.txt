@@ -1,0 +1,20 @@
+# Web Framework & Validation
+fastapi==0.110.0
+uvicorn==0.27.1
+pydantic[email]==2.6.3
+
+# Database - Relational (PostgreSQL)
+sqlalchemy==2.0.28
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Database - NoSQL (MongoDB)
+motor==3.3.2
+
+# Utilities
+python-dotenv==1.0.1
+python-multipart==0.0.9
+email-validator==2.1.1
+pytest
+pytest-cov
+httpx

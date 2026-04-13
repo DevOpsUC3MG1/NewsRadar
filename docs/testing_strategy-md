@@ -1,0 +1,56 @@
+🛡️ Estrategia de Calidad y Pruebas - NewsRadar
+
+1. Objetivos de Calidad
+Cobertura de Código: Alcanzar un mínimo del 70% (medido con pytest-cov).
+
+Cero Bloqueantes: Ningún fallo en las 7 inspecciones manuales del Anexo I.
+
+Trazabilidad: Cada requisito (RF-XX) debe tener al menos un test asociado.
+
+2. Niveles de Prueba
+Para NewsRadar aplicaremos una pirámide de tests:
+
+Pruebas Unitarias (60% del esfuerzo):
+
+Qué: Validar funciones aisladas (ej: ¿el validador de emails funciona?, ¿la IA genera sinónimos correctamente?).
+
+Herramienta: pytest.
+
+Pruebas de Integración (30% del esfuerzo):
+
+Qué: Validar la comunicación entre componentes (ej: ¿se guarda la noticia en MongoDB?, ¿funciona el login con JWT?).
+
+Herramienta: pytest + httpx (para llamadas a la API).
+
+Pruebas E2E / Funcionales (10% del esfuerzo):
+
+Qué: Flujos completos de usuario (ej: Registrarse -> Crear Alerta -> Recibir Email).
+
+Herramienta: Scripts manuales y pytest con el TestClient de FastAPI.
+
+3. Plan de Verificación (Las 7 Inspecciones del Anexo I)
+Estas pruebas son críticas para entrar en la competición. Se ejecutarán semanalmente:
+
+Categorías: Probar que solo se aceptan categorías de primer nivel IPTC.
+
+Email: Verificar el envío real/simulado de emails de bienvenida.
+
+Roles: Un "Lector" nunca debe poder crear una alerta (Error 403).
+
+Notificaciones: Confirmar que tras una indexación, el mensaje llega al buzón.
+
+Visualización: Comprobar que las nubes de palabras cambian según la categoría.
+
+Métricas: El contador de noticias en /stats debe ser exacto.
+
+Multiidioma: Cambiar el header Accept-Language y verificar que la API responde en el idioma correcto.
+
+4. Gestión de Datos (Fixtures)
+Se utilizarán fixtures en conftest.py para no ensuciar la base de datos real.
+
+Cada test de integración debe dejar la base de datos como la encontró (limpieza automática).
+
+5. Integración Continua (CI)
+Trigger: Los tests se ejecutan automáticamente en cada git push a la rama develop o main.
+
+Gatekeeper: No se permite el merge si los tests fallan o la cobertura baja del 70%.
