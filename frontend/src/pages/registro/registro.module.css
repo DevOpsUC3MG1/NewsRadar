@@ -1,0 +1,154 @@
+/* registro.module.css */
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #1f2122;
+  font-family: var(--sans);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px;
+}
+
+.formCard {
+  width: 100%;
+  max-width: 500px;
+  background-color: #f4f6f8;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.cardHeader {
+  background-color: #09090F;
+  padding: 25px 30px;
+  color: white;
+}
+
+.title {
+  font-size: 1.8rem;
+  margin: 0 0 5px 0;
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+  margin: 0;
+}
+
+.cardBody {
+  padding: 25px 30px;
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.formGroup {
+  position: relative; /* Esto es clave para que el error se posicione respecto a este div */
+  padding-bottom: 20px; /* Reserva el espacio en blanco de antemano para el texto de error */
+  margin-bottom: 15px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: #111;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: normal;
+}
+
+/* --- AQUÍ ESTÁN TUS CAMBIOS --- */
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #000000; /* Borde cambiado a negro */
+  color: #000000; /* Texto cambiado a negro para que sea visible */
+  border-radius: 4px;
+  font-size: 0.9rem;
+  outline: none;
+  background-color: white;
+}
+
+.input:focus {
+  border-color: #4e8df5;
+  box-shadow: 0 0 0 1px #4e8df5; /* Le añado un pequeño resplandor azul al hacer foco, igual que en el login */
+}
+
+.errorText {
+  position: absolute; /* Saca el texto del flujo normal (ya no empuja nada) */
+  bottom: 0; /* Lo pega abajo del todo del formGroup, en el padding que reservamos */
+  left: 0;
+  color: #e74c3c;
+  font-size: 0.8rem;
+  color: #e74c3c;
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.submitButton {
+  background-color: #09090F;
+  color: white;
+  border: none;
+  padding: 12px 40px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: block;
+  margin: 15px auto;
+  width: 100%;
+  max-width: 300px;
+}
+
+.submitButton:hover {
+  background-color: #1a1a24;
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.footerSection {
+  text-align: center;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 15px;
+  margin-top: 5px;
+}
+
+.footerText {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.loginButton {
+  background-color: transparent;
+  color: #4e8df5;
+  border: 1px solid #4e8df5;
+  padding: 6px 30px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.loginButton:hover {
+  background-color: rgba(78, 141, 245, 0.1);
+}

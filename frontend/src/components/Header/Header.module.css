@@ -1,0 +1,82 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 30px;
+  background-color: var(--color-header); /* Fondo oscuro general */
+  border-bottom: 1px solid #1a1c24; /* Línea sutil para separar el header del contenido */
+  font-family: var(--sans, sans-serif);
+}
+
+/* --- SECCIÓN IZQUIERDA (LOGO) --- */
+.logoSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoIcon {
+  width: 28px;
+  height: 28px;
+}
+
+.logoText {
+  color: #FFFFFF;
+  font-weight: bold;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+}
+
+/* --- SECCIÓN DERECHA (BUSCADOR Y PERFIL) --- */
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background-color: #12141d; /* Un tono ligeramente diferente al fondo para que destaque la caja */
+  border-radius: 8px;
+  padding: 8px 16px;
+  gap: 10px;
+  width: 320px; /* Ancho de la barra de búsqueda */
+}
+
+.searchIcon {
+  color: #626262;
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  color: #FFFFFF; /* El texto que escribe el usuario en blanco */
+  font-family: inherit;
+  font-weight: 300; /* Peso Light */
+  width: 100%;
+  outline: none; /* Quita el borde azul que ponen los navegadores por defecto al hacer clic */
+}
+
+/* Aplica el color gris solo al texto temporal (placeholder) */
+.searchInput::placeholder {
+  color: #626262;
+  font-weight: 300;
+}
+
+/* --- EXTRA: AVATAR DE USUARIO --- */
+.userProfile {
+  width: 36px;
+  height: 36px;
+  background-color: #073a5a; /* Color azulado sacado de la imagen */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.userProfile:hover {
+  opacity: 0.8;
+}

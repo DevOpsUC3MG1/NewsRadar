@@ -1,0 +1,125 @@
+/* Sidebar.module.css */
+
+.sidebar {
+  width: 260px;
+  /* CAMBIO CLAVE: Cambiamos 100vh por 100% para que se adapte al hueco que deja el Header */
+  height: 100%;
+  background-color: var(--color-nav, #12141d);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 30px 15px;
+  font-family: var(--sans, sans-serif);
+  box-sizing: border-box;
+}
+
+.navList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+  /* CAMBIO EXTRA: Si hay muchas opciones o la pantalla es pequeña, esta zona se podrá scrollear */
+  overflow-y: auto;
+  /* Ocultamos la barra de scroll para que quede más limpio en Chrome/Safari */
+  scrollbar-width: none; /* Firefox */
+}
+
+.navList::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Edge */
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 15px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  margin-bottom: 5px;
+  text-decoration: none;
+}
+
+/* Efecto hover general (solo si el botón NO es el activo) */
+.navItem:not(.active):hover {
+  background-color: #1a1c24;
+}
+
+/* === ESTADO ACTIVO === */
+.active {
+  background-color: #0E0E1D;
+  pointer-events: none; /* Desactiva clics y efectos hover para este elemento */
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.icon {
+  color: #8c909c; /* Color inactivo */
+  transition: color 0.2s ease;
+}
+
+/* El icono se vuelve blanco si hacemos hover o si es el botón activo */
+.navItem:hover .icon,
+.active .icon {
+  color: #ffffff;
+}
+
+/* === TEXTO DE LOS BOTONES NORMALES === */
+.label {
+  font-size: 0.95rem;
+  color: #ffffff; /* Letra blanca */
+  font-weight: bold; /* Letra en negrita */
+  display: inline-block; /* Requisito para que 'transform' funcione bien */
+  transition: transform 0.2s ease;
+  transform-origin: left center; /* Asegura que crezca hacia la derecha */
+}
+
+/* La letra crece al pasar el ratón (solo si el botón NO es el activo) */
+.navItem:not(.active):hover .label {
+  transform: scale(1.05);
+}
+
+/* === BADGE DE NOTIFICACIONES === */
+.badge {
+  background-color: #d11212;
+  color: #ffffff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Línea divisoria */
+.divider {
+  border: 0;
+  border-top: 1px solid #1a1c24;
+  margin: 20px 0;
+}
+
+/* === SECCIÓN CERRAR SESIÓN === */
+.logoutArea {
+  padding-top: 15px;
+  /* Nos aseguramos de que el contenedor no se aplaste si no hay espacio */
+  flex-shrink: 0;
+}
+
+.logoutLabel {
+  font-size: 0.9rem;
+  color: #8c909c; /* Letra gris */
+  font-weight: normal; /* Sin negrita */
+  transition: color 0.2s ease;
+}
+
+/* Al hacer hover en cerrar sesión, la letra y el icono se vuelven blancos */
+.logoutItem:hover .logoutLabel,
+.logoutItem:hover .icon {
+  color: #ffffff;
+}
