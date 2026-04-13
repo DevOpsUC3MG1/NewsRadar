@@ -1496,4 +1496,3 @@ async def delete_stats(
     result = await mongo_db.stats.delete_one({"_id": stats_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
-<
