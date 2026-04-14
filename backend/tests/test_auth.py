@@ -37,7 +37,7 @@ def test_auth_02_email_duplicado(client):
     # Verificamos que el sistema lo rechaza
     assert response_duplicado.status_code == 400
 
-    def test_login_exitoso(client, load_valid_users):
+def test_login_exitoso(client, load_valid_users):
     # 1. Obtenemos los datos del JSON
     datos_admin = load_valid_users["gestor_admin"]
     
