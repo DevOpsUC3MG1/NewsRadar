@@ -1,3 +1,84 @@
-name: CI
-on: [push]
-jobs: {}
+name: CI Complete Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # -------------------------
+    # Checkout
+    # -------------------------
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # -------------------------
+    # Setup Python
+    # -------------------------
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    # -------------------------
+    # Install dependencies
+    # -------------------------
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install flake8 pytest pytest-cov
+
+    # -------------------------
+    # LINT
+    # -------------------------
+    - name: Lint code
+      run: flake8 .
+
+    # -------------------------
+    # TESTS + COVERAGE
+    # -------------------------
+    - name: Run tests with coverage
+      run: pytest --cov=. --cov-report=xml
+
+    # -------------------------
+    # Upload coverage artifact
+    # -------------------------
+    - name: Upload coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.xml
+
+    # -------------------------
+    # SONARCLOUD 🔥
+    # -------------------------
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    # -------------------------
+    # DOCKER BUILD
+    # -------------------------
+    - name: Build Docker images
+      run: docker compose build
+
+    # -------------------------
+    # INTEGRATION TESTS
+    # -------------------------
+    - name: Run integration environment
+      run: |
+        docker compose -f docker-compose.test.yml up \
+          --build \
+          --abort-on-container-exit
+
+    # -------------------------
+    # CLEANUP
+    # -------------------------
+    - name: Cleanup
+      run: docker compose down

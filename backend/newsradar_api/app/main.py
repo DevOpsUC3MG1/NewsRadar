@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 from sqlalchemy import select, delete as sql_delete
@@ -23,6 +24,14 @@ app = FastAPI(
     title="NewsRadar API",
     version="1.0.0",
     description="API REST para gestión de usuarios, alertas, notificaciones, fuentes y canales RSS.",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173/", "http://127.0.0.1:5173/"], # Los puertos de tu React
+    allow_credentials=True,
+    allow_methods=[""],
+    allow_headers=[""],
 )
 
 API_PREFIX = "/api/v1"
