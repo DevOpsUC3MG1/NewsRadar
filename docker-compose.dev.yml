@@ -1,5 +1,18 @@
 version: "3.9"
+
 services:
   api:
+    volumes:
+      - ./backend:/app
     environment:
       - ENV=development
+      # Esto permite que FastAPI se reinicie solo al guardar cambios
+      - RELOAD=true 
+
+  frontend:
+    volumes:
+      - ./frontend:/app
+      # Evitamos que los node_modules locales pisen los del contenedor
+      - /app/node_modules 
+    environment:
+      - VITE_API_URL=http://localhost:8000

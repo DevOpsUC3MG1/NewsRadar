@@ -1,69 +1,51 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  # 1. Base de Datos Relacional (Usuarios, Alertas, Configuración)
-  db_relational:
+  db_postgres:
     image: postgres:15-alpine
-    container_name: nr_postgres
-    restart: always
+    container_name: newsradar_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
-      POSTGRES_DB: newsradar_core
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - nr_network
 
-  # 2. Base de Datos Documental (Noticias, Logs e Indexación)
-  db_documental:
-    image: mongo:6.0
-    container_name: nr_mongodb
-    restart: always
+  db_mongodb:
+    image: mongo:7.0
+    container_name: newsradar_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db
-    networks:
-      - nr_network
+      - mongodb_data:/data/db
 
-  # 3. Backend (FastAPI + Worker)
-  backend:
+  # Backend: Se encarga de la lógica y conexión a BD
+  api:
     build: ./backend
-    container_name: nr_backend
-    restart: always
+    container_name: newsradar_api
     depends_on:
-      - db_relational
-      - db_documental
+      - db_postgres
+      - db_mongodb
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@db_relational:5432/newsradar_core
-      - MONGO_URL=mongodb://db_documental:27017/newsradar_archive
-      - FEATURE_IA_ENABLED=true  # ADR-006: Feature Flag para competición
+      - DATABASE_URL=${DATABASE_URL}
+      - MONGODB_URL=${MONGODB_URL}
     ports:
       - "8000:8000"
-    networks:
-      - nr_network
 
-  # 4. Frontend (React + Nginx)
+  # Frontend: La interfaz de usuario
   frontend:
     build: ./frontend
-    container_name: nr_frontend
-    restart: always
-    depends_on:
-      - backend
+    container_name: newsradar_frontend
     ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=http://localhost:8000/api/v1
-    networks:
-      - nr_network
-
-networks:
-  nr_network:
-    driver: bridge
+      - "5173:5173"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
-  mongo_data:
+  mongodb_data:

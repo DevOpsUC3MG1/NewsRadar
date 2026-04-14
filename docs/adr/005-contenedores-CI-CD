@@ -1,10 +1,74 @@
 ## #ADR-005: Estrategia de Contenerización y CI/CD
-**Estado:** Aceptado
+***Estado:*** Aceptado
 
-**Contexto:** El proyecto requiere despliegues automatizados tipo "One-Click" en entornos limpios y la validación continua de la calidad del código, asegurando un mínimo del 70% de cobertura de pruebas.
+***Contexto:*** El proyecto requiere despliegues "One-Click" en entornos limpios y validación de calidad (>70% cobertura). Además, se necesita agilidad en desarrollo para que los cambios en el código se reflejen sin reconstruir imágenes constantemente.
 
-**Decisión:** Todo el ecosistema se orquestará localmente y en producción mediante **Docker Compose**. La Integración y Entrega Continua (CI/CD) se delegará a **GitHub Actions**, integrando análisis estático de código mediante **SonarCloud** (o SonarQube).
+***Decisión:*** Se adopta una Arquitectura de Composición de Docker Compose.
 
-**Consecuencias:**
+**docker-compose.yml (Base)**: Define la topología del sistema (Bases de datos, API, Frontend). Usa build para empaquetar el código. Es el estándar para el Pipeline de GitHub y la competición.
+
+**docker-compose.dev.yml (Desarrollo)**: Aplica un override sobre el base. Inyecta Volumes (bind mounts) para habilitar el Hot-Reload en local.
+
+**Contenedores Efímeros**: El CI/CD usará contenedores que se destruyen tras pasar los tests.
+
+
+
+***Consecuencias:***
 * **Positivas:** Garantiza que el código en la rama `main` siempre compila, supera los tests y es desplegable de forma idéntica en cualquier máquina. Centraliza las métricas de calidad.
-* **Ejemplo Práctico:** Al hacer `git push`, el pipeline de GitHub Actions levantará contenedores efímeros, ejecutará `pytest`, medirá la cobertura y enviará el reporte a SonarCloud. Solo si todo está en verde, se generará la imagen Docker definitiva.
+
+* **Negativas:** Requiere gestionar correctamente el archivo .env para evitar conflictos de credenciales entre entornos.
+
+
+
+***Guía de Dockerfiles***
+Para que el sistema funcione, necesitas dos Dockerfiles. Aquí te explico qué hace cada uno para que entiendas la lógica:
+
+* A. Backend (Python/FastAPI)
+Este archivo vive en /backend/Dockerfile. Su función es preparar el entorno de Python y copiar tu lógica de NewsRadar.
+
+* B. Frontend (React)
+Este archivo vive en /frontend/Dockerfile.
+
+
+
+***Entendiendo la Comunicación (Diagrama de Flujo)***
+Para entender cómo encaja todo cuando ejecutas tus scripts, imagina este flujo:
+
+Red Interna: Docker crea una red virtual. La API no busca la base de datos en localhost, la busca por su nombre de servicio: db_postgres.
+
+Persistencia: Los Volumes (postgres_data) aseguran que si borras el contenedor, las noticias y usuarios no desaparezcan.
+
+Sincronización: En desarrollo, el Volume de código (./backend:/app) hace que tu VSCode y el contenedor sean "el mismo espejo".
+
+
+
+* ***Ejemplo Práctico:*** Al hacer `git push`, el pipeline de GitHub Actions levantará contenedores efímeros, ejecutará `pytest`, medirá la cobertura y enviará el reporte a SonarCloud. Solo si todo está en verde, se generará la imagen Docker definitiva.
+
+Resumen de comandos para el equipo
+
+Entiendo, a veces el formato de tablas puede fallar dependiendo de dónde lo visualices. Aquí tienes la explicación detallada de cada comando en formato de texto claro, para que sepas exactamente qué ocurre "detrás de las cámaras" en cada caso:
+
+1. El comando para Programar (Día a día)
+Comando: *docker compose -f docker-compose.yml -f docker-compose.dev.yml up*
+
+Archivos que usa: Combina el archivo Base (servicios) con el de Desarrollo y los Volumes.
+
+Qué hace: Es el que usarás el 90% del tiempo en VSCode. Al sumar el archivo .dev.yml, Docker conecta tus carpetas locales con el contenedor.
+
+Resultado: Activa el Hot-reload. Si cambias una línea de código en Python o un componente en React y guardas, el sistema se actualiza solo sin que tengas que reiniciar nada.
+
+2. El comando para Simular la Competición (Prueba de fuego)
+Comando:*docker compose up --build*
+
+Archivos que usa: Solo el archivo docker-compose.yml (la "Caja cerrada").
+
+Qué hace: Ignora tus carpetas locales y construye imágenes "estáticas" con el código que haya en ese momento. Es exactamente lo que hará el profesor el día 25 de mayo.
+
+Resultado: Te sirve para verificar que el sistema es autónomo. Si aquí algo falla (por ejemplo, falta una librería en el requirements.txt), es porque el proyecto no está listo para entregarse aunque en "modo programar" te funcione.
+
+3. El comando para Limpiar Todo (Reset)
+Comando: *docker compose down -v*
+
+Qué hace: Detiene los contenedores y los borra. La clave es la -v: esto borra también los volúmenes (los datos guardados).
+
+Resultado: Limpieza total. Es como formatear el sistema. Úsalo cuando quieras vaciar la base de datos de PostgreSQL y MongoDB para empezar de cero con el script de seed.sh.
