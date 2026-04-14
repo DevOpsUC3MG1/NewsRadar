@@ -1,2 +1,2 @@
 #!/bin/bash
-echo "Deploy..."
+docker compose up -d --build

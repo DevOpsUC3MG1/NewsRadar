@@ -1,15 +1,26 @@
-name: Docker Build
+name: Docker Pipeline
 
 on:
   push:
     branches: [main]
+  pull_request:
 
 jobs:
   docker:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Build containers
         run: docker compose build
+
+      - name: Run test environment
+        run: |
+          docker compose -f docker-compose.test.yml up \
+          --build \
+          --abort-on-container-exit
+
+      - name: Shutdown containers
+        run: docker compose down
