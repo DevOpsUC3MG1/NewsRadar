@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
     # -------------------------
     # Checkout
     # -------------------------
@@ -39,7 +40,7 @@ jobs:
       run: flake8 .
 
     # -------------------------
-    # UNIT TESTS + COVERAGE
+    # TESTS + COVERAGE
     # -------------------------
     - name: Run tests with coverage
       run: pytest --cov=. --cov-report=xml
@@ -54,22 +55,30 @@ jobs:
         path: coverage.xml
 
     # -------------------------
-    # Docker Build
+    # SONARCLOUD 🔥
+    # -------------------------
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    # -------------------------
+    # DOCKER BUILD
     # -------------------------
     - name: Build Docker images
       run: docker compose build
 
     # -------------------------
-    # Integration Tests (REAL SYSTEM)
+    # INTEGRATION TESTS
     # -------------------------
     - name: Run integration environment
       run: |
         docker compose -f docker-compose.test.yml up \
-        --build \
-        --abort-on-container-exit
+          --build \
+          --abort-on-container-exit
 
     # -------------------------
-    # Shutdown containers
+    # CLEANUP
     # -------------------------
     - name: Cleanup
       run: docker compose down
