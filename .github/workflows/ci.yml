@@ -1,3 +1,19 @@
 name: CI
-on: [push]
-jobs: {}
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build project
+        run: bash scripts/build.sh
+
+      - name: Run tests
+        run: bash scripts/test.sh
