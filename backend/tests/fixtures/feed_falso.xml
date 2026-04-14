@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+  <title>NewsRadar Test Times</title>
+  <link>http://www.newsradar.test</link>
+  <description>Canal de pruebas para QA</description>
+  <item>
+    <title>La IA revoluciona la educación</title>
+    <link>http://www.newsradar.test/ia-educacion</link>
+    <description>Nuevos modelos de lenguaje ayudan a estudiantes en todo el mundo.</description>
+    <category>Tecnología</category>
+    <pubDate>Tue, 14 Apr 2026 10:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>Subida de los tipos de interés</title>
+    <link>http://www.newsradar.test/economia-tipos</link>
+    <description>El Banco Central anuncia nuevas medidas económicas.</description>
+    <category>Economía</category>
+    <pubDate>Tue, 14 Apr 2026 11:30:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>
