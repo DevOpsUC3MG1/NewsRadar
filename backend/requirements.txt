@@ -6,10 +6,12 @@ pydantic[email]==2.6.3
 # Database - Relational (PostgreSQL)
 sqlalchemy==2.0.28
 psycopg2-binary==2.9.9
+asyncpg==0.29.0
 alembic==1.13.1
 
 # Database - NoSQL (MongoDB)
 motor==3.3.2
+pymongo==4.6.1
 
 # Utilities
 python-dotenv==1.0.1
