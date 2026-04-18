@@ -5,7 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AuthContext } from '../../context/AuthContext';
 
+// Importamos nuestros componentes reutilizables
+import Input from '../../components/input';
+import Button from '../../components/button';
 import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
+
 import styles from './registro.module.css';
 
 const registerSchema = z.object({
@@ -82,43 +86,65 @@ export default function Registro() {
           <div className={styles.cardBody}>
             <form onSubmit={handleSubmit(onSubmitForm)}>
               
-              {/* --- RESTO DE TU CÓDIGO HTML/JSX (No cambia nada) --- */}
               <div className={styles.gridRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>NOMBRE</label>
-                  <input type="text" className={styles.input} {...register('nombre')} />
-                  {errors.nombre && <span className={styles.errorText}>{errors.nombre.message}</span>}
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>APELLIDOS</label>
-                  <input type="text" className={styles.input} {...register('apellidos')} />
-                  {errors.apellidos && <span className={styles.errorText}>{errors.apellidos.message}</span>}
-                </div>
+                {/* CAMPO NOMBRE */}
+                <Input
+                  label="NOMBRE"
+                  className={styles.input}
+                  labelClassName={styles.label}
+                  error={errors.nombre?.message}
+                  {...register('nombre')}
+                />
+                
+                {/* CAMPO APELLIDOS */}
+                <Input
+                  label="APELLIDOS"
+                  className={styles.input}
+                  labelClassName={styles.label}
+                  error={errors.apellidos?.message}
+                  {...register('apellidos')}
+                />
               </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>ORGANIZACIÓN</label>
-                <input type="text" className={styles.input} {...register('organizacion')} />
-                {errors.organizacion && <span className={styles.errorText}>{errors.organizacion.message}</span>}
-              </div>
+              {/* CAMPO ORGANIZACIÓN */}
+              <Input
+                label="ORGANIZACIÓN"
+                className={styles.input}
+                labelClassName={styles.label}
+                error={errors.organizacion?.message}
+                {...register('organizacion')}
+              />
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>EMAIL</label>
-                <input type="email" className={styles.input} {...register('email')} />
-                {errors.email && <span className={styles.errorText}>{errors.email.message}</span>}
-              </div>
+              {/* CAMPO EMAIL */}
+              <Input
+                label="EMAIL"
+                type="email"
+                className={styles.input}
+                labelClassName={styles.label}
+                error={errors.email?.message}
+                {...register('email')}
+              />
 
               <div className={styles.gridRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>CONTRASEÑA</label>
-                  <input type="password" className={styles.input} {...register('password')} />
-                  {errors.password && <span className={styles.errorText}>{errors.password.message}</span>}
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>CONFIRMAR CONTRASEÑA</label>
-                  <input type="password" className={styles.input} {...register('confirmPassword')} />
-                  {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword.message}</span>}
-                </div>
+                {/* CAMPO CONTRASEÑA */}
+                <Input
+                  label="CONTRASEÑA"
+                  type="password"
+                  className={styles.input}
+                  labelClassName={styles.label}
+                  error={errors.password?.message}
+                  {...register('password')}
+                />
+                
+                {/* CAMPO CONFIRMAR CONTRASEÑA */}
+                <Input
+                  label="CONFIRMAR CONTRASEÑA"
+                  type="password"
+                  className={styles.input}
+                  labelClassName={styles.label}
+                  error={errors.confirmPassword?.message}
+                  {...register('confirmPassword')}
+                />
               </div>
 
               {apiError && (
@@ -127,9 +153,14 @@ export default function Registro() {
                 </div>
               )}
 
-              <button type="submit" className={styles.submitButton} disabled={isLoading}>
+              {/* BOTÓN REUTILIZADO */}
+              <Button 
+                type="submit" 
+                className={styles.submitButton} 
+                disabled={isLoading}
+              >
                 {isLoading ? 'CREANDO...' : 'CREAR CUENTA'}
-              </button>
+              </Button>
 
             </form>
 
