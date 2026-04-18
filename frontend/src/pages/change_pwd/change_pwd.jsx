@@ -1,7 +1,12 @@
 // change_pwd.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+
+// Importamos nuestros componentes reutilizables
+import Input from '../../components/input';
+import Button from '../../components/button';
 import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
+
 import styles from './change_pwd.module.css';
 
 function ChangePwd() {
@@ -21,24 +26,25 @@ function ChangePwd() {
                     {/* Sección 2: Formulario de la tarjeta */}
                     <div className={styles.lightForm}>
                         <form className={styles.formElement}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel} htmlFor="email">
-                                    CORREO ELECTRÓNICO
-                                </label>
-                                <input
-                                    className={styles.formInput}
-                                    type="email"
-                                    id="email"
-                                />
-                            </div>
+                            
+                            {/* CAMPO EMAIL REUTILIZADO */}
+                            <Input
+                                label="CORREO ELECTRÓNICO"
+                                type="email"
+                                id="email"
+                                className={styles.formInput}
+                                labelClassName={styles.formLabel}
+                            />
 
                             <p className={styles.instructionText}>
                                 Te envíaremos un correo electrónico con las instrucciones para restablecer tu contraseña.
                             </p>
 
-                            <button className={styles.continueButton} type="submit">
+                            {/* BOTÓN REUTILIZADO */}
+                            <Button type="submit" className={styles.continueButton}>
                                 CONTINUAR
-                            </button>
+                            </Button>
+
                         </form>
 
                         <div className={styles.pwdFooter}>

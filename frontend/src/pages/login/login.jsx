@@ -6,11 +6,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-// Importamos el Header sin usuario
+// Componentes reutilizables
+import Input from '../../components/input';
+import Button from '../../components/button';
 import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
-import styles from './login.module.css';
 
-// Importamos la ÚNICA imagen SVG agrupada
+// Estilos e imágenes
+import styles from './login.module.css';
 import imgInicioSvg from './img-inicio.svg';
 
 const loginSchema = z.object({
@@ -89,35 +91,26 @@ export default function PantallaEntrada() {
 
           <div className={styles.formContainer}>
             <form onSubmit={handleSubmit(onSubmitForm)}>
-              {/* CAMPO EMAIL */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>EMAIL</label>
-                <input
-                  type="email"
-                  className={styles.input}
-                  {...register('email')}
-                />
-                {errors.email && (
-                  <span style={{ color: '#e74c3c', fontSize: '0.8rem', marginTop: '5px' }}>
-                    {errors.email.message}
-                  </span>
-                )}
-              </div>
+              
+              {/* CAMPO EMAIL REUTILIZANDO COMPONENTE */}
+              <Input
+                label="EMAIL"
+                type="email"
+                className={styles.input}
+                labelClassName={styles.label}
+                error={errors.email?.message}
+                {...register('email')}
+              />
 
-              {/* CAMPO CONTRASEÑA */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>CONTRASEÑA</label>
-                <input
-                  type="password"
-                  className={styles.input}
-                  {...register('password')}
-                />
-                {errors.password && (
-                  <span style={{ color: '#e74c3c', fontSize: '0.8rem', marginTop: '5px' }}>
-                    {errors.password.message}
-                  </span>
-                )}
-              </div>
+              {/* CAMPO CONTRASEÑA REUTILIZANDO COMPONENTE */}
+              <Input
+                label="CONTRASEÑA"
+                type="password"
+                className={styles.input}
+                labelClassName={styles.label}
+                error={errors.password?.message}
+                {...register('password')}
+              />
 
               {apiError && (
                 <div style={{ color: '#e74c3c', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
@@ -125,15 +118,15 @@ export default function PantallaEntrada() {
                 </div>
               )}
 
-              <button
+              {/* BOTÓN REUTILIZANDO COMPONENTE */}
+              <Button
                 type="submit"
                 className={styles.loginButton}
                 disabled={isLoading}
               >
                 {isLoading ? 'CARGANDO...' : 'INICIAR SESIÓN'}
-              </button>
+              </Button>
 
-              {/* AQUÍ ESTÁ EL CAMBIO CLAVE: Usamos Link en lugar de a */}
               <Link to="/recuperar-password" className={styles.forgotPassword}>
                 ¿OLVIDASTE TU CONTRASEÑA?
               </Link>
