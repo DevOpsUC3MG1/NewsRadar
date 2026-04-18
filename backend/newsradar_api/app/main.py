@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import os
 import smtplib
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from uuid import uuid4
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -19,6 +22,9 @@ from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 app = FastAPI(
     title="NewsRadar API",
@@ -39,12 +45,56 @@ security = HTTPBearer(auto_error=False)
 
 # ---------------------------------------------------------------------------
 # Configuración de email para recuperación de contraseña
-# Rellena estas variables con tus credenciales de Gmail.
-# En Gmail: Cuenta → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación
+# Usa las variables de entorno definidas en el archivo .env
 # ---------------------------------------------------------------------------
-GMAIL_SENDER = "tu_correo@gmail.com"          # TODO: reemplaza con tu correo Gmail
-GMAIL_APP_PASSWORD = "xxxx xxxx xxxx xxxx"    # TODO: reemplaza con tu contraseña de aplicación
-FRONTEND_RESET_URL = "http://localhost:3000/reset-password"  # TODO: URL del frontend
+GMAIL_SENDER = os.getenv("GMAIL_SENDER", "tu_correo@gmail.com")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "xxxx xxxx xxxx xxxx")
+FRONTEND_RESET_URL = os.getenv("FRONTEND_RESET_URL", "http://localhost:5173/")
+
+logger = logging.getLogger("uvicorn.error")
+logger.debug("GMAIL_SENDER: %s", GMAIL_SENDER)
+logger.debug("GMAIL_APP_PASSWORD: %s", GMAIL_APP_PASSWORD)
+
+
+print("GMAIL_SENDER:", GMAIL_SENDER, flush=True)
+print("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD, flush=True)
+
+
+def send_verification_email(to_email: str, token: str) -> None:
+    """Envía el correo de verificación de cuenta usando Gmail con contraseña de aplicación."""
+    verification_link = f"{FRONTEND_RESET_URL}?token={token}"  # Ajusta la URL según tu frontend
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Verifica tu cuenta - NewsRadar"
+    msg["From"] = GMAIL_SENDER
+    msg["To"] = to_email
+
+    text_body = (
+        f"Haz clic en el siguiente enlace para verificar tu cuenta:\n"
+        f"{verification_link}\n\nEste enlace expira en 24 horas."
+    )
+    html_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Bienvenido a NewsRadar</h2>
+        <p>Gracias por registrarte en <strong>NewsRadar</strong>. Para completar tu registro, verifica tu cuenta haciendo clic en el botón:</p>
+        <a href="{verification_link}"
+           style="display:inline-block;padding:12px 24px;background:#34a853;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;">
+          Verificar cuenta
+        </a>
+        <p style="margin-top:24px;color:#666;font-size:13px;">
+          Si no realizaste este registro, ignora este correo. El enlace expira en 24 horas.
+        </p>
+      </body>
+    </html>
+    """
+
+    msg.attach(MIMEText(text_body, "plain"))
+    msg.attach(MIMEText(html_body, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
+        server.sendmail(GMAIL_SENDER, to_email, msg.as_string())
 
 
 def send_reset_password_email(to_email: str, token: str) -> None:
@@ -411,7 +461,8 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> U
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    # TODO: Aquí irían las funciones para enviar email con el token de verificación
+    # Enviar email de verificación
+    send_verification_email(user.email, verification_token)
     return sanitize_user(user)
 
 
@@ -468,7 +519,8 @@ async def resend_verification(
     user.verification_token = new_verification_token
     await db.commit()
     
-    # TODO: Aquí iría la función para enviar email con el nuevo token
+    # Enviar email con el nuevo token
+    send_verification_email(user.email, new_verification_token)
     return VerificationResponse(
         message="Email de verificación reenviado",
         success=True
@@ -496,7 +548,7 @@ async def forgot_password(
     password_reset_tokens[reset_token] = user.id
 
     # TODO: Enviar email con Gmail — descomenta cuando hayas configurado GMAIL_SENDER y GMAIL_APP_PASSWORD
-    # send_reset_password_email(user.email, reset_token)
+    send_reset_password_email(user.email, reset_token)
 
     return VerificationResponse(
         message="Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.",
