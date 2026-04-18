@@ -34,10 +34,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173/", "http://127.0.0.1:5173/"], # Los puertos de tu React
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], # Los puertos de tu React
     allow_credentials=True,
-    allow_methods=[""],
-    allow_headers=[""],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 API_PREFIX = "/api/v1"
