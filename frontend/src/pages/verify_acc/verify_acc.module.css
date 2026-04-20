@@ -1,0 +1,170 @@
+    /* verify_acc.module.css */
+
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #1E1E20;
+  font-family: var(--sans, sans-serif);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 40px;
+}
+
+.accCard {
+  width: 100%;
+  max-width: 600px;
+  height: 85vh;
+  min-height: 480px;
+  max-height: 700px;
+  display: flex;
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* SECCIÓN 1: Cabecera oscura */
+.darkHeader {
+  background-color: #09090F;
+  padding: 40px 50px;
+  color: white;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.titleText {
+  color: #FFFFFF;
+  font-size: 1.8rem;
+  margin: 0 0 5px 0;
+  font-weight: bold;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.subtitleText {
+  color: #FFFFFF;
+  font-size: 0.8rem;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* SECCIÓN 2: Formulario */
+.lightForm {
+  flex: 1;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.formElement {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup {
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.formLabel {
+  font-size: 0.85rem;
+  color: #06060D;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+  font-weight: 400;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.formInput {
+  padding: 12px 15px;
+  border: 1px solid #06060D;
+  color: #06060D;
+  border-radius: 4px;
+  font-size: 1rem;
+  outline: none;
+  background-color: #FFFFFF;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formInput:focus {
+  border-color: #5B8DE9;
+  box-shadow: 0 0 0 1px #5B8DE9;
+}
+
+.instructionText {
+  text-align: left;
+  font-size: 0.7rem;
+  color: #09090F;
+  margin-bottom: 35px;
+  font-weight: 300;
+  line-height: 1.4;
+  width: 100%;
+}
+
+.continueButton {
+  background-color: #09090F;
+  color: #F2F6F7;
+  border: none;
+  padding: 14px 40px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  width: auto;
+  align-self: center;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  transition: opacity 0.2s;
+}
+
+.continueButton:hover {
+  opacity: 0.9;
+}
+
+/* SECCIÓN 3: Footer */
+.accFooter {
+  text-align: center;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 25px;
+  width: 100%;
+}
+
+.footerText {
+  font-size: 0.7rem;
+  color: #09090F;
+  margin-bottom: 12px;
+  font-weight: 300;
+}
+
+.backButton {
+  background-color: transparent;
+  color: #5B8DE9;
+  border: 1px solid #5B8DE9;
+  padding: 8px 30px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.backButton:hover {
+  background-color: rgba(91, 141, 233, 0.1);
+}
