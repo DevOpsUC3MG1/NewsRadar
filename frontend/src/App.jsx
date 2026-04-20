@@ -35,9 +35,9 @@ function App() {
         {/* Envolvemos el MainLayout con ProtectedRoute */}
         <Route 
           element={
-            //<ProtectedRoute>
+            <ProtectedRoute>
               <MainLayout />
-            //</ProtectedRoute>
+            </ProtectedRoute>
           }
         >
           {/* Ahora sí, las URLs serán directas */}
