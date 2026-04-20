@@ -49,7 +49,8 @@ security = HTTPBearer(auto_error=False)
 # ---------------------------------------------------------------------------
 GMAIL_SENDER = os.getenv("GMAIL_SENDER", "tu_correo@gmail.com")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "xxxx xxxx xxxx xxxx")
-FRONTEND_RESET_URL = os.getenv("FRONTEND_RESET_URL", "http://localhost:5173/")
+FRONTEND_RESET_URL = os.getenv("FRONTEND_RESET_URL")
+FRONTEND_VERIFY_URL = os.getenv("FRONTEND_VERIFY_URL")
 
 logger = logging.getLogger("uvicorn.error")
 logger.debug("GMAIL_SENDER: %s", GMAIL_SENDER)
@@ -58,7 +59,6 @@ logger.debug("GMAIL_APP_PASSWORD: %s", GMAIL_APP_PASSWORD)
 
 print("GMAIL_SENDER:", GMAIL_SENDER, flush=True)
 print("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD, flush=True)
-
 
 def send_verification_email(to_email: str, token: str) -> None:
     """Envía el correo de verificación de cuenta usando Gmail con contraseña de aplicación."""
