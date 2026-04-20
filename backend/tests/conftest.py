@@ -1,3 +1,5 @@
+import os
+import json
 import pytest
 from datetime import datetime
 from fastapi import FastAPI
@@ -99,3 +101,11 @@ def load_valid_users():
     
     with open(json_path, "r", encoding="utf-8") as file:
         return json.load(file)
+@pytest.fixture
+def mock_rss_xml():
+    """Lee el archivo XML falso para simular una respuesta de un feed RSS"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    xml_path = os.path.join(base_dir, "fixtures", "feed_falso.xml")
+    
+    with open(xml_path, "r", encoding="utf-8") as file:
+        return file.read()
