@@ -207,8 +207,10 @@
 
 .modalButton {
   background-color: #09090F;
+  padding: 16px 20px;
   width: 100%;
   border-radius: 8px;
+  font-weight: bold;
 }
 
 @keyframes popIn {
