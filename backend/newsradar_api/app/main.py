@@ -102,74 +102,37 @@ def send_reset_password_email(to_email: str, token: str) -> None:
     reset_link = f"{FRONTEND_RESET_URL}?token={token}"
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
+    msg["Subject"] = "Recuperación de contraseña - NewsRadar"
     msg["From"] = GMAIL_SENDER
     msg["To"] = to_email
 
-    msg.attach(MIMEText(text_body, "plain"))
-    msg.attach(MIMEText(html_body, "html"))
-
-    with smtplib.SMTP_SSL(GMAIL_SMTP_SERVER, GMAIL_SMTP_PORT) as server:
-        server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
-        server.sendmail(GMAIL_SENDER, to_email, msg.as_string())
-
-
-def send_verification_email(to_email: str, token: str) -> None:
-    verify_link = f"{FRONTEND_VERIFY_URL}?token={token}"
-
-    subject = "Verificación de cuenta - NewsRadar"
-    text_body = (
-        f"Bienvenido a NewsRadar. Por favor verifica tu cuenta usando el siguiente enlace:\n"
-        f"{verify_link}\n\n"
-        "Si no solicitaste este correo, ignóralo."
-    )
-    html_body = f"""
-    <html>
-      <body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">
-        <h2>Verificación de cuenta</h2>
-        <p>Gracias por registrarte en <strong>NewsRadar</strong>.</p>
-        <p>Haz clic en el siguiente botón para verificar tu cuenta:</p>
-        <a href=\"{verify_link}\"
-           style=\"display:inline-block;padding:12px 24px;background:#1a73e8;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;\">
-          Verificar mi cuenta
-        </a>
-        <p style=\"margin-top:24px;color:#666;font-size:13px;\">
-          Si no solicitaste este correo, ignóralo.
-        </p>
-      </body>
-    </html>
-    """
-
-    send_email(subject, to_email, text_body, html_body)
-
-
-def send_reset_password_email(to_email: str, token: str) -> None:
-    """Envía el correo de recuperación de contraseña usando Gmail con contraseña de aplicación."""
-    reset_link = f"{FRONTEND_RESET_URL}?token={token}"
-
-    subject = "Recuperación de contraseña - NewsRadar"
     text_body = (
         f"Haz clic en el siguiente enlace para restablecer tu contraseña:\n"
         f"{reset_link}\n\nEste enlace expira en 1 hora."
     )
     html_body = f"""
     <html>
-      <body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Recuperación de contraseña</h2>
         <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>NewsRadar</strong>.</p>
         <p>Haz clic en el botón para continuar:</p>
-        <a href=\"{reset_link}\"
-           style=\"display:inline-block;padding:12px 24px;background:#1a73e8;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;\">
+        <a href="{reset_link}"
+           style="display:inline-block;padding:12px 24px;background:#1a73e8;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;">
           Restablecer contraseña
         </a>
-        <p style=\"margin-top:24px;color:#666;font-size:13px;\">
+        <p style="margin-top:24px;color:#666;font-size:13px;">
           Si no solicitaste este cambio, ignora este correo. El enlace expira en 1 hora.
         </p>
       </body>
     </html>
     """
 
-    send_email(subject, to_email, text_body, html_body)
+    msg.attach(MIMEText(text_body, "plain"))
+    msg.attach(MIMEText(html_body, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
+        server.sendmail(GMAIL_SENDER, to_email, msg.as_string())
 
 
 class Metric(BaseModel):
@@ -397,51 +360,6 @@ def user_to_db(user: UserModel) -> UserInDB:
     )
 
 
-async def get_user_role_names(user: UserInDB, db: AsyncSession) -> set[str]:
-    if not user.role_ids:
-        return set()
-    result = await db.execute(select(RoleModel.name).where(RoleModel.id.in_(user.role_ids)))
-    return {row[0].lower() for row in result.fetchall()}
-
-
-def require_roles(*required_roles: str):
-    required = {role.lower() for role in required_roles}
-
-    async def dependency(
-        current_user: UserInDB = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
-    ) -> UserInDB:
-        user_roles = await get_user_role_names(current_user, db)
-        if not user_roles.intersection(required):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permisos insuficientes",
-            )
-        return current_user
-
-    return dependency
-
-
-def require_admin_or_same_user():
-    async def dependency(
-        user_id: int,
-        current_user: UserInDB = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
-    ) -> UserInDB:
-        if current_user.id == user_id:
-            return current_user
-
-        user_roles = await get_user_role_names(current_user, db)
-        if "admin" not in user_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permisos insuficientes",
-            )
-        return current_user
-
-    return dependency
-
-
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
@@ -521,15 +439,12 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> To
     if user is None or user.password != payload.password:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    if not user.is_verified:
-        raise HTTPException(status_code=403, detail="La cuenta no está verificada")
-
     token = str(uuid4())
     active_tokens[token] = user.id
     return TokenResponse(access_token=token)
 
 
-@app.post(f"{API_PREFIX}/auth/register", response_model=User, status_code=201, tags=["auth"])
+@app.post(f"{API_PREFIX}/auth/register", response_model=User, tags=["auth"])
 async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
     result = await db.execute(select(UserModel).where(UserModel.email == payload.email))
     if result.scalar_one_or_none():
@@ -541,7 +456,7 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> U
     user = UserModel(
         **payload.model_dump(),
         verification_token=verification_token,
-        is_verified=False,
+        is_verified=False
     )
     db.add(user)
     await db.commit()
@@ -608,7 +523,7 @@ async def resend_verification(
     send_verification_email(user.email, new_verification_token)
     return VerificationResponse(
         message="Email de verificación reenviado",
-        success=True,
+        success=True
     )
 
 
@@ -673,7 +588,7 @@ async def reset_password(
 
 @app.get(f"{API_PREFIX}/users", response_model=List[User], tags=["users"])
 async def list_users(
-    _: UserInDB = Depends(require_roles("admin")),
+    _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> List[User]:
     result = await db.execute(select(UserModel))
@@ -684,7 +599,7 @@ async def list_users(
 @app.post(f"{API_PREFIX}/users", response_model=User, status_code=201, tags=["users"])
 async def create_user(
     payload: UserCreate,
-    _: UserInDB = Depends(require_roles("admin")),
+    _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     result = await db.execute(select(UserModel).where(UserModel.email == payload.email))
@@ -753,7 +668,7 @@ async def update_user(
 )
 async def delete_user(
     user_id: int,
-    _: UserInDB = Depends(require_admin_or_same_user()),
+    _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     mongo_db=Depends(get_mongo_db),
 ) -> None:
@@ -788,7 +703,7 @@ async def list_roles(
 @app.post(f"{API_PREFIX}/roles", response_model=Role, status_code=201, tags=["roles"])
 async def create_role(
     payload: RoleCreate,
-    _: UserInDB = Depends(require_roles("admin")),
+    _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Role:
     role = RoleModel(**payload.model_dump())
@@ -815,7 +730,7 @@ async def get_role(
 async def update_role(
     role_id: int,
     payload: RoleUpdate,
-    _: UserInDB = Depends(require_roles("admin")),
+    _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Role:
     result = await db.execute(select(RoleModel).where(RoleModel.id == role_id))
@@ -841,7 +756,7 @@ async def update_role(
 )
 async def delete_role(
     role_id: int,
-    _: UserInDB = Depends(require_roles("admin")),
+    _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     result = await db.execute(select(RoleModel).where(RoleModel.id == role_id))
