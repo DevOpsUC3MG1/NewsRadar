@@ -140,7 +140,7 @@ function ChangePwd() {
                             className={styles.modalButton} 
                             onClick={() => navigate('/')}
                         >
-                            IR A INICIAR SESIÓN
+                            Ir a iniciar sesión
                         </Button>
                     </div>
                 </div>

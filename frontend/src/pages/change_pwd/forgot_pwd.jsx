@@ -1,6 +1,6 @@
 // forgot_pwd.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Importamos nuestros componentes reutilizables
 import Input from '../../components/input';
@@ -15,6 +15,8 @@ function ChangePwd() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const navigate = useNavigate();
 
     // 2. Función que se ejecuta al hacer clic en "Continuar"
     const handleSubmit = async (e) => {
@@ -120,9 +122,13 @@ function ChangePwd() {
 
                         <div className={styles.pwdFooter}>
                             <p className={styles.footerText}>¿Te acuerdas de la contraseña?</p>
-                            <Link className={styles.loginButton} to="/">
-                                Iniciar sesión
-                            </Link>
+                            <button
+                                type="button"
+                                className={styles.loginButton}
+                                onClick={() => navigate(-1)}
+                            >
+                                Volver
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -23,7 +23,7 @@ export default function Sidebar() {
       notifications: 3
     },
     { divider: true },
-    { label: 'Mi perfil', icon: <User size={20} />, path: '/perfil' },
+    { label: 'Mi perfil', icon: <User size={20} />, path: '/profile' },
   ];
 
   return (

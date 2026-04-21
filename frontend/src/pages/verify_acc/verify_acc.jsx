@@ -1,6 +1,6 @@
 // verify_acc.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Importamos nuestros componentes reutilizables
 import Input from '../../components/input';
@@ -15,6 +15,8 @@ function VerifyAcc() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const navigate = useNavigate();
 
     // 2. Función para reenviar el correo de verificación
     const handleSubmit = async (e) => {
@@ -117,9 +119,13 @@ function VerifyAcc() {
 
                         <div className={styles.accFooter}>
                             <p className={styles.footerText}>¿Lo quieres hacer en otro momento?</p>
-                            <Link className={styles.backButton} to="/">
+                            <button
+                                type="button"
+                                className={styles.backButton}
+                                onClick={() => navigate(-1)}
+                            >
                                 Volver
-                            </Link>
+                            </button>
                         </div>
                     </div>
                 </div>
