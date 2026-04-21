@@ -7,6 +7,7 @@ import ChangePwd from './pages/change_pwd/change_pwd.jsx'
 import ResendVerify from './pages/verify_acc/verify_acc.jsx' // <-- 1. Importamos la nueva pantalla
 import VerifyAcc from './pages/verify_acc/confirm_verify.jsx'
 import Dashboard from './pages/dashboard/dashboard.jsx'
+import Notifications from './pages/notificaciones/notificaciones.jsx'
 import Home from './pages/Home'
 import About from './pages/About'
 import UiTesting from './pages/UiTesting'
@@ -46,6 +47,7 @@ function App() {
           <Route path="/ui-testing" element={<UiTesting />} />
           <Route path="/pr" element={<Prueba />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/notificaciones" element={<Notifications />} />
 
         </Route>
       </Routes>
