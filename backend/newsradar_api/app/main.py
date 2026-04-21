@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import smtplib
 import logging
@@ -9,6 +10,8 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from uuid import uuid4
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +25,8 @@ from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
+from .services.ia_service import generate_synonyms, classify_iptc_level1
+from .services.rss_worker import RSSWorker
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -206,6 +211,18 @@ class AlertUpdate(BaseModel):
     descriptors: Optional[List[str]] = None
     categories: Optional[List[AlertCategoryItem]] = None
     cron_expression: Optional[str] = Field(None, min_length=1, max_length=120)
+
+
+class SuggestSynonymsRequest(BaseModel):
+    """Request para generar sinónimos de palabras clave."""
+    keywords: List[str] = Field(..., min_items=1, max_items=5)
+    max_synonyms: int = Field(default=5, ge=3, le=10)
+
+
+class SuggestSynonymsResponse(BaseModel):
+    """Response con sugerencias de sinónimos."""
+    keywords: List[str]
+    suggested_synonyms: List[str]
 
 
 class Alert(AlertBase):
@@ -776,6 +793,35 @@ async def delete_role(
 
     await db.delete(role)
     await db.commit()
+
+
+# =========================================================================
+# ALERTS & IA ENDPOINTS
+# =========================================================================
+
+@app.post(
+    f"{API_PREFIX}/alerts/suggest-synonyms",
+    response_model=SuggestSynonymsResponse,
+    tags=["alerts"],
+)
+async def suggest_synonyms(
+    payload: SuggestSynonymsRequest,
+    _: UserInDB = Depends(get_current_user),
+) -> SuggestSynonymsResponse:
+    """
+    Sugiere sinónimos y palabras relacionadas para palabras clave.
+    
+    Utiliza IA (OpenAI gpt-3.5-turbo) para generar sinónimos que amplíen
+    la cobertura de búsqueda de noticias.
+    
+    RF-02: Sugerencia automática de sinónimos durante la creación de alertas
+    """
+    suggested = generate_synonyms(payload.keywords, payload.max_synonyms)
+    
+    return SuggestSynonymsResponse(
+        keywords=payload.keywords,
+        suggested_synonyms=suggested,
+    )
 
 
 @app.get(
@@ -1557,3 +1603,140 @@ async def delete_stats(
     result = await mongo_db.stats.delete_one({"_id": stats_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
+
+
+# =========================================================================
+# RSS WORKER & SCHEDULER
+# =========================================================================
+
+# Scheduler global para ejecutar trabajos RSS según cron_expression
+_scheduler: Optional[AsyncIOScheduler] = None
+
+logger = logging.getLogger(__name__)
+
+
+async def initialize_scheduler():
+    """Inicializa el scheduler de APScheduler."""
+    global _scheduler
+    
+    if _scheduler is not None:
+        return
+    
+    _scheduler = AsyncIOScheduler()
+    _scheduler.start()
+    logger.info("RSS Scheduler iniciado")
+
+
+async def shutdown_scheduler():
+    """Detiene el scheduler."""
+    global _scheduler
+    
+    if _scheduler is not None:
+        _scheduler.shutdown()
+        logger.info("RSS Scheduler detenido")
+
+
+async def schedule_alert_worker(alert_id: int, cron_expr: str):
+    """
+    Programa un job para procesar una alerta según su cron_expression.
+    
+    Args:
+        alert_id: ID de la alerta
+        cron_expr: Expresión cron (ej: "0 * * * *" = cada hora)
+    """
+    global _scheduler
+    
+    if _scheduler is None:
+        logger.warning("Scheduler no inicializado")
+        return
+    
+    job_id = f"alert_{alert_id}"
+    
+    # Remover job existente si hay
+    try:
+        _scheduler.remove_job(job_id)
+    except:
+        pass
+    
+    try:
+        # Parsear cron_expression
+        trigger = CronTrigger.from_crontab(cron_expr)
+        
+        # Agregar job
+        _scheduler.add_job(
+            process_alert_job,
+            trigger=trigger,
+            id=job_id,
+            args=[alert_id],
+            replace_existing=True,
+            max_instances=1,
+        )
+        logger.info(f"Job programado para alerta {alert_id} con cron: {cron_expr}")
+        
+    except Exception as e:
+        logger.error(f"Error programando alerta {alert_id}: {str(e)}")
+
+
+async def process_alert_job(alert_id: int):
+    """
+    Función que ejecuta el worker para una alerta.
+    Esta es la función que APScheduler ejecutará según el cron.
+    """
+    logger.info(f"Iniciando procesamiento de alerta {alert_id}")
+    
+    try:
+        from .database import AsyncSessionLocal
+        from .database_mongodb import db_mongo
+        
+        async with AsyncSessionLocal() as db:
+            # Crear worker
+            worker = RSSWorker(db, db_mongo)
+            
+            # Procesar alerta
+            stats = await worker.process_alert(alert_id)
+            
+            logger.info(f"Alerta {alert_id} procesada. Stats: {stats}")
+            
+    except Exception as e:
+        logger.error(f"Error procesando alerta {alert_id}: {str(e)}")
+
+
+async def sync_scheduler_with_alerts():
+    """
+    Sincroniza los jobs del scheduler con las alertas en la BD.
+    Ejecutar al startup y cuando se creen/actualicen/eliminen alertas.
+    """
+    try:
+        from .database import AsyncSessionLocal
+        async with AsyncSessionLocal() as db:
+            # Obtener todas las alertas
+            result = await db.execute(select(AlertModel))
+            alerts = result.scalars().all()
+            
+            for alert in alerts:
+                if alert.cron_expression:
+                    await schedule_alert_worker(alert.id, alert.cron_expression)
+            
+            logger.info(f"Scheduler sincronizado con {len(alerts)} alertas")
+            
+    except Exception as e:
+        logger.error(f"Error sin cronizar scheduler: {str(e)}")
+
+
+# =========================================================================
+# LIFECYCLE EVENTS
+# =========================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Ejecuta al arrancar la aplicación."""
+    logger.info("Iniciando aplicación...")
+    await initialize_scheduler()
+    await sync_scheduler_with_alerts()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Ejecuta al detener la aplicación."""
+    logger.info("Deteniendo aplicación...")
+    await shutdown_scheduler()
