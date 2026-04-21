@@ -8,6 +8,7 @@ import ResendVerify from './pages/verify_acc/verify_acc.jsx' // <-- 1. Importamo
 import VerifyAcc from './pages/verify_acc/confirm_verify.jsx'
 import Dashboard from './pages/dashboard/dashboard.jsx'
 import Notifications from './pages/notificaciones/notificaciones.jsx'
+import Profile from './pages/user_profile/user_profile.jsx'
 import Home from './pages/Home'
 import About from './pages/About'
 import UiTesting from './pages/UiTesting'
@@ -48,6 +49,7 @@ function App() {
           <Route path="/pr" element={<Prueba />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/notificaciones" element={<Notifications />} />
+          <Route path="/profile" element={<Profile />} />
 
         </Route>
       </Routes>
