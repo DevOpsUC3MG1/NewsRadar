@@ -330,6 +330,9 @@ class ResetPasswordRequest(BaseModel):
     token: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=6, max_length=128)
 
+class UserEmailVerificationStatus(BaseModel):
+    email: EmailStr
+    is_verified: bool
 
 # Token storage (in-memory for simplicity, could be moved to Redis in production)
 # password_reset_tokens almacena {token: user_id} — en producción usar Redis con TTL
@@ -1557,3 +1560,28 @@ async def delete_stats(
     result = await mongo_db.stats.delete_one({"_id": stats_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
+    
+@app.get(
+    f"{API_PREFIX}/users/email/{{email}}/verification-status", 
+    response_model=UserEmailVerificationStatus, 
+    tags=["users"]
+)
+async def get_user_verification_status_by_email(
+    email: EmailStr,
+    _: UserInDB = Depends(get_current_user), # Borra esta línea si quieres que el endpoint sea público
+    db: AsyncSession = Depends(get_db),
+) -> UserEmailVerificationStatus:
+    """Comprueba si la cuenta de un usuario está verificada a partir de su correo electrónico."""
+    
+    # Hacemos la consulta a la base de datos buscando por email
+    result = await db.execute(select(UserModel).where(UserModel.email == email))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    # Devolvemos el email y el valor de la columna is_verified (que será True/False equivalente a t/f en Postgres)
+    return UserEmailVerificationStatus(
+        email=user.email, 
+        is_verified=user.is_verified
+    )
