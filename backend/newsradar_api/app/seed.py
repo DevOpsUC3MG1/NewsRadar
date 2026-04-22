@@ -12,6 +12,7 @@ import json
 import asyncio
 import logging
 from pathlib import Path
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .database import AsyncSessionLocal
 from .models import Category as CategoryModel
@@ -40,7 +41,7 @@ async def load_rss_sources():
         logger.info("Cargando categorías IPTC...")
         for category_name in data.get("categories", []):
             existing = await db.execute(
-                __import__("sqlalchemy").select(CategoryModel).where(
+                select(CategoryModel).where(
                     CategoryModel.name == category_name
                 )
             )
@@ -50,7 +51,7 @@ async def load_rss_sources():
                 logger.info(f"  ✓ Categoría creada: {category_name}")
         
         await db.commit()
-        logger.info(f"✅ {len(data.get('categories', []))} categorías cargadas")
+        logger.info(f"Categorías: {len(data.get('categories', []))} cargadas")
         
         # 2. Cargar fuentes (medios) y canales
         logger.info("\nCargando medios y canales RSS...")
@@ -62,7 +63,7 @@ async def load_rss_sources():
             
             # Obtener o crear fuente
             existing_source = await db.execute(
-                __import__("sqlalchemy").select(InformationSourceModel).where(
+                select(InformationSourceModel).where(
                     InformationSourceModel.name == source_name
                 )
             )
@@ -77,7 +78,7 @@ async def load_rss_sources():
                 await db.flush()
                 logger.info(f"  ✓ Fuente creada: {source_name}")
             else:
-                logger.info(f"  → Fuente existente: {source_name}")
+                logger.info(f"  - Fuente existente: {source_name}")
             
             # Cargar canales
             for channel_data in source_data.get("channels", []):
@@ -86,24 +87,24 @@ async def load_rss_sources():
                 
                 # Obtener categoría
                 category_result = await db.execute(
-                    __import__("sqlalchemy").select(CategoryModel).where(
+                    select(CategoryModel).where(
                         CategoryModel.name == category_name
                     )
                 )
                 category = category_result.scalar_one_or_none()
                 
                 if not category:
-                    logger.warning(f"    ⚠ Categoría no encontrada: {category_name}")
+                    logger.warning(f"    Categoría no encontrada: {category_name}")
                     continue
                 
                 # Verificar si canal existe
                 existing_channel = await db.execute(
-                    __import__("sqlalchemy").select(RSSChannelModel).where(
+                    select(RSSChannelModel).where(
                         RSSChannelModel.url == channel_url
                     )
                 )
                 if existing_channel.scalar_one_or_none():
-                    logger.debug(f"    → Canal existente: {channel_url[:50]}...")
+                    logger.debug(f"    Canal existente: {channel_url[:50]}...")
                 else:
                     channel = RSSChannelModel(
                         url=channel_url,
@@ -112,12 +113,12 @@ async def load_rss_sources():
                     )
                     db.add(channel)
                     total_channels += 1
-                    logger.debug(f"    ✓ Canal añadido: {channel_url[:50]}...")
+                    logger.debug(f"    Canal: {channel_url[:50]}...")
             
             await db.commit()
         
-        logger.info(f"\n✅ {total_channels} canales cargados")
-        logger.info("🎉 Seeding completado exitosamente")
+        logger.info(f"\nCanales: {total_channels} cargados")
+        logger.info("Seeding completado exitosamente")
 
 
 async def main():
@@ -125,9 +126,10 @@ async def main():
     try:
         await load_rss_sources()
     except Exception as e:
-        logger.error(f"❌ Error durante el seeding: {str(e)}")
+        logger.error(f"Error durante seeding: {str(e)}")
         raise
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+

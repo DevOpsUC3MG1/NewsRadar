@@ -1,9 +1,13 @@
 #!/bin/bash
-# scripts/seed.sh
+# scripts/seed.sh - Carga datos iniciales (medios, canales RSS, categorias)
 
-echo "🌱 Ejecutando carga de datos iniciales..."
+set -e
 
-# Ejecutamos el script de python dentro del contenedor de la API
-docker compose exec api python app/seed.py
+echo "Cargando datos iniciales de RSS..."
+echo ""
 
-echo "✅ Proceso de seed completado."
+# Ejecutar seed.py en el contenedor
+docker compose exec -T api python -m app.seed
+
+echo ""
+echo "OK - Seeding completado"
