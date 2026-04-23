@@ -1,0 +1,291 @@
+/* frontend/src/pages/fuentes/fuentes.module.css */
+
+/* ─── WRAPPER ───────────────────────────────────────────────────────────── */
+.wrapper {
+  background-color: #05050A;
+  min-height: calc(100vh - 64px);
+  padding: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pageTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* ─── CARD PRINCIPAL (blanca) ────────────────────────────────────────────── */
+.mainCard {
+  background-color: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ─── HEADER DE CARD ─────────────────────────────────────────────────────── */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e8ee;
+}
+
+.cardHeaderTitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #111118;
+}
+
+/* ─── TABS ───────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  background-color: #f0f0f5;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 22px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+  position: relative;
+}
+
+.tab:hover {
+  color: #111;
+}
+
+.tabActive {
+  background-color: #111118;
+  color: #ffffff;
+}
+
+.tabActive::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background-color: #4db8e8;
+  border-radius: 2px;
+}
+
+/* ─── BODY: SIDEBAR + LISTA ─────────────────────────────────────────────── */
+.cardBody {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── SIDEBAR ────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 20px 18px;
+  border-right: 1px solid #e8e8ee;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.5px solid #d0d0dc;
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-size: 0.9rem;
+  color: #111;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.searchInput::placeholder {
+  color: #aaa;
+}
+
+.searchInput:focus {
+  border-color: #4db8e8;
+}
+
+.sidebarSection {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #111118;
+  margin: 4px 0 2px;
+}
+
+.catList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.catItem {
+  cursor: pointer;
+}
+
+/* ─── CHECKBOX CUSTOM ────────────────────────────────────────────────────── */
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.8px solid #bbb;
+  background: #f5f5fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.checkboxChecked {
+  background-color: #4db8e8;
+  border-color: #4db8e8;
+}
+
+/* ─── PANEL LISTA ────────────────────────────────────────────────────────── */
+.listPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.listScroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* ─── FILA ───────────────────────────────────────────────────────────────── */
+.row {
+  display: flex;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eeeeF4;
+  gap: 16px;
+  transition: background-color 0.12s;
+}
+
+.row:hover {
+  background-color: #f8f8fc;
+}
+
+.rowName {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #111118;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.rowCats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.catBadge {
+  background-color: #4db8e8;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  letter-spacing: 0.01em;
+}
+
+.rowActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ─── BOTONES DE ACCIÓN ──────────────────────────────────────────────────── */
+.actionBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid #d0d0dc;
+  background: #ffffff;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.actionBtn:hover {
+  border-color: #4db8e8;
+  color: #4db8e8;
+  background: #f0faff;
+}
+
+.actionBtnDelete:hover {
+  border-color: #E02020;
+  color: #E02020;
+  background: #fff5f5;
+}
+
+/* ─── FOOTER ─────────────────────────────────────────────────────────────── */
+.listFooter {
+  padding: 14px 24px;
+  border-top: 1px solid #e8e8ee;
+  font-size: 0.82rem;
+  color: #888;
+  text-align: center;
+}
+
+/* ─── EMPTY STATE ────────────────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  color: #aaa;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
+.listScroll::-webkit-scrollbar {
+  width: 6px;
+}
+.listScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.listScroll::-webkit-scrollbar-thumb {
+  background: #d8d8e8;
+  border-radius: 3px;
+}
