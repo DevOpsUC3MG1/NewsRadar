@@ -67,7 +67,7 @@ print("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD, flush=True)
 
 def send_verification_email(to_email: str, token: str) -> None:
     """Envía el correo de verificación de cuenta usando Gmail con contraseña de aplicación."""
-    verification_link = f"{FRONTEND_RESET_URL}?token={token}"  # Ajusta la URL según tu frontend
+    verification_link = f"{FRONTEND_VERIFY_URL}?token={token}"  # Ajusta la URL según tu frontend
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Verifica tu cuenta - NewsRadar"
