@@ -1,0 +1,208 @@
+/* frontend/src/pages/resumen/resumen.module.css */
+
+/* ─── WRAPPER ─────────────────────────────────────────────────────────── */
+.resumenWrapper {
+  background-color: #05050A;
+  min-height: calc(100vh - 64px);
+  padding: 28px 28px 40px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ─── PÁGINA TÍTULO ────────────────────────────────────────────────────── */
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+/* ─── SECCIÓN NUBE ─────────────────────────────────────────────────────── */
+.nubeSection {
+  width: 100%;
+}
+
+.nubeCard {
+  background-color: #111118;
+  border: 1px solid #1e1e2a;
+  border-radius: 14px;
+  padding: 22px 26px 28px;
+}
+
+.nubeTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ccccdd;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 24px;
+}
+
+/* ─── NUBE CONTENIDO ───────────────────────────────────────────────────── */
+.nubeContent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  align-items: center;
+  min-height: 110px;
+}
+
+.nubeWord {
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: default;
+  line-height: 1.2;
+  animation: fadeInWord 0.4s ease both;
+  transition: opacity 0.2s;
+}
+
+.nubeWord:hover {
+  opacity: 1 !important;
+  color: #e0e0ff;
+}
+
+@keyframes fadeInWord {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { /* opacity set inline */ transform: translateY(0); }
+}
+
+.nubeEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  width: 100%;
+}
+
+.nubeEmpty p {
+  color: #444455;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ─── SECCIÓN CATEGORÍAS ───────────────────────────────────────────────── */
+.categoriasSection {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sectionTitle {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.categoriasGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+/* ─── CARD DE CATEGORÍA ────────────────────────────────────────────────── */
+.categoriaCard {
+  background-color: #111118;
+  border: 1px solid #1e1e2a;
+  border-radius: 14px;
+  padding: 20px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.categoriaTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ccccdd;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* ─── ACCENT BAR ───────────────────────────────────────────────────────── */
+.accentBar {
+  display: inline-block;
+  width: 3px;
+  height: 15px;
+  background-color: #E02020;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ─── TAGS ─────────────────────────────────────────────────────────────── */
+.tagsWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag {
+  background: transparent;
+  border: 1px solid #2e2e3e;
+  color: #b0b0c8;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  letter-spacing: 0.02em;
+  font-family: inherit;
+}
+
+.tag:hover {
+  border-color: #555566;
+  color: #e0e0f0;
+  background: #1a1a25;
+}
+
+.tagSelected {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  color: #05050A;
+}
+
+.tagSelected:hover {
+  background-color: #e8e8f0;
+  border-color: #e8e8f0;
+  color: #05050A;
+}
+
+/* ─── SKELETON LOADING ─────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #1a1a25 25%, #252535 50%, #1a1a25 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+.skeletonWord {
+  display: inline-block;
+  height: 18px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .categoriasGrid {
+    grid-template-columns: 1fr;
+  }
+}
