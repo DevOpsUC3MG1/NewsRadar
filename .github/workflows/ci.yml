@@ -30,29 +30,39 @@ jobs:
     # -------------------------
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
         pip install flake8 pytest pytest-cov
 
     # -------------------------
     # LINT
     # -------------------------
     - name: Lint code
-      run: flake8 .
+      run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
     # -------------------------
-    # TESTS + COVERAGE
+    # TESTS + COVERAGE 🔥 (Actualizado)
     # -------------------------
     - name: Run tests with coverage
-      run: pytest --cov=. --cov-report=xml
+      # Usamos --cov=backend para medir solo tu código y --cov-fail-under para asegurar el aprobado
+      run: |
+        pytest backend/ \
+          --cov=backend \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-fail-under=70
 
     # -------------------------
-    # Upload coverage artifact
+    # Upload coverage artifacts (Actualizado)
     # -------------------------
-    - name: Upload coverage
+    - name: Upload coverage reports
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
-        path: coverage.xml
+        # Guardamos tanto el XML para Sonar como la carpeta HTML para el equipo
+        path: |
+          coverage.xml
+          htmlcov/
 
     # -------------------------
     # SONARCLOUD 🔥
