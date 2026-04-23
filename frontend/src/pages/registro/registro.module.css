@@ -1,4 +1,5 @@
 /* registro.module.css */
+
 .pageContainer {
   display: flex;
   flex-direction: column;
@@ -55,7 +56,6 @@
 .formGroup {
   position: relative; /* Esto es clave para que el error se posicione respecto a este div */
   padding-bottom: 20px; /* Reserva el espacio en blanco de antemano para el texto de error */
-  margin-bottom: 15px;
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
@@ -72,7 +72,6 @@
   white-space: normal;
 }
 
-/* --- AQUÍ ESTÁN TUS CAMBIOS --- */
 .input {
   width: 100%;
   box-sizing: border-box;
@@ -94,8 +93,6 @@
   position: absolute; /* Saca el texto del flujo normal (ya no empuja nada) */
   bottom: 0; /* Lo pega abajo del todo del formGroup, en el padding que reservamos */
   left: 0;
-  color: #e74c3c;
-  font-size: 0.8rem;
   color: #e74c3c;
   font-size: 0.75rem;
   margin-top: 2px;
@@ -151,4 +148,72 @@
 
 .loginButton:hover {
   background-color: rgba(78, 141, 245, 0.1);
+}
+
+
+/* --- ESTILOS PARA EL MODAL DE ÉXITO --- */
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px); /* Le da un toque premium difuminando el fondo */
+}
+
+.modalContent {
+  background-color: #FFFFFF;
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  animation: popIn 0.3s ease-out forwards;
+}
+
+.successIcon {
+  background-color: #2ecc71;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  margin: 0 auto 20px auto;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  color: #09090F;
+  margin: 0 0 15px 0;
+  letter-spacing: 0.5px;
+}
+
+.modalText {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 30px;
+}
+
+.modalButton {
+  background-color: #09090F;
+  padding: 16px 20px;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }

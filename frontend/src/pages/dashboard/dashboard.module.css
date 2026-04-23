@@ -1,0 +1,72 @@
+/* frontend/src/pages/dashboard/dashboard.module.css */
+
+.dashboardWrapper {
+  background-color: #05050A;
+  /* Solución al scroll: Restamos la altura estimada del header (ej: 64px) */
+  /* Si no sabes la altura exacta, puedes usar min-height: auto; */
+  min-height: calc(100vh - 64px);
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.topRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.bottomRow {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 20px;
+  flex-grow: 1; /* Esto ayuda a que la fila de abajo use el espacio sobrante */
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 15px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centra el contenido verticalmente */
+  min-height: 140px;      /* Contenedores de arriba más altos */
+}
+
+.cardTitle {
+  color: #666;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.metricValue {
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #05050A;
+  line-height: 1;
+}
+
+/* Estilos para los porcentajes */
+.percentage {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.pos { color: #26885C; }     /* Verde */
+.neg { color: #E02020; }     /* Rojo */
+.neutral { color: #606065; } /* Gris */
+
+.largeCard {
+  min-height: 450px;
+}
+
+.chartContainer {
+  width: 100%;
+  flex-grow: 1;
+  margin-top: 15px;
+}

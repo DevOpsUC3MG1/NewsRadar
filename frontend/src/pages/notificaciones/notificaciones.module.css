@@ -1,0 +1,254 @@
+/* frontend/src/pages/notifications/notifications.module.css */
+
+.pageWrapper {
+  background-color: #05050A;
+  min-height: calc(100vh - 64px); /* Permite que la página crezca y use el scroll del navegador */
+  padding: 30px 40px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+}
+
+.centerContainer {
+  width: 100%;
+  max-width: 850px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- CABECERA --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #1f2122;
+  padding-bottom: 15px;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 20px; 
+  align-items: center;
+}
+
+.textButton {
+  background: none;
+  border: none;
+  color: #4e8df5;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.textButton:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.clearButton {
+  background: none;
+  border: 1px solid #333;
+  color: #e74c3c; 
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.clearButton:hover {
+  background-color: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+/* --- LISTA DE NOTIFICACIONES --- */
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-bottom: 40px; /* Espacio extra al final de la página */
+}
+
+/* --- TARJETAS --- */
+.notificationCard {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.notificationCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.unread {
+  background-color: #f4f8ff;
+  border-left: 4px solid #4e8df5;
+}
+
+.unreadDot {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 10px;
+  height: 10px;
+  background-color: #e74c3c;
+  border-radius: 50%;
+}
+
+.iconContainer {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.notificationContent {
+  flex-grow: 1;
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.notifTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #05050A;
+  margin: 0;
+}
+
+.notifDate {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.notifMessage {
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* --- BOTÓN MOSTRAR MÁS --- */
+.loadMoreContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.loadMoreButton {
+  background-color: transparent;
+  color: #ffffff;
+  border: 1px solid #333;
+  padding: 12px 30px;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loadMoreButton:hover {
+  background-color: #ffffff;
+  color: #05050A;
+  border-color: #ffffff;
+}
+
+/* --- ESTADOS: CARGA (SKELETONS) --- */
+.skeleton {
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.skeletonTitle {
+  height: 20px;
+  width: 40%;
+  margin-bottom: 10px;
+}
+
+.skeletonText {
+  height: 15px;
+  width: 80%;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --- ESTADOS: VACÍO Y ERROR --- */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: #888;
+  background-color: #111116; 
+  border: 1px dashed #333;
+  border-radius: 15px;
+  margin-top: 20px;
+}
+
+.emptyIcon {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+  opacity: 0.3;
+}
+
+.emptyState p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.errorContainer {
+  color: white;
+  text-align: center;
+  margin-top: 50px;
+}
+
+.actionButton {
+  margin-top: 20px;
+  background-color: #4e8df5;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}

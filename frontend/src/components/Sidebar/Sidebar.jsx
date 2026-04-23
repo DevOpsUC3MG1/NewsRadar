@@ -12,7 +12,7 @@ export default function Sidebar() {
   const { logout } = useContext(AuthContext);
 
   const menuItems = [
-    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/app' },
+    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
     { label: 'Resumen', icon: <PieChart size={20} />, path: '/resumen' },
     { label: 'Alertas', icon: <Bell size={20} />, path: '/alertas' },
     { label: 'Fuentes y RSS', icon: <Rss size={20} />, path: '/fuentes' },
@@ -23,7 +23,7 @@ export default function Sidebar() {
       notifications: 3
     },
     { divider: true },
-    { label: 'Mi perfil', icon: <User size={20} />, path: '/perfil' },
+    { label: 'Mi perfil', icon: <User size={20} />, path: '/profile' },
   ];
 
   return (

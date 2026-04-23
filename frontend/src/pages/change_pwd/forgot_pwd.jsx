@@ -1,4 +1,4 @@
-// verify_acc.jsx
+// forgot_pwd.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,10 +7,10 @@ import Input from '../../components/input';
 import Button from '../../components/button';
 import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
 
-import styles from './verify_acc.module.css';
+import styles from './forgot_pwd.module.css';
 
-function VerifyAcc() {
-    // 1. Estados para manejar el correo y la interfaz
+function ChangePwd() {
+    // 1. Creamos los estados para manejar los datos y la interfaz
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -18,11 +18,11 @@ function VerifyAcc() {
 
     const navigate = useNavigate();
 
-    // 2. Función para reenviar el correo de verificación
+    // 2. Función que se ejecuta al hacer clic en "Continuar"
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Evita que la página recargue el navegador
 
-        // Limpiamos mensajes previos
+        // Limpiamos mensajes anteriores antes de enviar
         setMessage('');
         setError('');
 
@@ -31,33 +31,34 @@ function VerifyAcc() {
             return;
         }
 
-        setIsLoading(true);
+        setIsLoading(true); // Activamos estado de carga
 
         try {
-            // CAMBIO CLAVE: Enviamos el email como parámetro de consulta (?payload=...)
-            // y eliminamos el 'body' de la configuración del fetch.
-            const url = `http://localhost:8000/api/v1/auth/resend-verification?payload=${encodeURIComponent(email)}`;
-
-            const response = await fetch(url, {
+            // 3. Hacemos la petición POST a tu API (FastAPI)
+            const response = await fetch('http://localhost:8000/api/v1/auth/forgot-password', {
                 method: 'POST',
                 headers: {
-                    'Accept': 'application/json',
-                    // Ya no necesitamos Content-Type porque no enviamos body
-                }
+                    'Content-Type': 'application/json',
+                },
+                // El backend espera un 'payload' con la propiedad 'email'
+                body: JSON.stringify({ email: email }),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                setMessage(data.message || 'Se ha enviado un nuevo enlace de verificación a tu correo.');
-                setEmail('');
+                // Éxito: Mostramos el mensaje que nos devuelve FastAPI
+                setMessage(data.message);
+                setEmail(''); // Opcional: vaciamos el input
             } else {
+                // Error desde el backend (ej. 422 Unprocessable Entity si el email es inválido)
                 setError(data.detail || 'Ocurrió un error al procesar tu solicitud.');
             }
         } catch (err) {
+            // Error de red (ej. el backend está apagado)
             setError('No se pudo conectar con el servidor. Inténtalo de nuevo más tarde.');
         } finally {
-            setIsLoading(false);
+            setIsLoading(false); // Apagamos estado de carga
         }
     };
 
@@ -66,23 +67,25 @@ function VerifyAcc() {
             <HeaderNoUser />
 
             <main className={styles.mainContent}>
-                <div className={styles.accCard}>
+                <div className={styles.pwdCard}>
 
                     {/* Sección 1: Cabecera oscura */}
                     <div className={styles.darkHeader}>
-                        <h1 className={styles.titleText}>VERIFICA TU CUENTA</h1>
+                        <h1 className={styles.titleText}>RECUPERA TU CONTRASEÑA</h1>
                         <p className={styles.subtitleText}>Ingresa tu correo electrónico</p>
                     </div>
 
                     {/* Sección 2: Formulario de la tarjeta */}
                     <div className={styles.lightForm}>
+                        {/* 4. Añadimos el evento onSubmit al form */}
                         <form className={styles.formElement} onSubmit={handleSubmit}>
 
-                            {/* CAMPO EMAIL */}
+                            {/* CAMPO EMAIL REUTILIZADO */}
                             <Input
                                 label="CORREO ELECTRÓNICO"
                                 type="email"
                                 id="email"
+                                // 5. Conectamos el input con el estado
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className={styles.formInput}
@@ -91,10 +94,10 @@ function VerifyAcc() {
                             />
 
                             <p className={styles.instructionText}>
-                                Te enviaremos un correo electrónico con las instrucciones para verificar tu cuenta.
+                                Te envíaremos un correo electrónico con las instrucciones para restablecer tu contraseña.
                             </p>
 
-                            {/* Mensajes de feedback visual */}
+                            {/* 6. Mostramos los mensajes de feedback al usuario */}
                             {error && (
                                 <p style={{ color: '#d93025', textAlign: 'center', fontSize: '14px', marginBottom: '10px' }}>
                                     {error}
@@ -106,22 +109,22 @@ function VerifyAcc() {
                                 </p>
                             )}
 
-                            {/* BOTÓN CONTINUAR */}
+                            {/* BOTÓN REUTILIZADO */}
                             <Button
                                 type="submit"
                                 className={styles.continueButton}
-                                disabled={isLoading}
+                                disabled={isLoading} // Deshabilitamos si está cargando
                             >
                                 {isLoading ? 'ENVIANDO...' : 'CONTINUAR'}
                             </Button>
 
                         </form>
 
-                        <div className={styles.accFooter}>
-                            <p className={styles.footerText}>¿Lo quieres hacer en otro momento?</p>
+                        <div className={styles.pwdFooter}>
+                            <p className={styles.footerText}>¿Te acuerdas de la contraseña?</p>
                             <button
                                 type="button"
-                                className={styles.backButton}
+                                className={styles.loginButton}
                                 onClick={() => navigate(-1)}
                             >
                                 Volver
@@ -134,4 +137,4 @@ function VerifyAcc() {
     );
 }
 
-export default VerifyAcc;
+export default ChangePwd;

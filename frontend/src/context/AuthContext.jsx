@@ -40,16 +40,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ACTUALIZADO: Solo registra al usuario, sin hacer auto-login
   const registerUser = async (userData) => {
-    // Registramos en la API
     const newUser = await authService.register(userData);
-    
-    // Auto-login silencioso para conseguir el token
-    await authService.login(userData.email, userData.password);
-
-    // Guardamos el usuario
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
     return newUser;
   };
 
