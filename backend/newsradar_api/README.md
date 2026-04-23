@@ -30,6 +30,17 @@ uvicorn app.main:app --reload
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
 
+## Configuración de email
+
+Para enviar correos de verificación y recuperación de contraseña con Gmail, define estas variables de entorno:
+
+```bash
+export GMAIL_SENDER="tu_correo@gmail.com"
+export GMAIL_APP_PASSWORD="tu_contraseña_de_aplicación"
+export FRONTEND_VERIFY_URL="http://localhost:3000/verify"
+export FRONTEND_RESET_URL="http://localhost:3000/reset-password"
+```
+
 ## Autenticación
 
 1. Usuario semilla en arranque:

@@ -1,3 +1,5 @@
+import pytest
+import os
 # backend/tests/test_auth.py
 
 def test_auth_01_registro_exitoso(client, db_engine):
@@ -50,3 +52,12 @@ def test_login_exitoso(client, load_valid_users):
     # 3. Comprobamos que devuelve un Token
     assert response.status_code == 200
     assert "access_token" in response.json()
+
+@pytest.fixture
+def mock_rss_xml():
+    """Lee el archivo XML falso para simular una respuesta de un feed RSS"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    xml_path = os.path.join(base_dir, "fixtures", "feed_falso.xml")
+    
+    with open(xml_path, "r", encoding="utf-8") as file:
+        return file.read()
