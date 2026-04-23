@@ -1,74 +1,280 @@
-## #ADR-005: Estrategia de Contenerización y CI/CD
-***Estado:*** Aceptado
+# ADR-005: Estrategia de Contenerización y CI/CD
 
-***Contexto:*** El proyecto requiere despliegues "One-Click" en entornos limpios y validación de calidad (>70% cobertura). Además, se necesita agilidad en desarrollo para que los cambios en el código se reflejen sin reconstruir imágenes constantemente.
+## Estado
+Aceptado
 
-***Decisión:*** Se adopta una Arquitectura de Composición de Docker Compose.
+## Contexto
+El proyecto requiere despliegues "One-Click" en entornos limpios y validación de calidad (>70% cobertura). Además, se necesita agilidad en desarrollo para que los cambios en el código se reflejen sin reconstruir imágenes constantemente.
 
-**docker-compose.yml (Base)**: Define la topología del sistema (Bases de datos, API, Frontend). Usa build para empaquetar el código. Es el estándar para el Pipeline de GitHub y la competición.
+## Decisión
+Se adopta una Arquitectura de Composición de Docker Compose con tres archivos de configuración:
 
-**docker-compose.dev.yml (Desarrollo)**: Aplica un override sobre el base. Inyecta Volumes (bind mounts) para habilitar el Hot-Reload en local.
+- **docker-compose.yml**: Configuración base de producción con 4 servicios
+- **docker-compose.dev.yml**: Overrides para desarrollo con volúmenes
+- **docker-compose.test.yml**: Configuración para tests (opcional)
 
-**Contenedores Efímeros**: El CI/CD usará contenedores que se destruyen tras pasar los tests.
+## Servicios del Sistema
 
+### 1. PostgreSQL 15-Alpine (db_postgres)
+```yaml
+image: postgres:15-alpine
+container_name: newsradar_postgres
+ports: 5432:5432
+environment:
+  - POSTGRES_USER: ${POSTGRES_USER}
+  - POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  - POSTGRES_DB: ${POSTGRES_DB}
+volumes:
+  - postgres_data:/var/lib/postgresql/data
+healthcheck: Comprueba que el servicio está listo
+```
 
+**Responsabilidades:**
+- Almacenar usuarios, roles, alertas, fuentes RSS, notificaciones
+- Gestionar integridad referencial
+- Ejecutar migraciones Alembic
 
-***Consecuencias:***
-* **Positivas:** Garantiza que el código en la rama `main` siempre compila, supera los tests y es desplegable de forma idéntica en cualquier máquina. Centraliza las métricas de calidad.
+### 2. MongoDB 7.0 (db_mongodb)
+```yaml
+image: mongo:7.0
+container_name: newsradar_mongodb
+ports: 27017:27017
+environment:
+  - MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+  - MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+volumes:
+  - mongodb_data:/data/db
+```
 
-* **Negativas:** Requiere gestionar correctamente el archivo .env para evitar conflictos de credenciales entre entornos.
+**Responsabilidades:**
+- Almacenar noticias indexadas (colección `news`)
+- Búsqueda full-text por categoría IPTC
+- Metadatos y sentimiento de noticias
 
+### 3. API Backend (newsradar_api)
+```dockerfile
+# backend/Dockerfile
+FROM python:3.12-slim
 
+WORKDIR /app
 
-***Guía de Dockerfiles***
-Para que el sistema funcione, necesitas dos Dockerfiles. Aquí te explico qué hace cada uno para que entiendas la lógica:
+# Instalar dependencias del sistema para psycopg2 (driver PostgreSQL)
+RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
-* A. Backend (Python/FastAPI)
-Este archivo vive en /backend/Dockerfile. Su función es preparar el entorno de Python y copiar tu lógica de NewsRadar.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-* B. Frontend (React)
-Este archivo vive en /frontend/Dockerfile.
+COPY . .
 
+CMD ["uvicorn", "newsradar_api.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
 
+**Stack:**
+- Python 3.12 slim (minimalista, ~150MB)
+- FastAPI con uvicorn
+- SQLAlchemy 2.0 async + Alembic
+- Motor para MongoDB async
+- Pydantic para validación
 
-***Entendiendo la Comunicación (Diagrama de Flujo)***
-Para entender cómo encaja todo cuando ejecutas tus scripts, imagina este flujo:
+**Endpoints expuestos:**
+- API REST: `http://localhost:8000`
+- Swagger UI: `http://localhost:8000/docs`
+- OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-Red Interna: Docker crea una red virtual. La API no busca la base de datos en localhost, la busca por su nombre de servicio: db_postgres.
+**Depends on:**
+- `db_postgres` (healthcheck: service_healthy)
+- `db_mongodb` (service_started)
 
-Persistencia: Los Volumes (postgres_data) aseguran que si borras el contenedor, las noticias y usuarios no desaparezcan.
+### 4. Frontend (newsradar_frontend)
+```dockerfile
+# frontend/Dockerfile
+FROM node:20-alpine
 
-Sincronización: En desarrollo, el Volume de código (./backend:/app) hace que tu VSCode y el contenedor sean "el mismo espejo".
+WORKDIR /app
 
+COPY package*.json ./
 
+RUN npm install
 
-* ***Ejemplo Práctico:*** Al hacer `git push`, el pipeline de GitHub Actions levantará contenedores efímeros, ejecutará `pytest`, medirá la cobertura y enviará el reporte a SonarCloud. Solo si todo está en verde, se generará la imagen Docker definitiva.
+COPY . .
 
-Resumen de comandos para el equipo
+CMD ["npm", "run", "dev", "--", "--host"]
+```
 
-Entiendo, a veces el formato de tablas puede fallar dependiendo de dónde lo visualices. Aquí tienes la explicación detallada de cada comando en formato de texto claro, para que sepas exactamente qué ocurre "detrás de las cámaras" en cada caso:
+**Stack:**
+- Node.js 20 Alpine
+- React.js 18
+- Vite (bundler rápido)
+- Componentes reutilizables
+- i18n (ES/EN)
 
-1. El comando para Programar (Día a día)
-Comando: *docker compose -f docker-compose.yml -f docker-compose.dev.yml up*
+**Expuesto en:**
+- `http://localhost:5173`
 
-Archivos que usa: Combina el archivo Base (servicios) con el de Desarrollo y los Volumes.
+**Depends on:**
+- `api` (se comunica vía http://api:8000)
 
-Qué hace: Es el que usarás el 90% del tiempo en VSCode. Al sumar el archivo .dev.yml, Docker conecta tus carpetas locales con el contenedor.
+## Arquitectura de Red
 
-Resultado: Activa el Hot-reload. Si cambias una línea de código en Python o un componente en React y guardas, el sistema se actualiza solo sin que tengas que reiniciar nada.
+```
+Internet
+    ↓
+[Host Machine]
+    ↓
+Docker Bridge Network (newsradar_network)
+    ├── db_postgres (puerto 5432 interno)
+    ├── db_mongodb (puerto 27017 interno)
+    ├── newsradar_api (puerto 8000 → localhost:8000)
+    └── newsradar_frontend (puerto 5173 → localhost:5173)
+```
 
-2. El comando para Simular la Competición (Prueba de fuego)
-Comando:*docker compose up --build*
+**Características:**
+- Los servicios se comunican por nombre DNS (ej: `db_postgres` en lugar de `localhost`)
+- Solo los puertos especificados en `ports:` están expuestos al host
+- Variables de entorno inyectadas desde `.env`
 
-Archivos que usa: Solo el archivo docker-compose.yml (la "Caja cerrada").
+## Volúmenes Persistentes
 
-Qué hace: Ignora tus carpetas locales y construye imágenes "estáticas" con el código que haya en ese momento. Es exactamente lo que hará el profesor el día 25 de mayo.
+| Volumen | Servicio | Propósito |
+|---------|----------|-----------|
+| `postgres_data` | db_postgres | Almacenamiento de BD relacional |
+| `mongodb_data` | db_mongodb | Almacenamiento de BD documental |
+| `./backend:/app` (dev) | newsradar_api | Hot-reload en desarrollo |
+| `./frontend:/app` (dev) | newsradar_frontend | Hot-reload en desarrollo |
 
-Resultado: Te sirve para verificar que el sistema es autónomo. Si aquí algo falla (por ejemplo, falta una librería en el requirements.txt), es porque el proyecto no está listo para entregarse aunque en "modo programar" te funcione.
+## Configuración por Entorno
 
-3. El comando para Limpiar Todo (Reset)
-Comando: *docker compose down -v*
+### Desarrollo (Día a día)
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
 
-Qué hace: Detiene los contenedores y los borra. La clave es la -v: esto borra también los volúmenes (los datos guardados).
+**Características:**
+- Volúmenes bind-mount para hot-reload
+- uvicorn en modo reload
+- npm run dev con watch
+- Acceso fácil a logs
+- Cambios de código reflejados instantáneamente
 
-Resultado: Limpieza total. Es como formatear el sistema. Úsalo cuando quieras vaciar la base de datos de PostgreSQL y MongoDB para empezar de cero con el script de seed.sh.
+### Testing
+```bash
+docker compose -f docker-compose.test.yml up
+pytest backend/tests/ --cov=newsradar_api
+```
+
+**Características:**
+- Base de datos de test limpia
+- Contenedores efímeros
+- Reporte de cobertura
+- CI/CD automation
+
+### Producción (Competición)
+```bash
+docker compose up --build
+```
+
+**Características:**
+- Imágenes compiladas y optimizadas
+- Sin volúmenes bind-mount
+- Código estático copiado
+- Réplica exacta de qué entregará el jurado
+
+## Variables de Entorno (.env)
+
+```bash
+# PostgreSQL
+POSTGRES_USER=newsradar_user
+POSTGRES_PASSWORD=secure_password_123
+POSTGRES_DB=newsradar_db
+DATABASE_URL=postgresql+asyncpg://newsradar_user:secure_password_123@db_postgres:5432/newsradar_db
+
+# MongoDB
+MONGO_INITDB_ROOT_USERNAME=mongo_user
+MONGO_INITDB_ROOT_PASSWORD=mongo_password_123
+MONGODB_URL=mongodb://mongo_user:mongo_password_123@db_mongodb:27017
+
+# Email (Gmail)
+GMAIL_SENDER=tu_correo@gmail.com
+GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+FRONTEND_RESET_URL=http://localhost:5173/reset-password
+FRONTEND_VERIFY_URL=http://localhost:5173/verify
+```
+
+## Healthcheck
+
+Solo PostgreSQL incluye verificación de salud:
+
+```yaml
+healthcheck:
+  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+  interval: 5s
+  timeout: 5s
+  retries: 5
+```
+
+**Propósito:** Garantizar que la API espera a PostgreSQL antes de iniciar
+
+## Comandos Esenciales
+
+| Comando | Propósito | Entorno |
+|---------|-----------|---------|
+| `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` | Iniciar en desarrollo con hot-reload | Dev |
+| `docker compose up --build` | Simular producción (competición) | Prod |
+| `docker compose down -v` | Detener y limpiar volúmenes (reset total) | Todos |
+| `docker compose logs -f api` | Ver logs del backend en tiempo real | Todos |
+| `docker compose exec api bash` | Acceso shell al contenedor API | Dev |
+| `docker compose ps` | Listar servicios en ejecución | Todos |
+
+## Flujo de Despliegue
+
+### 1. Desarrollo Local
+```
+git commit → docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+↓
+Hot-reload → Cambios se ven instantáneamente
+```
+
+### 2. Pull Request
+```
+git push → GitHub Actions Pipeline
+↓
+docker compose -f docker-compose.test.yml up
+↓
+pytest --cov=newsradar_api --cov-report=xml
+↓
+Cobertura ≥ 70%? ✅ → Merge permitido | ❌ → Merge bloqueado
+```
+
+### 3. Competición (Día de Entrega)
+```
+git clone → docker compose up --build
+↓
+Esperamos 30 segundos (healthcheck)
+↓
+Accedemos a http://localhost:5173 y http://localhost:8000/docs
+↓
+Jurado prueba casos de uso
+```
+
+## Consecuencias
+
+### Positivas
+✅ **Consistencia:** Código que funciona en dev funciona idéntico en prod
+✅ **Aislamiento:** Cada desarrollador tiene su propia instancia sin conflictos
+✅ **One-Click:** Un único comando levanta todo el sistema
+✅ **Reproducibilidad:** El jurado verá exactamente lo que probaste
+✅ **Escalabilidad:** Fácil añadir más servicios (cache Redis, worker Celery, etc.)
+
+### Negativas
+⚠️ **Gestión .env:** Cada desarrollador debe configurar variables correctamente
+⚠️ **Curva de aprendizaje:** Docker requiere comprensión de redes y volúmenes
+⚠️ **Consumo de recursos:** 4 contenedores pueden usar 2-3GB de RAM
+⚠️ **Debugging:** Logs distribuidos requieren `docker compose logs`
+
+## Mejoras Futuras
+
+1. **Redis:** Cache para tokens y sesiones
+2. **Nginx:** Reverse proxy para producción real
+3. **Prometheus + Grafana:** Monitorización de métricas
+4. **Worker Celery:** Procesamiento asincrónico de RSS
+5. **Backup automático:** Volumen de PostgreSQL snapshot diario
