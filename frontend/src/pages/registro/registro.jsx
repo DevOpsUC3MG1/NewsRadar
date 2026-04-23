@@ -27,8 +27,11 @@ const registerSchema = z.object({
 export default function Registro() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
-  const navigate = useNavigate();
   
+  // NUEVO: Estado para controlar si mostramos la ventana de éxito
+  const [showSuccess, setShowSuccess] = useState(false); 
+  
+  const navigate = useNavigate();
   const { registerUser } = useContext(AuthContext);
 
   const {
@@ -45,7 +48,6 @@ export default function Registro() {
     setIsLoading(true);
 
     try {
-      // Adaptado exactamente a UserCreate de main.py
       const apiPayload = {
         email: data.email,
         first_name: data.nombre, 
@@ -55,11 +57,10 @@ export default function Registro() {
         role_ids: [] 
       };
 
-      // Esto registra y hace auto-login
       await registerUser(apiPayload);
       
-      // Ya está logueado, lo mandamos al panel principal (cambia la ruta si es distinta)
-      navigate('/'); 
+      // En lugar de navegar de golpe, mostramos la ventana emergente
+      setShowSuccess(true);
       
     } catch (err) {
       if (err.response && err.response.status === 409) {
@@ -87,7 +88,6 @@ export default function Registro() {
             <form onSubmit={handleSubmit(onSubmitForm)}>
               
               <div className={styles.gridRow}>
-                {/* CAMPO NOMBRE */}
                 <Input
                   label="NOMBRE"
                   className={styles.input}
@@ -96,7 +96,6 @@ export default function Registro() {
                   {...register('nombre')}
                 />
                 
-                {/* CAMPO APELLIDOS */}
                 <Input
                   label="APELLIDOS"
                   className={styles.input}
@@ -106,7 +105,6 @@ export default function Registro() {
                 />
               </div>
 
-              {/* CAMPO ORGANIZACIÓN */}
               <Input
                 label="ORGANIZACIÓN"
                 className={styles.input}
@@ -115,7 +113,6 @@ export default function Registro() {
                 {...register('organizacion')}
               />
 
-              {/* CAMPO EMAIL */}
               <Input
                 label="EMAIL"
                 type="email"
@@ -126,7 +123,6 @@ export default function Registro() {
               />
 
               <div className={styles.gridRow}>
-                {/* CAMPO CONTRASEÑA */}
                 <Input
                   label="CONTRASEÑA"
                   type="password"
@@ -136,7 +132,6 @@ export default function Registro() {
                   {...register('password')}
                 />
                 
-                {/* CAMPO CONFIRMAR CONTRASEÑA */}
                 <Input
                   label="CONFIRMAR CONTRASEÑA"
                   type="password"
@@ -153,7 +148,6 @@ export default function Registro() {
                 </div>
               )}
 
-              {/* BOTÓN REUTILIZADO */}
               <Button 
                 type="submit" 
                 className={styles.submitButton} 
@@ -174,6 +168,26 @@ export default function Registro() {
           </div>
         </div>
       </main>
+
+      {/* NUEVO: Ventana emergente (Modal) de éxito */}
+      {showSuccess && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.successIcon}>✓</div>
+            <h2 className={styles.modalTitle}>¡Registro Completado!</h2>
+            <p className={styles.modalText}>
+              Tu cuenta ha sido creada correctamente. Ya puedes iniciar sesión en Newsradar para comenzar.
+            </p>
+            <Button 
+              className={styles.modalButton} 
+              onClick={() => navigate('/')}
+            >
+              IR A INICIAR SESIÓN
+            </Button>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 }
