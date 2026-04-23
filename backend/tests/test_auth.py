@@ -1,4 +1,5 @@
 import pytest
+import os
 # backend/tests/test_auth.py
 
 def test_auth_01_registro_exitoso(client, db_engine):
