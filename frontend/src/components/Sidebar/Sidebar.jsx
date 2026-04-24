@@ -13,7 +13,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
-    { label: 'Resumen', icon: <PieChart size={20} />, path: '/resumen' },
+    { label: 'Nubes', icon: <PieChart size={20} />, path: '/nubes' },
     { label: 'Alertas', icon: <Bell size={20} />, path: '/alertas' },
     { label: 'Fuentes y RSS', icon: <Rss size={20} />, path: '/fuentes' },
     {
