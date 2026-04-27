@@ -1,4 +1,91 @@
 {
-  "welcome": "Welcome",
-  "hello": "Hello {{name}}!"
+  "login": {
+    "subtitleLine1": "Monitoring system for",
+    "subtitleLine2": "news in media",
+    "subtitleLine3": "and official sources",
+    "altImage": "Monitoring illustration",
+    "welcome": "WELCOME",
+    "welcomeSubtitle": "LOG IN AND ACCESS THE CONTENT",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "PASSWORD",
+    "loadingBtn": "LOADING...",
+    "loginBtn": "LOG IN",
+    "forgotPassword": "FORGOT YOUR PASSWORD?",
+    "noAccount": "Don't have an account? Register here",
+    "registerBtn": "Create a new account",
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Must be a valid email format",
+      "passwordMin": "Password must be at least 6 characters",
+      "apiError": "Incorrect credentials or server error. Please try again."
+    }
+  },
+
+  "register": {
+    "title": "CREATE YOUR ACCOUNT",
+    "subtitle": "Register to access NEWSRADAR",
+    "nameLabel": "FIRST NAME",
+    "lastNameLabel": "LAST NAME",
+    "orgLabel": "ORGANIZATION",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "PASSWORD",
+    "confirmPasswordLabel": "CONFIRM PASSWORD",
+    "loadingBtn": "CREATING...",
+    "submitBtn": "CREATE ACCOUNT",
+    "hasAccount": "Already have an account?",
+    "loginLink": "Log in",
+    "errors": {
+      "nameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "orgRequired": "Organization is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "passwordMin": "Must be at least 6 characters",
+      "confirmRequired": "You must confirm the password",
+      "passwordsMismatch": "Passwords do not match",
+      "emailExists": "Email is already registered.",
+      "apiError": "Error creating account. Please try again."
+    },
+    "modal": {
+      "title": "Registration Complete!",
+      "text": "Your account has been successfully created. You can now log in to Newsradar to begin.",
+      "button": "GO TO LOGIN"
+    }
+  },
+  "changePwd": {
+    "title": "RESET YOUR PASSWORD",
+    "subtitle1": "Create a password with at least 6 letters and numbers.",
+    "subtitle2": "You will need it to log in.",
+    "newPasswordLabel": "NEW PASSWORD",
+    "loadingBtn": "SAVING...",
+    "submitBtn": "CONTINUE",
+    "rememberPwd": "Remember your password?",
+    "loginLink": "Log in",
+    "errors": {
+      "invalidToken": "Invalid or expired link. Please request a new recovery email.",
+      "passwordMin": "The password must be at least 6 characters long.",
+      "default": "An error occurred while processing your request.",
+      "network": "Could not connect to the server. Please try again later."
+    },
+    "modal": {
+      "title": "Password Reset!",
+      "text": "Your password has been successfully changed. You can now log in with your new password.",
+      "button": "Go to login"
+    }
+  },
+  "forgotPwd": {
+    "title": "RECOVER YOUR PASSWORD",
+    "subtitle": "Enter your email address",
+    "emailLabel": "EMAIL ADDRESS",
+    "instructions": "We will send you an email with instructions to reset your password.",
+    "loadingBtn": "SENDING...",
+    "submitBtn": "CONTINUE",
+    "rememberPwd": "Remember your password?",
+    "backBtn": "Go back",
+    "errors": {
+      "emailRequired": "Please enter your email address.",
+      "default": "An error occurred while processing your request.",
+      "network": "Could not connect to the server. Please try again later."
+    }
+  }
 }

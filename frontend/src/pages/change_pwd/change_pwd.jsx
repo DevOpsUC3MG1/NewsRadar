@@ -1,6 +1,7 @@
 // frontend/src/pages/change_pwd/change_pwd.jsx
 import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // Importamos nuestros componentes reutilizables
 import Input from '../../components/input';
@@ -10,17 +11,16 @@ import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
 import styles from './change_pwd.module.css';
 
 function ChangePwd() {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token');
-    
-    // Añadimos useNavigate para redirigir desde el modal
+
     const navigate = useNavigate();
 
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    
-    // NUEVO: Estado para el modal de éxito
+
     const [showSuccess, setShowSuccess] = useState(false);
 
     const handleSubmit = async (e) => {
@@ -28,12 +28,12 @@ function ChangePwd() {
         setError('');
 
         if (!token) {
-            setError('Enlace no válido o expirado. Por favor, solicita un nuevo correo de recuperación.');
+            setError(t('changePwd.errors.invalidToken'));
             return;
         }
 
         if (!password || password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres.');
+            setError(t('changePwd.errors.passwordMin'));
             return;
         }
 
@@ -54,14 +54,14 @@ function ChangePwd() {
             const data = await response.json();
 
             if (response.ok) {
-                // Éxito: Mostramos el modal y limpiamos el input
                 setShowSuccess(true);
                 setPassword('');
             } else {
-                setError(data.detail || 'Ocurrió un error al procesar tu solicitud.');
+                // Si el backend devuelve un error detallado lo mostramos, si no, uno genérico traducido
+                setError(data.detail || t('changePwd.errors.default'));
             }
         } catch (err) {
-            setError('No se pudo conectar con el servidor. Inténtalo de nuevo más tarde.');
+            setError(t('changePwd.errors.network'));
         } finally {
             setIsLoading(false);
         }
@@ -74,21 +74,19 @@ function ChangePwd() {
             <main className={styles.mainContent}>
                 <div className={styles.pwdCard}>
 
-                    {/* Sección 1: Cabecera oscura */}
                     <div className={styles.darkHeader}>
-                        <h1 className={styles.titleText}>RESTABLECE TU CONTRASEÑA</h1>
+                        <h1 className={styles.titleText}>{t('changePwd.title')}</h1>
                         <p className={styles.subtitleText}>
-                            Crea una contraseña que tenga al menos 6 letras y números. <br />
-                            La necesitarás para iniciar sesión.
+                            {t('changePwd.subtitle1')} <br />
+                            {t('changePwd.subtitle2')}
                         </p>
                     </div>
 
-                    {/* Sección 2: Formulario de la tarjeta */}
                     <div className={styles.lightForm}>
                         <form className={styles.formElement} onSubmit={handleSubmit}>
 
                             <Input
-                                label="CONTRASEÑA NUEVA"
+                                label={t('changePwd.newPasswordLabel')}
                                 type="password"
                                 id="password"
                                 value={password}
@@ -98,49 +96,46 @@ function ChangePwd() {
                                 required
                             />
 
-                            {/* Mensajes de error visual */}
                             {error && (
                                 <p style={{ color: '#d93025', textAlign: 'center', fontSize: '14px', marginBottom: '10px', marginTop: '20px' }}>
                                     {error}
                                 </p>
                             )}
 
-                            {/* BOTÓN CONTINUAR */}
                             <Button
                                 type="submit"
                                 className={styles.continueButton}
                                 disabled={isLoading}
                                 style={{ marginTop: '35px' }}
                             >
-                                {isLoading ? 'GUARDANDO...' : 'CONTINUAR'}
+                                {isLoading ? t('changePwd.loadingBtn') : t('changePwd.submitBtn')}
                             </Button>
 
                         </form>
 
                         <div className={styles.pwdFooter}>
-                            <p className={styles.footerText}>¿Te acuerdas de la contraseña?</p>
+                            <p className={styles.footerText}>{t('changePwd.rememberPwd')}</p>
                             <Link className={styles.loginButton} to="/">
-                                Iniciar sesión
+                                {t('changePwd.loginLink')}
                             </Link>
                         </div>
                     </div>
                 </div>
             </main>
 
-            {/* NUEVO: Ventana emergente (Modal) de éxito */}
             {showSuccess && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modalContent}>
                         <div className={styles.successIcon}>✓</div>
-                        <h2 className={styles.modalTitle}>¡Contraseña Restablecida!</h2>
+                        <h2 className={styles.modalTitle}>{t('changePwd.modal.title')}</h2>
                         <p className={styles.modalText}>
-                            Tu contraseña ha sido cambiada correctamente. Ya puedes iniciar sesión con tu nueva clave.
+                            {t('changePwd.modal.text')}
                         </p>
-                        <Button 
-                            className={styles.modalButton} 
+                        <Button
+                            className={styles.modalButton}
                             onClick={() => navigate('/')}
                         >
-                            Ir a iniciar sesión
+                            {t('changePwd.modal.button')}
                         </Button>
                     </div>
                 </div>

@@ -1,4 +1,92 @@
 {
-  "welcome": "Bienvenido",
-  "hello": "¡Hola {{name}}!"
+  "login": {
+    "subtitleLine1": "Sistema de monitorización",
+    "subtitleLine2": "de noticias en medios",
+    "subtitleLine3": "de comunicación y fuentes oficiales",
+    "altImage": "Ilustración de monitorización",
+    "welcome": "BIENVENIDO",
+    "welcomeSubtitle": "INICIE SESIÓN Y ACCEDA AL CONTENIDO",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "CONTRASEÑA",
+    "loadingBtn": "CARGANDO...",
+    "loginBtn": "INICIAR SESIÓN",
+    "forgotPassword": "¿OLVIDASTE TU CONTRASEÑA?",
+    "noAccount": "¿No tienes cuenta? Regístrate aquí",
+    "registerBtn": "Crear una cuenta nueva",
+    "errors": {
+      "emailRequired": "El email es obligatorio",
+      "emailInvalid": "Debe ser un formato de correo válido",
+      "passwordMin": "La contraseña debe tener al menos 6 caracteres",
+      "apiError": "Credenciales incorrectas o error en el servidor. Inténtalo de nuevo."
+    }
+  },
+
+  "register": {
+    "title": "CREA TU CUENTA",
+    "subtitle": "Regístrate para acceder a NEWSRADAR",
+    "nameLabel": "NOMBRE",
+    "lastNameLabel": "APELLIDOS",
+    "orgLabel": "ORGANIZACIÓN",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "CONTRASEÑA",
+    "confirmPasswordLabel": "CONFIRMAR CONTRASEÑA",
+    "loadingBtn": "CREANDO...",
+    "submitBtn": "CREAR CUENTA",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "loginLink": "Iniciar sesión",
+    "errors": {
+      "nameRequired": "El nombre es obligatorio",
+      "lastNameRequired": "Los apellidos son obligatorios",
+      "orgRequired": "La organización es obligatoria",
+      "emailRequired": "El email es obligatorio",
+      "emailInvalid": "Formato de correo no válido",
+      "passwordMin": "Debe tener al menos 6 caracteres",
+      "confirmRequired": "Debes confirmar la contraseña",
+      "passwordsMismatch": "Las contraseñas no coinciden",
+      "emailExists": "El email ya está registrado.",
+      "apiError": "Error al crear la cuenta. Inténtalo de nuevo."
+    },
+    "modal": {
+      "title": "¡Registro Completado!",
+      "text": "Tu cuenta ha sido creada correctamente. Ya puedes iniciar sesión en Newsradar para comenzar.",
+      "button": "IR A INICIAR SESIÓN"
+    }
+  },
+  "changePwd": {
+    "title": "RESTABLECE TU CONTRASEÑA",
+    "subtitle1": "Crea una contraseña que tenga al menos 6 letras y números.",
+    "subtitle2": "La necesitarás para iniciar sesión.",
+    "newPasswordLabel": "CONTRASEÑA NUEVA",
+    "loadingBtn": "GUARDANDO...",
+    "submitBtn": "CONTINUAR",
+    "rememberPwd": "¿Te acuerdas de la contraseña?",
+    "loginLink": "Iniciar sesión",
+    "errors": {
+      "invalidToken": "Enlace no válido o expirado. Por favor, solicita un nuevo correo de recuperación.",
+      "passwordMin": "La contraseña debe tener al menos 6 caracteres.",
+      "default": "Ocurrió un error al procesar tu solicitud.",
+      "network": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    },
+    "modal": {
+      "title": "¡Contraseña Restablecida!",
+      "text": "Tu contraseña ha sido cambiada correctamente. Ya puedes iniciar sesión con tu nueva clave.",
+      "button": "Ir a iniciar sesión"
+    }
+  },
+  "forgotPwd": {
+    "title": "RECUPERA TU CONTRASEÑA",
+    "subtitle": "Ingresa tu correo electrónico",
+    "emailLabel": "CORREO ELECTRÓNICO",
+    "instructions": "Te enviaremos un correo electrónico con las instrucciones para restablecer tu contraseña.",
+    "loadingBtn": "ENVIANDO...",
+    "submitBtn": "CONTINUAR",
+    "rememberPwd": "¿Te acuerdas de la contraseña?",
+    "backBtn": "Volver",
+    "errors": {
+      "emailRequired": "Por favor, introduce tu correo electrónico.",
+      "default": "Ocurrió un error al procesar tu solicitud.",
+      "network": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    }
+  }
 }
+

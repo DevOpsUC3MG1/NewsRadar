@@ -74,3 +74,51 @@ h2 {
 }
 
 
+/* --- PANTALLA DE CARGA (Suspense) --- */
+.initial-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #05050A; /* Mismo fondo oscuro de tu app */
+  color: #FFFFFF;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+}
+
+.spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid rgba(255, 255, 255, 0.1); /* Borde semitransparente */
+  border-left-color: #FFFFFF; /* Borde blanco sólido que gira */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.loader-title {
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin: 0;
+  color: #FFFFFF;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Animaciones */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
