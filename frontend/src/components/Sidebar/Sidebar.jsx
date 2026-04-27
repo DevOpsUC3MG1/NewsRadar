@@ -14,7 +14,7 @@ export default function Sidebar() {
   const menuItems = [
     { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
     { label: 'Nubes', icon: <PieChart size={20} />, path: '/nubes' },
-    { label: 'Alertas', icon: <Bell size={20} />, path: '/alertas' },
+    { label: 'Alertas', icon: <Bell size={20} />, path: '/alerts' },
     { label: 'Fuentes y RSS', icon: <Rss size={20} />, path: '/fuentes' },
     {
       label: 'Notificaciones',

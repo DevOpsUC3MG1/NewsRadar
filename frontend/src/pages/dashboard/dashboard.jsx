@@ -1,31 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, PieChart, Pie, Legend
 } from 'recharts';
+import { ChevronRight, Loader2 } from 'lucide-react'; // Añadimos Loader2
 import styles from './dashboard.module.css';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [newsFilter, setNewsFilter] = useState('7D');
 
-  // Ejemplo práctico: Simulación de llamada a la API
   const fetchDashboardData = async () => {
     setLoading(true);
     setError(false);
     try {
-      // Simulamos un retraso de red de 2 segundos
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulación de carga
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Simulación de respuesta exitosa del backend
       const response = {
-        metrics: [
-          { title: "FUENTES ACTIVAS", value: 12, change: "+12% esta semana", type: "pos" },
-          { title: "NOTICIAS CAPTURADAS", value: "1,420", change: "-1% esta semana", type: "neg" },
-          { title: "ALERTAS CONFIGURADAS", value: 8, change: "Sin cambios", type: "neutral" },
-          { title: "CANALES RSS", value: 104, change: "+8% esta semana", type: "pos" }
-        ],
+        fuentes: { activas: 12, rss: 104 },
+        noticias: { hoy: 145, semana: "1,420" },
+        alertas: 8,
         evolucion: [
           { name: 'Lun', noticias: 45 }, { name: 'Mar', noticias: 52 },
           { name: 'Mie', noticias: 38 }, { name: 'Jue', noticias: 65 },
@@ -50,99 +49,133 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Componente interno para mostrar la carga en las tarjetas pequeñas
-  const SkeletonCard = () => (
-    <div className={styles.card}>
-      <div className={`${styles.skeleton} ${styles.skeletonText}`}></div>
-      <div className={`${styles.skeleton} ${styles.skeletonValue}`}></div>
-    </div>
-  );
+  const CustomPieTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className={styles.customTooltip}>
+          <p className={styles.tooltipLabel}>{`${payload[0].name}`}</p>
+          <p className={styles.tooltipValue}>{`Noticias: ${payload[0].value}`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
-  // 1. Caso de Error
+  // PANTALLA DE ERROR
   if (error) {
     return (
       <div className={styles.dashboardWrapper}>
         <div className={styles.errorContainer}>
-          <h2>¡Ups! Algo salió mal al cargar el dashboard</h2>
-          <p>No pudimos conectar con el servidor de NewsRadar.</p>
-          <button className={styles.retryButton} onClick={fetchDashboardData}>
-            Reintentar conexión
-          </button>
+          <h2>Error al conectar con NewsRadar</h2>
+          <button className={styles.retryButton} onClick={fetchDashboardData}>Reintentar</button>
         </div>
       </div>
     );
   }
 
+  // PANTALLA DE CARGA (Aparece mientras loading es true)
+  if (loading) {
+    return (
+      <div className={styles.dashboardWrapper}>
+        <div className={styles.loadingOverlay}>
+          <Loader2 className={styles.spinner} size={48} />
+          <p>Cargando datos del sistema...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // RENDERIZADO PRINCIPAL
   return (
     <div className={styles.dashboardWrapper}>
+      {/* TÍTULO DE LA PÁGINA */}
+      <h1 className={styles.pageTitle}>DASHBOARD</h1>
 
       {/* FILA 1: KPIs */}
       <div className={styles.topRow}>
-        {loading ? (
-          // 2. Caso de Carga: Mostramos 4 esqueletos
-          [1, 2, 3, 4].map(i => <SkeletonCard key={i} />)
-        ) : (
-          // 3. Caso de Éxito: Datos reales
-          data.metrics.map((item, idx) => (
-            <div className={styles.card} key={idx}>
-              <span className={styles.cardTitle}>{item.title}</span>
-              <span className={styles.metricValue}>{item.value}</span>
-              <span className={`${styles.percentage} ${styles[item.type]}`}>
-                {item.change}
-              </span>
+        {/* FUENTES */}
+        <div className={styles.card}>
+          <span className={styles.cardTitle}>FUENTES</span>
+          <div className={styles.sourcesList}>
+            <div className={styles.sourceItem}>
+              <span>Fuentes activas</span>
+              <span className={styles.sourceValue}>{data.fuentes.activas}</span>
             </div>
-          ))
-        )}
-      </div>
+            <div className={styles.sourceItem}>
+              <span>Canales RSS</span>
+              <span className={styles.sourceValue}>{data.fuentes.rss}</span>
+            </div>
+          </div>
+          <button className={styles.btnNavigate} onClick={() => navigate('/fuentes')}>
+            Ir a fuentes <ChevronRight size={14} />
+          </button>
+        </div>
 
-      {/* FILA 2: Gráficas */}
-      <div className={styles.bottomRow}>
-
-        {/* Gráfica de Evolución */}
-        <div className={`${styles.card} ${styles.largeCard}`}>
-          <span className={styles.cardTitle}>EVOLUCIÓN DE CAPTURA</span>
-          <div className={styles.chartContainer}>
-            {loading ? (
-              <div className={`${styles.skeleton}`} style={{height: '100%'}}></div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.evolucion}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="noticias" fill="#0088FE" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+        {/* NOTICIAS DETECTADAS */}
+        <div className={styles.card}>
+          <span className={styles.cardTitle}>NOTICIAS DETECTADAS</span>
+          <span className={styles.metricValue}>
+            {newsFilter === '1D' ? data.noticias.hoy : data.noticias.semana}
+          </span>
+          <div className={styles.filterContainer}>
+            <button
+              className={newsFilter === '1D' ? styles.filterBtnActive : styles.filterBtnInactive}
+              onClick={() => setNewsFilter('1D')}
+            >1D</button>
+            <button
+              className={newsFilter === '7D' ? styles.filterBtnActive : styles.filterBtnInactive}
+              onClick={() => setNewsFilter('7D')}
+            >7D</button>
           </div>
         </div>
 
-        {/* Gráfica de Categorías */}
+        {/* ALERTAS */}
+        <div className={styles.card}>
+          <span className={styles.cardTitle}>ALERTAS CONFIGURADAS</span>
+          <span className={styles.metricValue}>{data.alertas}</span>
+          <button className={styles.btnNavigate} onClick={() => navigate('/alertas')}>
+            Ir a alertas <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* FILA 2: GRÁFICAS */}
+      <div className={styles.bottomRow}>
+        <div className={`${styles.card} ${styles.largeCard}`}>
+          <span className={styles.cardTitle}>EVOLUCIÓN DE CAPTURA - NOTICIAS POR DÍA</span>
+          <div className={styles.chartContainer}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.evolucion}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} />
+                <Tooltip cursor={{fill: '#f0f0f0'}} />
+                <Bar dataKey="noticias" fill="#0088FE" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className={`${styles.card} ${styles.largeCard}`}>
           <span className={styles.cardTitle}>NOTICIAS POR CATEGORÍA</span>
           <div className={styles.chartContainer}>
-            {loading ? (
-              <div className={`${styles.skeleton}`} style={{height: '100%'}}></div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data.categorias}
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={5}
-                    dataKey="value"
-                    label={({ name }) => name}
-                  >
-                    {data.categorias.map((entry, index) => (
-                      <Cell key={index} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index % 4]} />
-                    ))}
-                  </Pie>
-                  <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data.categorias}
+                  innerRadius={60}
+                  outerRadius={85}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {data.categorias.map((entry, index) => (
+                    <Cell key={index} fill={['#0E0E1D', '#4CC9F0', '#B5179E', '#7209B7'][index % 4]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomPieTooltip />} />
+                <Legend verticalAlign="bottom" />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
