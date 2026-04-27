@@ -87,6 +87,143 @@
       "default": "Ocurrió un error al procesar tu solicitud.",
       "network": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
     }
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "clouds": "Nubes",
+    "alerts": "Alertas",
+    "sources": "Fuentes y RSS",
+    "notifications": "Notificaciones",
+    "profile": "Mi perfil",
+    "logout": "Cerrar sesión"
+  },
+  "dashboard": {
+    "title": "DASHBOARD",
+    "loading": "Cargando datos del sistema...",
+    "errorTitle": "Error al conectar con NewsRadar",
+    "retryBtn": "Reintentar",
+    "sourcesCard": {
+      "title": "FUENTES",
+      "active": "Fuentes activas",
+      "rss": "Canales RSS",
+      "goBtn": "Ir a fuentes"
+    },
+    "newsCard": {
+      "title": "NOTICIAS DETECTADAS"
+    },
+    "alertsCard": {
+      "title": "ALERTAS CONFIGURADAS",
+      "goBtn": "Ir a alertas"
+    },
+    "charts": {
+      "evolutionTitle": "EVOLUCIÓN DE CAPTURA - NOTICIAS POR DÍA",
+      "categoriesTitle": "NOTICIAS POR CATEGORÍA",
+      "newsLabel": "Noticias: ",
+      "news": "Noticias"
+    },
+    "days": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mié",
+      "thu": "Jue",
+      "fri": "Vie",
+      "sat": "Sáb",
+      "sun": "Dom"
+    },
+    "categories": {
+      "politics": "Política",
+      "economy": "Economía",
+      "health": "Salud",
+      "tech": "Tecno"
+    }
+  },
+  "userProfile": {
+    "personalInfo": {
+      "title": "Información Personal",
+      "first_name": "NOMBRE",
+      "last_name": "APELLIDOS",
+      "organization": "ORGANIZACIÓN",
+      "email": "CORREO ELECTRÓNICO"
+    },
+    "actions": {
+      "edit": "Editar",
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "roles": {
+      "title": "Roles y Permisos",
+      "role_1": "Gestor de alertas",
+      "role_2": "Lector"
+    },
+    "security": {
+      "title": "Seguridad",
+      "changePassword": "Cambiar Contraseña",
+      "verifyEmail": "Verificar Email",
+      "deleteAccount": "Eliminar Cuenta"
+    },
+    "deleteModal": {
+      "title": "¿Está seguro de eliminar la cuenta?",
+      "warning": "Esta acción no se puede deshacer. Todos tus datos y alertas serán borrados permanentemente.",
+      "confirmText": "Para confirmar, escribe tu correo electrónico:",
+      "placeholder": "Escribe tu correo aquí...",
+      "keepBtn": "MANTENER",
+      "deletingBtn": "BORRANDO...",
+      "deleteBtn": "BORRAR CUENTA",
+      "errors": {
+        "emailMismatch": "El correo electrónico no coincide.",
+        "noUserId": "Error: No se ha encontrado el ID del usuario.",
+        "apiError": "Error al eliminar la cuenta. Inténtalo de nuevo."
+      }
+    }
+  },
+  "verifyAcc": {
+    "title": "VERIFICA TU CUENTA",
+    "subtitle": "Ingresa tu correo electrónico",
+    "emailLabel": "CORREO ELECTRÓNICO",
+    "instruction": "Te enviaremos un correo electrónico con las instrucciones para verificar tu cuenta.",
+    "buttonSending": "ENVIANDO...",
+    "buttonContinue": "CONTINUAR",
+    "footerQuestion": "¿Lo quieres hacer en otro momento?",
+    "backBtn": "Volver",
+    "errors": {
+      "emptyEmail": "Por favor, introduce tu correo electrónico.",
+      "defaultError": "Ocurrió un error al procesar tu solicitud.",
+      "networkError": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    },
+    "successDefault": "Se ha enviado un nuevo enlace de verificación a tu correo."
+  },
+  "confirmVerify": {
+    "title": "CONFIRMA TU REGISTRO",
+    "subtitle": "Estás a un paso de terminar",
+    "instruction": "Haz clic en el botón de \"verificar cuenta\" para poder verificar tu cuenta y empezar a usar ",
+    "buttonVerifying": "VERIFICANDO...",
+    "buttonVerify": "VERIFICAR CUENTA",
+    "footerQuestion": "¿Ya está todo listo?",
+    "loginBtn": "Iniciar sesión",
+    "errors": {
+      "noToken": "No se encontró ningún código de verificación en el enlace. Por favor, revisa tu correo.",
+      "defaultError": "El enlace es inválido o ha expirado.",
+      "networkError": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    },
+    "successDefault": "¡Tu cuenta ha sido verificada exitosamente!"
+  },
+  "clouds": {
+    "pageTitle": "NUBES",
+    "globalTitle": "NUBE GLOBAL DE DESCRIPTORES",
+    "categoriesTitle": "CATEGORÍAS",
+    "noData": "Sin datos disponibles",
+    "categories": {
+      "culture": "Cultura",
+      "consumption": "Consumo",
+      "sports": "Deportes",
+      "economy": "Economía",
+      "entertainment": "Entretenimiento",
+      "government": "Gobierno",
+      "international": "Internacional",
+      "national": "Nacional",
+      "politics": "Política",
+      "technology": "Tecnología"
+    }
   }
 }
 

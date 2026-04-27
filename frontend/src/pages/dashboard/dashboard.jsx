@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, PieChart, Pie, Legend
 } from 'recharts';
-import { ChevronRight, Loader2 } from 'lucide-react'; // Añadimos Loader2
+import { ChevronRight, Loader2 } from 'lucide-react';
 import styles from './dashboard.module.css';
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,19 +23,20 @@ const Dashboard = () => {
       // Simulación de carga
       await new Promise(resolve => setTimeout(resolve, 1500));
 
+      // Aplicamos traducciones a los datos simulados para las gráficas
       const response = {
         fuentes: { activas: 12, rss: 104 },
         noticias: { hoy: 145, semana: "1,420" },
         alertas: 8,
         evolucion: [
-          { name: 'Lun', noticias: 45 }, { name: 'Mar', noticias: 52 },
-          { name: 'Mie', noticias: 38 }, { name: 'Jue', noticias: 65 },
-          { name: 'Vie', noticias: 48 }, { name: 'Sab', noticias: 20 },
-          { name: 'Dom', noticias: 15 }
+          { name: t('dashboard.days.mon'), noticias: 45 }, { name: t('dashboard.days.tue'), noticias: 52 },
+          { name: t('dashboard.days.wed'), noticias: 38 }, { name: t('dashboard.days.thu'), noticias: 65 },
+          { name: t('dashboard.days.fri'), noticias: 48 }, { name: t('dashboard.days.sat'), noticias: 20 },
+          { name: t('dashboard.days.sun'), noticias: 15 }
         ],
         categorias: [
-          { name: 'Política', value: 400 }, { name: 'Economía', value: 300 },
-          { name: 'Salud', value: 200 }, { name: 'Tecno', value: 100 }
+          { name: t('dashboard.categories.politics'), value: 400 }, { name: t('dashboard.categories.economy'), value: 300 },
+          { name: t('dashboard.categories.health'), value: 200 }, { name: t('dashboard.categories.tech'), value: 100 }
         ]
       };
 
@@ -45,16 +48,17 @@ const Dashboard = () => {
     }
   };
 
+  // Añadimos 't' a las dependencias para que recargue el mock si se cambia el idioma sobre la marcha
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [t]);
 
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
         <div className={styles.customTooltip}>
           <p className={styles.tooltipLabel}>{`${payload[0].name}`}</p>
-          <p className={styles.tooltipValue}>{`Noticias: ${payload[0].value}`}</p>
+          <p className={styles.tooltipValue}>{`${t('dashboard.charts.newsLabel')}${payload[0].value}`}</p>
         </div>
       );
     }
@@ -66,20 +70,22 @@ const Dashboard = () => {
     return (
       <div className={styles.dashboardWrapper}>
         <div className={styles.errorContainer}>
-          <h2>Error al conectar con NewsRadar</h2>
-          <button className={styles.retryButton} onClick={fetchDashboardData}>Reintentar</button>
+          <h2>{t('dashboard.errorTitle')}</h2>
+          <button className={styles.retryButton} onClick={fetchDashboardData}>
+            {t('dashboard.retryBtn')}
+          </button>
         </div>
       </div>
     );
   }
 
   // PANTALLA DE CARGA (Aparece mientras loading es true)
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className={styles.dashboardWrapper}>
         <div className={styles.loadingOverlay}>
           <Loader2 className={styles.spinner} size={48} />
-          <p>Cargando datos del sistema...</p>
+          <p>{t('dashboard.loading')}</p>
         </div>
       </div>
     );
@@ -89,31 +95,31 @@ const Dashboard = () => {
   return (
     <div className={styles.dashboardWrapper}>
       {/* TÍTULO DE LA PÁGINA */}
-      <h1 className={styles.pageTitle}>DASHBOARD</h1>
+      <h1 className={styles.pageTitle}>{t('dashboard.title')}</h1>
 
       {/* FILA 1: KPIs */}
       <div className={styles.topRow}>
         {/* FUENTES */}
         <div className={styles.card}>
-          <span className={styles.cardTitle}>FUENTES</span>
+          <span className={styles.cardTitle}>{t('dashboard.sourcesCard.title')}</span>
           <div className={styles.sourcesList}>
             <div className={styles.sourceItem}>
-              <span>Fuentes activas</span>
+              <span>{t('dashboard.sourcesCard.active')}</span>
               <span className={styles.sourceValue}>{data.fuentes.activas}</span>
             </div>
             <div className={styles.sourceItem}>
-              <span>Canales RSS</span>
+              <span>{t('dashboard.sourcesCard.rss')}</span>
               <span className={styles.sourceValue}>{data.fuentes.rss}</span>
             </div>
           </div>
           <button className={styles.btnNavigate} onClick={() => navigate('/fuentes')}>
-            Ir a fuentes <ChevronRight size={14} />
+            {t('dashboard.sourcesCard.goBtn')} <ChevronRight size={14} />
           </button>
         </div>
 
         {/* NOTICIAS DETECTADAS */}
         <div className={styles.card}>
-          <span className={styles.cardTitle}>NOTICIAS DETECTADAS</span>
+          <span className={styles.cardTitle}>{t('dashboard.newsCard.title')}</span>
           <span className={styles.metricValue}>
             {newsFilter === '1D' ? data.noticias.hoy : data.noticias.semana}
           </span>
@@ -131,10 +137,10 @@ const Dashboard = () => {
 
         {/* ALERTAS */}
         <div className={styles.card}>
-          <span className={styles.cardTitle}>ALERTAS CONFIGURADAS</span>
+          <span className={styles.cardTitle}>{t('dashboard.alertsCard.title')}</span>
           <span className={styles.metricValue}>{data.alertas}</span>
           <button className={styles.btnNavigate} onClick={() => navigate('/alertas')}>
-            Ir a alertas <ChevronRight size={14} />
+            {t('dashboard.alertsCard.goBtn')} <ChevronRight size={14} />
           </button>
         </div>
       </div>
@@ -142,7 +148,7 @@ const Dashboard = () => {
       {/* FILA 2: GRÁFICAS */}
       <div className={styles.bottomRow}>
         <div className={`${styles.card} ${styles.largeCard}`}>
-          <span className={styles.cardTitle}>EVOLUCIÓN DE CAPTURA - NOTICIAS POR DÍA</span>
+          <span className={styles.cardTitle}>{t('dashboard.charts.evolutionTitle')}</span>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.evolucion}>
@@ -150,14 +156,14 @@ const Dashboard = () => {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
                 <Tooltip cursor={{fill: '#f0f0f0'}} />
-                <Bar dataKey="noticias" fill="#0088FE" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="noticias" name={t('dashboard.charts.news')} fill="#0088FE" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className={`${styles.card} ${styles.largeCard}`}>
-          <span className={styles.cardTitle}>NOTICIAS POR CATEGORÍA</span>
+          <span className={styles.cardTitle}>{t('dashboard.charts.categoriesTitle')}</span>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

@@ -87,5 +87,142 @@
       "default": "An error occurred while processing your request.",
       "network": "Could not connect to the server. Please try again later."
     }
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "clouds": "Clouds",
+    "alerts": "Alerts",
+    "sources": "Sources & RSS",
+    "notifications": "Notifications",
+    "profile": "My Profile",
+    "logout": "Log out"
+  },
+  "dashboard": {
+    "title": "DASHBOARD",
+    "loading": "Loading system data...",
+    "errorTitle": "Error connecting to NewsRadar",
+    "retryBtn": "Retry",
+    "sourcesCard": {
+      "title": "SOURCES",
+      "active": "Active sources",
+      "rss": "RSS Feeds",
+      "goBtn": "Go to sources"
+    },
+    "newsCard": {
+      "title": "DETECTED NEWS"
+    },
+    "alertsCard": {
+      "title": "CONFIGURED ALERTS",
+      "goBtn": "Go to alerts"
+    },
+    "charts": {
+      "evolutionTitle": "CAPTURE EVOLUTION - NEWS PER DAY",
+      "categoriesTitle": "NEWS BY CATEGORY",
+      "newsLabel": "News: ",
+      "news": "News"
+    },
+    "days": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "categories": {
+      "politics": "Politics",
+      "economy": "Economy",
+      "health": "Health",
+      "tech": "Tech"
+    }
+  },
+  "userProfile": {
+    "personalInfo": {
+      "title": "Personal Information",
+      "first_name": "FIRST NAME",
+      "last_name": "LAST NAME",
+      "organization": "ORGANIZATION",
+      "email": "EMAIL ADDRESS"
+    },
+    "actions": {
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "roles": {
+      "title": "Roles and Permissions",
+      "role_1": "Alert Manager",
+      "role_2": "Reader"
+    },
+    "security": {
+      "title": "Security",
+      "changePassword": "Change Password",
+      "verifyEmail": "Verify Email",
+      "deleteAccount": "Delete Account"
+    },
+    "deleteModal": {
+      "title": "Are you sure you want to delete your account?",
+      "warning": "This action cannot be undone. All your data and alerts will be permanently deleted.",
+      "confirmText": "To confirm, type your email address:",
+      "placeholder": "Type your email here...",
+      "keepBtn": "KEEP ACCOUNT",
+      "deletingBtn": "DELETING...",
+      "deleteBtn": "DELETE ACCOUNT",
+      "errors": {
+        "emailMismatch": "The email address does not match.",
+        "noUserId": "Error: User ID not found.",
+        "apiError": "Error deleting account. Please try again."
+      }
+    }
+  },
+  "verifyAcc": {
+    "title": "VERIFY YOUR ACCOUNT",
+    "subtitle": "Enter your email address",
+    "emailLabel": "EMAIL ADDRESS",
+    "instruction": "We will send you an email with instructions to verify your account.",
+    "buttonSending": "SENDING...",
+    "buttonContinue": "CONTINUE",
+    "footerQuestion": "Want to do this later?",
+    "backBtn": "Go back",
+    "errors": {
+      "emptyEmail": "Please enter your email address.",
+      "defaultError": "An error occurred while processing your request.",
+      "networkError": "Could not connect to the server. Please try again later."
+    },
+    "successDefault": "A new verification link has been sent to your email."
+  },
+  "confirmVerify": {
+    "title": "CONFIRM YOUR REGISTRATION",
+    "subtitle": "You are one step away from finishing",
+    "instruction": "Click the \"verify account\" button to verify your account and start using ",
+    "buttonVerifying": "VERIFYING...",
+    "buttonVerify": "VERIFY ACCOUNT",
+    "footerQuestion": "Are you all set?",
+    "loginBtn": "Log in",
+    "errors": {
+      "noToken": "No verification code found in the link. Please check your email.",
+      "defaultError": "The link is invalid or has expired.",
+      "networkError": "Could not connect to the server. Please try again later."
+    },
+    "successDefault": "Your account has been successfully verified!"
+  },
+  "clouds": {
+    "pageTitle": "CLOUDS",
+    "globalTitle": "GLOBAL DESCRIPTORS CLOUD",
+    "categoriesTitle": "CATEGORIES",
+    "noData": "No data available",
+    "categories": {
+      "culture": "Culture",
+      "consumption": "Consumption",
+      "sports": "Sports",
+      "economy": "Economy",
+      "entertainment": "Entertainment",
+      "government": "Government",
+      "international": "International",
+      "national": "National",
+      "politics": "Politics",
+      "technology": "Technology"
+    }
   }
 }

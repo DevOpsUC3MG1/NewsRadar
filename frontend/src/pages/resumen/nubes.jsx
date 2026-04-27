@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './nubes.module.css';
 
 // ─── CATEGORÍAS ──────────────────────────────────────────────────────────────
+// Simulamos lo que llegaría del backend: claves neutras en minúscula.
 const ALL_CATEGORIAS = [
-  'Cultura', 'Consumo', 'Deportes', 'Economía', 'Entretenimiento',
-  'Gobierno', 'Internacional', 'Nacional', 'Política', 'Tecnología',
+  'culture', 'consumption', 'sports', 'economy', 'entertainment',
+  'government', 'international', 'national', 'politics', 'technology',
 ];
 
 // ─── MOCK: nube global (todos los canales RSS) ───────────────────────────────
 const fetchNubeGlobal = async () => {
   await new Promise((res) => setTimeout(res, 700));
+  // Estos términos vendrán traducidos desde el backend según el Accept-Language
   return [
     { term: 'INTELIGENCIA ARTIFICIAL', count: 98 },
     { term: 'SOSTENIBILIDAD', count: 74 },
@@ -33,44 +36,45 @@ const fetchNubeGlobal = async () => {
 };
 
 // ─── MOCK: nube por categoría ─────────────────────────────────────────────────
+// He actualizado las claves para que coincidan con ALL_CATEGORIAS
 const TERMINOS_POR_CATEGORIA = {
-  Cultura: [
+  culture: [
     { term: 'CINE', count: 80 }, { term: 'MÚSICA', count: 65 }, { term: 'ARTE', count: 50 },
     { term: 'TEATRO', count: 38 }, { term: 'LITERATURA', count: 30 }, { term: 'FESTIVAL', count: 22 },
   ],
-  Consumo: [
+  consumption: [
     { term: 'PRECIOS', count: 75 }, { term: 'SUPERMERCADO', count: 60 }, { term: 'CESTA BÁSICA', count: 48 },
     { term: 'IPC', count: 35 }, { term: 'DERECHOS', count: 27 }, { term: 'FRAUDE', count: 18 },
   ],
-  Deportes: [
+  sports: [
     { term: 'FÚTBOL', count: 90 }, { term: 'CHAMPIONS', count: 72 }, { term: 'LIGA', count: 60 },
     { term: 'BALONCESTO', count: 40 }, { term: 'TENIS', count: 30 }, { term: 'FORMULA 1', count: 22 },
   ],
-  Economía: [
+  economy: [
     { term: 'INFLACIÓN', count: 85 }, { term: 'PIB', count: 68 }, { term: 'TIPOS DE INTERÉS', count: 55 },
     { term: 'BOLSA', count: 45 }, { term: 'DEUDA', count: 35 }, { term: 'STARTUP', count: 22 },
   ],
-  Entretenimiento: [
+  entertainment: [
     { term: 'STREAMING', count: 78 }, { term: 'SERIES', count: 62 }, { term: 'VIDEOJUEGOS', count: 50 },
     { term: 'REDES SOCIALES', count: 40 }, { term: 'INFLUENCER', count: 28 }, { term: 'PODCAST', count: 20 },
   ],
-  Gobierno: [
+  government: [
     { term: 'PRESUPUESTOS', count: 82 }, { term: 'DECRETO', count: 65 }, { term: 'MINISTERIO', count: 52 },
     { term: 'SUBVENCIÓN', count: 40 }, { term: 'CONGRESO', count: 33 }, { term: 'SENADO', count: 22 },
   ],
-  Internacional: [
+  international: [
     { term: 'UCRANIA', count: 88 }, { term: 'CHINA', count: 70 }, { term: 'ONU', count: 55 },
     { term: 'OTAN', count: 45 }, { term: 'EEUU', count: 38 }, { term: 'REFUGIADOS', count: 25 },
   ],
-  Nacional: [
+  national: [
     { term: 'GOBIERNO', count: 84 }, { term: 'COMUNIDADES', count: 66 }, { term: 'IMPUESTOS', count: 53 },
     { term: 'DESEMPLEO', count: 42 }, { term: 'VIVIENDA', count: 34 }, { term: 'SANIDAD', count: 24 },
   ],
-  Política: [
+  politics: [
     { term: 'ELECCIONES', count: 91 }, { term: 'PARTIDO', count: 73 }, { term: 'COALICIÓN', count: 58 },
     { term: 'MOCIÓN', count: 44 }, { term: 'CAMPAÑA', count: 36 }, { term: 'VOTACIÓN', count: 25 },
   ],
-  Tecnología: [
+  technology: [
     { term: 'INTELIGENCIA ARTIFICIAL', count: 95 }, { term: 'CIBERSEGURIDAD', count: 75 },
     { term: 'BLOCKCHAIN', count: 58 }, { term: 'CLOUD', count: 45 },
     { term: 'MACHINE LEARNING', count: 35 }, { term: 'METAVERSO', count: 22 },
@@ -84,6 +88,8 @@ const fetchNubeCategoria = async (categoria) => {
 
 // ─── COMPONENTE: NUBE DE PALABRAS ────────────────────────────────────────────
 const WordCloud = ({ terminos, loading, minFontRem = 0.7, maxFontRem = 2.0 }) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className={styles.cloudContent}>
@@ -106,7 +112,7 @@ const WordCloud = ({ terminos, loading, minFontRem = 0.7, maxFontRem = 2.0 }) =>
   if (!terminos || terminos.length === 0) {
     return (
       <div className={styles.cloudEmpty}>
-        <p>Sin datos disponibles</p>
+        <p>{t('clouds.noData')}</p>
       </div>
     );
   }
@@ -135,6 +141,7 @@ const WordCloud = ({ terminos, loading, minFontRem = 0.7, maxFontRem = 2.0 }) =>
 
 // ─── COMPONENTE: CARD DE CATEGORÍA ───────────────────────────────────────────
 const CategoriaCloud = ({ categoria }) => {
+  const { t } = useTranslation();
   const [terminos, setTerminos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -151,7 +158,7 @@ const CategoriaCloud = ({ categoria }) => {
     <div className={styles.catCard}>
       <h3 className={styles.catTitle}>
         <span className={styles.accentBar} />
-        {categoria.toUpperCase()}
+        {t(`clouds.categories.${categoria}`).toUpperCase()}
       </h3>
       <WordCloud terminos={terminos} loading={loading} minFontRem={0.65} maxFontRem={1.5} />
     </div>
@@ -160,6 +167,7 @@ const CategoriaCloud = ({ categoria }) => {
 
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 const Nubes = () => {
+  const { t } = useTranslation();
   const [globalTerminos, setGlobalTerminos] = useState([]);
   const [globalLoading, setGlobalLoading] = useState(true);
 
@@ -172,14 +180,14 @@ const Nubes = () => {
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.pageTitle}>NUBES</h1>
+      <h1 className={styles.pageTitle}>{t('clouds.pageTitle')}</h1>
 
       {/* ── NUBE GLOBAL ── */}
       <section className={styles.globalSection}>
         <div className={styles.globalCard}>
           <h2 className={styles.globalTitle}>
             <span className={styles.accentBar} />
-            NUBE GLOBAL DE DESCRIPTORES
+            {t('clouds.globalTitle')}
           </h2>
           <WordCloud
             terminos={globalTerminos}
@@ -192,7 +200,7 @@ const Nubes = () => {
 
       {/* ── NUBES POR CATEGORÍA ── */}
       <section className={styles.catsSection}>
-        <h2 className={styles.sectionTitle}>CATEGORÍAS</h2>
+        <h2 className={styles.sectionTitle}>{t('clouds.categoriesTitle')}</h2>
         <div className={styles.catsGrid}>
           {ALL_CATEGORIAS.map((cat) => (
             <CategoriaCloud key={cat} categoria={cat} />

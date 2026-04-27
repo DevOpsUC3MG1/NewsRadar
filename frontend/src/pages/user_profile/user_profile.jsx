@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, CheckCircle, Pencil, Save, X, Key, Mail, Trash2, Check, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // <-- Importamos el hook
 import styles from './user_profile.module.css';
 import { checkVerificationStatus, deleteUserAccount } from '../../services/userService';
 import authService from '../../services/authService';
 
 const UserProfile = () => {
+  const { t } = useTranslation(); // <-- Inicializamos traducción
   const navigate = useNavigate();
 
   const [userData, setUserData] = useState({
@@ -55,9 +57,10 @@ const UserProfile = () => {
     setIsEditingInfo(false);
   };
 
+  // Traducimos los nombres de los roles dinámicamente
   const availableRoles = [
-    { id: 1, name: "Gestor de alertas" },
-    { id: 2, name: "Lector" }
+    { id: 1, name: t('userProfile.roles.role_1') },
+    { id: 2, name: t('userProfile.roles.role_2') }
   ];
 
   const handleEditRoles = () => setIsEditingRoles(true);
@@ -77,12 +80,12 @@ const UserProfile = () => {
   // --- LÓGICA PARA ELIMINAR CUENTA ---
   const handleDeleteAccount = async () => {
     if (confirmEmail !== userData.email) {
-      setDeleteError('El correo electrónico no coincide.');
+      setDeleteError(t('userProfile.deleteModal.errors.emailMismatch'));
       return;
     }
 
     if (!userData.id) {
-      setDeleteError('Error: No se ha encontrado el ID del usuario.');
+      setDeleteError(t('userProfile.deleteModal.errors.noUserId'));
       return;
     }
 
@@ -93,15 +96,13 @@ const UserProfile = () => {
       const token = authService.getToken();
       await deleteUserAccount(userData.id, token);
 
-      // Limpiamos los datos de sesión y redirigimos a la pantalla de entrada
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       navigate('/');
 
-      // Forzamos la recarga para que el AuthContext se limpie completamente
       window.location.reload();
     } catch (error) {
-      setDeleteError('Error al eliminar la cuenta. Inténtalo de nuevo.');
+      setDeleteError(t('userProfile.deleteModal.errors.apiError'));
       setIsDeleting(false);
     }
   };
@@ -122,11 +123,12 @@ const UserProfile = () => {
         <div className={styles.leftColumn}>
           {/* Información Personal */}
           <div className={styles.card} style={{ flex: 2 }}>
-            <span className={styles.cardTitle}>Información Personal</span>
+            <span className={styles.cardTitle}>{t('userProfile.personalInfo.title')}</span>
             <div className={styles.infoGrid}>
               {['first_name','last_name','organization'].map(field => (
                 <div key={field} className={styles.inputGroup}>
-                  <label>{field.replace('_',' ').toUpperCase()}</label>
+                  {/* Usamos el field dinámicamente para acceder al JSON */}
+                  <label>{t(`userProfile.personalInfo.${field}`)}</label>
                   <input
                     type="text"
                     name={field}
@@ -138,22 +140,22 @@ const UserProfile = () => {
                 </div>
               ))}
               <div className={styles.inputGroup}>
-                <label>Correo electrónico</label>
+                <label>{t('userProfile.personalInfo.email')}</label>
                 <input type="email" value={userData.email} disabled className={`${styles.inputField} ${styles.emailInput}`} />
               </div>
             </div>
             <div className={styles.buttonContainer}>
               {!isEditingInfo ? (
                 <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={() => setIsEditingInfo(true)}>
-                  <Pencil size={16} /> Editar
+                  <Pencil size={16} /> {t('userProfile.actions.edit')}
                 </button>
               ) : (
                 <>
                   <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={() => { setTempInfo(userData); setIsEditingInfo(false); }}>
-                    <X size={16} /> Cancelar
+                    <X size={16} /> {t('userProfile.actions.cancel')}
                   </button>
                   <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleSaveInfo}>
-                    <Save size={16} /> Guardar
+                    <Save size={16} /> {t('userProfile.actions.save')}
                   </button>
                 </>
               )}
@@ -163,14 +165,20 @@ const UserProfile = () => {
           {/* Roles */}
           <div className={styles.card} style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <span className={styles.cardTitle}>Roles y Permisos</span>
+              <span className={styles.cardTitle}>{t('userProfile.roles.title')}</span>
               <div className={styles.buttonContainer} style={{ marginTop: 0 }}>
                 {!isEditingRoles ? (
-                  <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleEditRoles}><Pencil size={16}/> Editar</button>
+                  <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleEditRoles}>
+                    <Pencil size={16}/> {t('userProfile.actions.edit')}
+                  </button>
                 ) : (
                   <>
-                    <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={handleCancelRoles}><X size={16}/> Cancelar</button>
-                    <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleSaveRoles}><Save size={16}/> Guardar</button>
+                    <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={handleCancelRoles}>
+                      <X size={16}/> {t('userProfile.actions.cancel')}
+                    </button>
+                    <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleSaveRoles}>
+                      <Save size={16}/> {t('userProfile.actions.save')}
+                    </button>
                   </>
                 )}
               </div>
@@ -194,17 +202,16 @@ const UserProfile = () => {
         {/* Seguridad */}
         <div className={`${styles.card} ${styles.securityCard}`}>
           <div className={styles.securityTopActions}>
-            <span className={styles.cardTitle}>Seguridad</span>
+            <span className={styles.cardTitle}>{t('userProfile.security.title')}</span>
             <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={() => navigate('/recuperar-password')}>
-              <Key size={18} /> Cambiar Contraseña
+              <Key size={18} /> {t('userProfile.security.changePassword')}
             </button>
             <button className={`${styles.btnAction} ${isVerified ? styles.btnGray : styles.btnDark}`} disabled={isVerified} onClick={() => navigate('/reenviar-verificacion')}>
-              <Mail size={18} /> Verificar Email
+              <Mail size={18} /> {t('userProfile.security.verifyEmail')}
             </button>
           </div>
-          {/* Cambiamos la acción para abrir el modal en lugar de navegar */}
           <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={() => setShowDeleteModal(true)}>
-            <Trash2 size={18} /> Eliminar Cuenta
+            <Trash2 size={18} /> {t('userProfile.security.deleteAccount')}
           </button>
         </div>
       </div>
@@ -223,15 +230,17 @@ const UserProfile = () => {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
               <AlertTriangle size={48} color="#B65753" />
             </div>
-            <h2 style={{ color: '#0E0E1D', marginBottom: '10px', fontSize: '24px' }}>¿Está seguro de eliminar la cuenta?</h2>
+            <h2 style={{ color: '#0E0E1D', marginBottom: '10px', fontSize: '24px' }}>
+              {t('userProfile.deleteModal.title')}
+            </h2>
             <p style={{ color: '#626262', marginBottom: '20px', fontSize: '15px', lineHeight: '1.5' }}>
-              Esta acción no se puede deshacer. Todos tus datos y alertas serán borrados permanentemente.
-              Para confirmar, escribe tu correo electrónico: <strong>{userData.email}</strong>
+              {t('userProfile.deleteModal.warning')} <br/><br/>
+              {t('userProfile.deleteModal.confirmText')} <strong>{userData.email}</strong>
             </p>
 
             <input
               type="email"
-              placeholder="Escribe tu correo aquí..."
+              placeholder={t('userProfile.deleteModal.placeholder')}
               value={confirmEmail}
               onChange={(e) => {
                 setConfirmEmail(e.target.value);
@@ -265,7 +274,7 @@ const UserProfile = () => {
                   fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s'
                 }}
               >
-                MANTENER
+                {t('userProfile.deleteModal.keepBtn')}
               </button>
 
               {/* BOTÓN BORRAR CUENTA */}
@@ -279,7 +288,7 @@ const UserProfile = () => {
                   opacity: isDeleting ? 0.7 : 1
                 }}
               >
-                {isDeleting ? 'BORRANDO...' : 'BORRAR CUENTA'}
+                {isDeleting ? t('userProfile.deleteModal.deletingBtn') : t('userProfile.deleteModal.deleteBtn')}
               </button>
             </div>
           </div>

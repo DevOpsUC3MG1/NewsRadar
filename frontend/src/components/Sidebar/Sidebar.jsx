@@ -1,29 +1,31 @@
-import React, { useContext } from 'react'; // 1. Importamos useContext
+import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PieChart, Bell, Rss, User, LogOut } from 'lucide-react';
-// 2. Importamos tu AuthContext (asegúrate de que la ruta sea la correcta)
 import { AuthContext } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next'; // <-- 1. Importamos el hook
+
 import styles from './Sidebar.module.css';
 
 export default function Sidebar() {
+  const { t } = useTranslation(); // <-- 2. Extraemos la función t
   const location = useLocation();
 
-  // 3. Extraemos la función logout de tu compañero
   const { logout } = useContext(AuthContext);
 
+  // 3. Traducimos directamente los labels usando t()
   const menuItems = [
-    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
-    { label: 'Nubes', icon: <PieChart size={20} />, path: '/nubes' },
-    { label: 'Alertas', icon: <Bell size={20} />, path: '/alerts' },
-    { label: 'Fuentes y RSS', icon: <Rss size={20} />, path: '/fuentes' },
+    { label: t('sidebar.dashboard'), icon: <LayoutDashboard size={20} />, path: '/dashboard' },
+    { label: t('sidebar.clouds'), icon: <PieChart size={20} />, path: '/nubes' },
+    { label: t('sidebar.alerts'), icon: <Bell size={20} />, path: '/alerts' },
+    { label: t('sidebar.sources'), icon: <Rss size={20} />, path: '/fuentes' },
     {
-      label: 'Notificaciones',
+      label: t('sidebar.notifications'),
       icon: <Bell size={20} />,
       path: '/notificaciones',
-      notifications: 3
+      notifications: 3 // Este número supongo que vendrá de alguna API más adelante
     },
     { divider: true },
-    { label: 'Mi perfil', icon: <User size={20} />, path: '/profile' },
+    { label: t('sidebar.profile'), icon: <User size={20} />, path: '/profile' },
   ];
 
   return (
@@ -57,7 +59,6 @@ export default function Sidebar() {
 
       {/* Sección inferior de Cerrar Sesión */}
       <div className={styles.logoutArea}>
-        {/* 4. Añadimos el evento onClick para ejecutar la función antes de navegar */}
         <Link
           to="/"
           onClick={logout}
@@ -65,7 +66,8 @@ export default function Sidebar() {
         >
           <div className={styles.content}>
             <LogOut size={20} className={styles.icon} />
-            <span className={styles.logoutLabel}>Cerrar sesión</span>
+            {/* 4. Traducimos también el texto del botón de salir */}
+            <span className={styles.logoutLabel}>{t('sidebar.logout')}</span>
           </div>
         </Link>
       </div>
