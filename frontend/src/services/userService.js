@@ -16,3 +16,18 @@ export const checkVerificationStatus = async (email, token) => {
     return false;
   }
 };
+
+// NUEVA FUNCIÓN: Eliminar cuenta de usuario
+export const deleteUserAccount = async (userId, token) => {
+  try {
+    const response = await axios.delete(`${API_URL}/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al eliminar la cuenta:', error);
+    throw error; // Lanzamos el error para capturarlo en el componente
+  }
+};

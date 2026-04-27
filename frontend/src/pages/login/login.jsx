@@ -49,7 +49,7 @@ export default function PantallaEntrada() {
 
     try {
       await login(data.email, data.password);
-      navigate('/app');
+      navigate('/dashboard');
     } catch (err) {
       console.error(err);
       // 2. Aquí también guardamos solo la clave en lugar del texto ya traducido
