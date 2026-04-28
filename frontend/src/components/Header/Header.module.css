@@ -80,3 +80,25 @@
 .userProfile:hover {
   opacity: 0.8;
 }
+
+/* Estilos del botón de idioma */
+.langBtn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.langBtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: white;
+}

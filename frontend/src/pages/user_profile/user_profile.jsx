@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // <-- 1. Importamos useNavigate
-import { User, CheckCircle, Pencil, Save, X, Key, Mail, Trash2, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, CheckCircle, Pencil, Save, X, Key, Mail, Trash2, Check, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // <-- Importamos el hook
 import styles from './user_profile.module.css';
+import { checkVerificationStatus, deleteUserAccount } from '../../services/userService';
+import authService from '../../services/authService';
 
 const UserProfile = () => {
-  const navigate = useNavigate(); // <-- 2. Inicializamos el hook de navegación
+  const { t } = useTranslation(); // <-- Inicializamos traducción
+  const navigate = useNavigate();
 
   const [userData, setUserData] = useState({
-    first_name: '', last_name: '', email: '', organization: '', role_ids: []
+    id: null, first_name: '', last_name: '', email: '', organization: '', role_ids: []
   });
 
-  // Estados de edición independientes
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [tempInfo, setTempInfo] = useState({});
 
@@ -19,16 +22,34 @@ const UserProfile = () => {
 
   const [isVerified, setIsVerified] = useState(false);
 
+  // --- ESTADOS PARA EL MODAL DE ELIMINAR CUENTA ---
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem('user')) || {
-      first_name: 'Pepe', last_name: 'Fernández', email: 'pepe@gmail.com', organization: 'UC3M', role_ids: []
+      id: null,
+      first_name: '-',
+      last_name: '-',
+      email: '-',
+      organization: '-',
+      role_ids: []
     };
+
     setUserData(savedUser);
     setTempInfo(savedUser);
     setTempRoles(savedUser.role_ids);
+
+    if (savedUser.email) {
+      const token = authService.getToken();
+      checkVerificationStatus(savedUser.email, token)
+        .then(status => setIsVerified(status))
+        .catch(err => console.error(err));
+    }
   }, []);
 
-  // --- LÓGICA INFORMACIÓN PERSONAL ---
   const handleSaveInfo = () => {
     const updatedUser = { ...userData, ...tempInfo };
     setUserData(updatedUser);
@@ -36,19 +57,14 @@ const UserProfile = () => {
     setIsEditingInfo(false);
   };
 
-  // --- LÓGICA DE ROLES ---
+  // Traducimos los nombres de los roles dinámicamente
   const availableRoles = [
-    { id: 1, name: "Gestor de alertas" },
-    { id: 2, name: "Lector" }
+    { id: 1, name: t('userProfile.roles.role_1') },
+    { id: 2, name: t('userProfile.roles.role_2') }
   ];
 
   const handleEditRoles = () => setIsEditingRoles(true);
-
-  const handleCancelRoles = () => {
-    setTempRoles(userData.role_ids); // Revertir a los roles guardados
-    setIsEditingRoles(false);
-  };
-
+  const handleCancelRoles = () => { setTempRoles(userData.role_ids); setIsEditingRoles(false); };
   const handleSaveRoles = () => {
     const updatedUser = { ...userData, role_ids: tempRoles };
     setUserData(updatedUser);
@@ -58,16 +74,42 @@ const UserProfile = () => {
 
   const toggleRole = (roleId) => {
     if (!isEditingRoles) return;
-    if (tempRoles.includes(roleId)) {
-      setTempRoles(tempRoles.filter(id => id !== roleId));
-    } else {
-      setTempRoles([...tempRoles, roleId]);
+    setTempRoles(tempRoles.includes(roleId) ? tempRoles.filter(id => id !== roleId) : [...tempRoles, roleId]);
+  };
+
+  // --- LÓGICA PARA ELIMINAR CUENTA ---
+  const handleDeleteAccount = async () => {
+    if (confirmEmail !== userData.email) {
+      setDeleteError(t('userProfile.deleteModal.errors.emailMismatch'));
+      return;
+    }
+
+    if (!userData.id) {
+      setDeleteError(t('userProfile.deleteModal.errors.noUserId'));
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError('');
+
+    try {
+      const token = authService.getToken();
+      await deleteUserAccount(userData.id, token);
+
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      navigate('/');
+
+      window.location.reload();
+    } catch (error) {
+      setDeleteError(t('userProfile.deleteModal.errors.apiError'));
+      setIsDeleting(false);
     }
   };
 
   return (
     <div className={styles.pageWrapper}>
-      {/* BANNER SUPERIOR */}
+      {/* HEADER */}
       <div className={styles.headerBanner}>
         <div className={styles.userIconCircle}><User size={32} color="#FFFFFF" /></div>
         <div className={styles.userNameContainer}>
@@ -76,82 +118,76 @@ const UserProfile = () => {
         </div>
       </div>
 
+      {/* MAIN GRID */}
       <div className={styles.mainGrid}>
         <div className={styles.leftColumn}>
-
-          {/* BLOQUE INFORMACIÓN PERSONAL */}
+          {/* Información Personal */}
           <div className={styles.card} style={{ flex: 2 }}>
-            <span className={styles.cardTitle}>Información Personal</span>
+            <span className={styles.cardTitle}>{t('userProfile.personalInfo.title')}</span>
             <div className={styles.infoGrid}>
+              {['first_name','last_name','organization'].map(field => (
+                <div key={field} className={styles.inputGroup}>
+                  {/* Usamos el field dinámicamente para acceder al JSON */}
+                  <label>{t(`userProfile.personalInfo.${field}`)}</label>
+                  <input
+                    type="text"
+                    name={field}
+                    value={tempInfo[field] || ''}
+                    onChange={e => setTempInfo({...tempInfo, [field]: e.target.value})}
+                    disabled={!isEditingInfo}
+                    className={`${styles.inputField} ${isEditingInfo ? styles.activeInput : styles.disabledInput}`}
+                  />
+                </div>
+              ))}
               <div className={styles.inputGroup}>
-                <label>Nombre</label>
-                <input type="text" name="first_name" value={tempInfo.first_name || ''}
-                  onChange={(e) => setTempInfo({...tempInfo, first_name: e.target.value})}
-                  disabled={!isEditingInfo} className={`${styles.inputField} ${isEditingInfo ? styles.activeInput : styles.disabledInput}`} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Apellidos</label>
-                <input type="text" name="last_name" value={tempInfo.last_name || ''}
-                  onChange={(e) => setTempInfo({...tempInfo, last_name: e.target.value})}
-                  disabled={!isEditingInfo} className={`${styles.inputField} ${isEditingInfo ? styles.activeInput : styles.disabledInput}`} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Correo electrónico</label>
+                <label>{t('userProfile.personalInfo.email')}</label>
                 <input type="email" value={userData.email} disabled className={`${styles.inputField} ${styles.emailInput}`} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Organización</label>
-                <input type="text" name="organization" value={tempInfo.organization || ''}
-                  onChange={(e) => setTempInfo({...tempInfo, organization: e.target.value})}
-                  disabled={!isEditingInfo} className={`${styles.inputField} ${isEditingInfo ? styles.activeInput : styles.disabledInput}`} />
               </div>
             </div>
             <div className={styles.buttonContainer}>
               {!isEditingInfo ? (
                 <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={() => setIsEditingInfo(true)}>
-                  <Pencil size={16} /> Editar
+                  <Pencil size={16} /> {t('userProfile.actions.edit')}
                 </button>
               ) : (
                 <>
-                  <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={() => {setTempInfo(userData); setIsEditingInfo(false);}}>
-                    <X size={16} /> Cancelar
+                  <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={() => { setTempInfo(userData); setIsEditingInfo(false); }}>
+                    <X size={16} /> {t('userProfile.actions.cancel')}
                   </button>
                   <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleSaveInfo}>
-                    <Save size={16} /> Guardar
+                    <Save size={16} /> {t('userProfile.actions.save')}
                   </button>
                 </>
               )}
             </div>
           </div>
 
-          {/* BLOQUE ROLES Y PERMISOS */}
+          {/* Roles */}
           <div className={styles.card} style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <span className={styles.cardTitle}>Roles y Permisos</span>
-              <div className={styles.buttonContainer} style={{marginTop: 0}}>
+              <span className={styles.cardTitle}>{t('userProfile.roles.title')}</span>
+              <div className={styles.buttonContainer} style={{ marginTop: 0 }}>
                 {!isEditingRoles ? (
                   <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleEditRoles}>
-                    <Pencil size={16} /> Editar
+                    <Pencil size={16}/> {t('userProfile.actions.edit')}
                   </button>
                 ) : (
                   <>
                     <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={handleCancelRoles}>
-                      <X size={16} /> Cancelar
+                      <X size={16}/> {t('userProfile.actions.cancel')}
                     </button>
                     <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleSaveRoles}>
-                      <Save size={16} /> Guardar
+                      <Save size={16}/> {t('userProfile.actions.save')}
                     </button>
                   </>
                 )}
               </div>
             </div>
-
             <div className={`${styles.rolesList} ${!isEditingRoles ? styles.rolesDisabled : ''}`}>
               {availableRoles.map(role => {
                 const isSelected = tempRoles.includes(role.id);
                 return (
-                  <div key={role.id} onClick={() => toggleRole(role.id)}
-                    className={`${styles.roleItem} ${isSelected ? styles.roleSelected : styles.roleUnselected}`}>
+                  <div key={role.id} onClick={() => toggleRole(role.id)} className={`${styles.roleItem} ${isSelected ? styles.roleSelected : styles.roleUnselected}`}>
                     <div className={`${styles.tickCircle} ${isSelected ? styles.tickSelected : styles.tickUnselected}`}>
                       {isSelected && <Check size={12} color="#0E0E1D" />}
                     </div>
@@ -163,36 +199,102 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* BLOQUE SEGURIDAD */}
+        {/* Seguridad */}
         <div className={`${styles.card} ${styles.securityCard}`}>
           <div className={styles.securityTopActions}>
-            <span className={styles.cardTitle}>Seguridad</span>
-
-            {/* <-- 3. Rutas añadidas a los onClick de Seguridad --> */}
-            <button
-              className={`${styles.btnAction} ${styles.btnDark}`}
-              onClick={() => navigate('/recuperar-password')}
-            >
-              <Key size={18} /> Cambiar Contraseña
+            <span className={styles.cardTitle}>{t('userProfile.security.title')}</span>
+            <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={() => navigate('/recuperar-password')}>
+              <Key size={18} /> {t('userProfile.security.changePassword')}
             </button>
-
-            <button
-              className={`${styles.btnAction} ${isVerified ? styles.btnGray : styles.btnDark}`}
-              disabled={isVerified}
-              onClick={() => navigate('/reenviar-verificacion')}
-            >
-              <Mail size={18} /> Verificar Email
+            <button className={`${styles.btnAction} ${isVerified ? styles.btnGray : styles.btnDark}`} disabled={isVerified} onClick={() => navigate('/reenviar-verificacion')}>
+              <Mail size={18} /> {t('userProfile.security.verifyEmail')}
             </button>
           </div>
-
-          <button
-            className={`${styles.btnAction} ${styles.btnDanger}`}
-            onClick={() => navigate('/remove-acc')}
-          >
-            <Trash2 size={18} /> Eliminar Cuenta
+          <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={() => setShowDeleteModal(true)}>
+            <Trash2 size={18} /> {t('userProfile.security.deleteAccount')}
           </button>
         </div>
       </div>
+
+      {/* MODAL DE ELIMINAR CUENTA */}
+      {showDeleteModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex',
+          justifyContent: 'center', alignItems: 'center', zIndex: 9999
+        }}>
+          <div style={{
+            backgroundColor: '#fff', padding: '30px', borderRadius: '12px',
+            maxWidth: '450px', width: '90%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+              <AlertTriangle size={48} color="#B65753" />
+            </div>
+            <h2 style={{ color: '#0E0E1D', marginBottom: '10px', fontSize: '24px' }}>
+              {t('userProfile.deleteModal.title')}
+            </h2>
+            <p style={{ color: '#626262', marginBottom: '20px', fontSize: '15px', lineHeight: '1.5' }}>
+              {t('userProfile.deleteModal.warning')} <br/><br/>
+              {t('userProfile.deleteModal.confirmText')} <strong>{userData.email}</strong>
+            </p>
+
+            <input
+              type="email"
+              placeholder={t('userProfile.deleteModal.placeholder')}
+              value={confirmEmail}
+              onChange={(e) => {
+                setConfirmEmail(e.target.value);
+                setDeleteError('');
+              }}
+              style={{
+                width: '100%', padding: '12px', marginBottom: '15px',
+                borderRadius: '6px', border: '1px solid #ccc', outline: 'none',
+                boxSizing: 'border-box', fontSize: '15px'
+              }}
+            />
+
+            {deleteError && (
+              <p style={{ color: '#B65753', fontSize: '14px', marginBottom: '15px', fontWeight: '500' }}>
+                {deleteError}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '15px', marginTop: '20px' }}>
+              {/* BOTÓN MANTENER */}
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setConfirmEmail('');
+                  setDeleteError('');
+                }}
+                disabled={isDeleting}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '6px', cursor: 'pointer',
+                  backgroundColor: '#FFFFFF', color: '#0E0E1D', border: '2px solid #0E0E1D',
+                  fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s'
+                }}
+              >
+                {t('userProfile.deleteModal.keepBtn')}
+              </button>
+
+              {/* BOTÓN BORRAR CUENTA */}
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '6px', cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  backgroundColor: '#B65753', color: '#FFFFFF', border: 'none',
+                  fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s',
+                  opacity: isDeleting ? 0.7 : 1
+                }}
+              >
+                {isDeleting ? t('userProfile.deleteModal.deletingBtn') : t('userProfile.deleteModal.deleteBtn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

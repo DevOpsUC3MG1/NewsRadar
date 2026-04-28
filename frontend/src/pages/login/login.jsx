@@ -5,6 +5,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useTranslation } from 'react-i18next';
 
 // Componentes reutilizables
 import Input from '../../components/input';
@@ -15,21 +16,22 @@ import HeaderNoUser from '../../components/HeaderNoUser/HeaderNoUser.jsx';
 import styles from './login.module.css';
 import imgInicioSvg from './img-inicio.svg';
 
+// 1. Volvemos a poner el esquema fuera, pero en vez del texto, le pasamos la CLAVE del JSON
 const loginSchema = z.object({
   email: z
     .string()
-    .min(1, 'El email es obligatorio')
-    .email('Debe ser un formato de correo válido'),
+    .min(1, 'login.errors.emailRequired')
+    .email('login.errors.emailInvalid'),
   password: z
     .string()
-    .min(6, 'La contraseña debe tener al menos 6 caracteres'),
+    .min(6, 'login.errors.passwordMin'),
 });
 
 export default function PantallaEntrada() {
+  const { t } = useTranslation();
   const [apiError, setApiError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Traemos la nueva función login que hemos creado en AuthContext
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -46,14 +48,12 @@ export default function PantallaEntrada() {
     setIsLoading(true);
 
     try {
-      // Enviamos email y password al AuthContext
       await login(data.email, data.password);
-      
-      // Si llega aquí sin dar error, el usuario y el token ya están guardados
-      navigate('/app');
+      navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      setApiError('Credenciales incorrectas o error en el servidor. Inténtalo de nuevo.');
+      // 2. Aquí también guardamos solo la clave en lugar del texto ya traducido
+      setApiError('login.errors.apiError');
     } finally {
       setIsLoading(false);
     }
@@ -72,70 +72,70 @@ export default function PantallaEntrada() {
           </div>
 
           <p className={styles.subtitle}>
-            Sistema de monitorización<br />
-            de noticias en medios<br />
-            de comunicación y fuentes oficiales
+            {t('login.subtitleLine1')}<br />
+            {t('login.subtitleLine2')}<br />
+            {t('login.subtitleLine3')}
           </p>
 
           <div className={styles.imageContainer}>
-            <img src={imgInicioSvg} alt="Ilustración de monitorización" className={styles.mainImage} />
+            <img src={imgInicioSvg} alt={t('login.altImage')} className={styles.mainImage} />
           </div>
         </div>
 
         {/* --- Mitad Derecha --- */}
         <div className={styles.rightPanel}>
           <div className={styles.rightPanelHeader}>
-            <h2 className={styles.welcomeTitle}>BIENVENIDO</h2>
-            <p className={styles.welcomeSubtitle}>INICIE SESIÓN Y ACCEDA AL CONTENIDO</p>
+            <h2 className={styles.welcomeTitle}>{t('login.welcome')}</h2>
+            <p className={styles.welcomeSubtitle}>{t('login.welcomeSubtitle')}</p>
           </div>
 
           <div className={styles.formContainer}>
             <form onSubmit={handleSubmit(onSubmitForm)}>
-              
-              {/* CAMPO EMAIL REUTILIZANDO COMPONENTE */}
+
               <Input
-                label="EMAIL"
+                label={t('login.emailLabel')}
                 type="email"
                 className={styles.input}
                 labelClassName={styles.label}
-                error={errors.email?.message}
+                // 3. Traducimos el error justo al pasárselo al Input
+                error={errors.email?.message ? t(errors.email.message) : undefined}
                 {...register('email')}
               />
 
-              {/* CAMPO CONTRASEÑA REUTILIZANDO COMPONENTE */}
               <Input
-                label="CONTRASEÑA"
+                label={t('login.passwordLabel')}
                 type="password"
                 className={styles.input}
                 labelClassName={styles.label}
-                error={errors.password?.message}
+                // Traducimos el error al vuelo
+                error={errors.password?.message ? t(errors.password.message) : undefined}
                 {...register('password')}
               />
 
+              {/* Traducimos el error de la API al vuelo también */}
               {apiError && (
                 <div style={{ color: '#e74c3c', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
-                  {apiError}
+                  {t(apiError)}
                 </div>
               )}
 
-              {/* BOTÓN REUTILIZANDO COMPONENTE */}
               <Button
                 type="submit"
                 className={styles.loginButton}
                 disabled={isLoading}
               >
-                {isLoading ? 'CARGANDO...' : 'INICIAR SESIÓN'}
+                {isLoading ? t('login.loadingBtn') : t('login.loginBtn')}
               </Button>
 
               <Link to="/recuperar-password" className={styles.forgotPassword}>
-                ¿OLVIDASTE TU CONTRASEÑA?
+                {t('login.forgotPassword')}
               </Link>
             </form>
 
             <div>
-              <p className={styles.footerText}>¿No tienes cuenta? Regístrate aquí</p>
+              <p className={styles.footerText}>{t('login.noAccount')}</p>
               <Link to="/registro" className={styles.registerButton}>
-                Crear una cuenta nueva
+                {t('login.registerBtn')}
               </Link>
             </div>
           </div>

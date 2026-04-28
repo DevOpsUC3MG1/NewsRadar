@@ -4,10 +4,13 @@ import PantallaEntrada from './pages/login/login.jsx'
 import Registro from './pages/registro/registro.jsx'
 import ForgotPwd from './pages/change_pwd/forgot_pwd.jsx'
 import ChangePwd from './pages/change_pwd/change_pwd.jsx'
-import ResendVerify from './pages/verify_acc/verify_acc.jsx' // <-- 1. Importamos la nueva pantalla
+import ResendVerify from './pages/verify_acc/verify_acc.jsx'
 import VerifyAcc from './pages/verify_acc/confirm_verify.jsx'
 import Dashboard from './pages/dashboard/dashboard.jsx'
 import Notifications from './pages/notificaciones/notificaciones.jsx'
+import Nubes from './pages/resumen/nubes.jsx'
+import Fuentes from './pages/fuentes/fuentes.jsx'
+import Alertas from './pages/alerts/alerts.jsx'
 import Profile from './pages/user_profile/user_profile.jsx'
 import Home from './pages/Home'
 import About from './pages/About'
@@ -50,7 +53,9 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/notificaciones" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
-
+          <Route path="/nubes" element={<Nubes />} />
+          <Route path="/alerts" element={<Alertas />} />
+          <Route path="/fuentes" element={<Fuentes />} />
         </Route>
       </Routes>
     </BrowserRouter>

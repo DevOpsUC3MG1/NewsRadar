@@ -1,4 +1,229 @@
 {
-  "welcome": "Bienvenido",
-  "hello": "¡Hola {{name}}!"
+  "login": {
+    "subtitleLine1": "Sistema de monitorización",
+    "subtitleLine2": "de noticias en medios",
+    "subtitleLine3": "de comunicación y fuentes oficiales",
+    "altImage": "Ilustración de monitorización",
+    "welcome": "BIENVENIDO",
+    "welcomeSubtitle": "INICIE SESIÓN Y ACCEDA AL CONTENIDO",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "CONTRASEÑA",
+    "loadingBtn": "CARGANDO...",
+    "loginBtn": "INICIAR SESIÓN",
+    "forgotPassword": "¿OLVIDASTE TU CONTRASEÑA?",
+    "noAccount": "¿No tienes cuenta? Regístrate aquí",
+    "registerBtn": "Crear una cuenta nueva",
+    "errors": {
+      "emailRequired": "El email es obligatorio",
+      "emailInvalid": "Debe ser un formato de correo válido",
+      "passwordMin": "La contraseña debe tener al menos 6 caracteres",
+      "apiError": "Credenciales incorrectas o error en el servidor. Inténtalo de nuevo."
+    }
+  },
+
+  "register": {
+    "title": "CREA TU CUENTA",
+    "subtitle": "Regístrate para acceder a NEWSRADAR",
+    "nameLabel": "NOMBRE",
+    "lastNameLabel": "APELLIDOS",
+    "orgLabel": "ORGANIZACIÓN",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "CONTRASEÑA",
+    "confirmPasswordLabel": "CONFIRMAR CONTRASEÑA",
+    "loadingBtn": "CREANDO...",
+    "submitBtn": "CREAR CUENTA",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "loginLink": "Iniciar sesión",
+    "errors": {
+      "nameRequired": "El nombre es obligatorio",
+      "lastNameRequired": "Los apellidos son obligatorios",
+      "orgRequired": "La organización es obligatoria",
+      "emailRequired": "El email es obligatorio",
+      "emailInvalid": "Formato de correo no válido",
+      "passwordMin": "Debe tener al menos 6 caracteres",
+      "confirmRequired": "Debes confirmar la contraseña",
+      "passwordsMismatch": "Las contraseñas no coinciden",
+      "emailExists": "El email ya está registrado.",
+      "apiError": "Error al crear la cuenta. Inténtalo de nuevo."
+    },
+    "modal": {
+      "title": "¡Registro Completado!",
+      "text": "Tu cuenta ha sido creada correctamente. Ya puedes iniciar sesión en Newsradar para comenzar.",
+      "button": "IR A INICIAR SESIÓN"
+    }
+  },
+  "changePwd": {
+    "title": "RESTABLECE TU CONTRASEÑA",
+    "subtitle1": "Crea una contraseña que tenga al menos 6 letras y números.",
+    "subtitle2": "La necesitarás para iniciar sesión.",
+    "newPasswordLabel": "CONTRASEÑA NUEVA",
+    "loadingBtn": "GUARDANDO...",
+    "submitBtn": "CONTINUAR",
+    "rememberPwd": "¿Te acuerdas de la contraseña?",
+    "loginLink": "Iniciar sesión",
+    "errors": {
+      "invalidToken": "Enlace no válido o expirado. Por favor, solicita un nuevo correo de recuperación.",
+      "passwordMin": "La contraseña debe tener al menos 6 caracteres.",
+      "default": "Ocurrió un error al procesar tu solicitud.",
+      "network": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    },
+    "modal": {
+      "title": "¡Contraseña Restablecida!",
+      "text": "Tu contraseña ha sido cambiada correctamente. Ya puedes iniciar sesión con tu nueva clave.",
+      "button": "Ir a iniciar sesión"
+    }
+  },
+  "forgotPwd": {
+    "title": "RECUPERA TU CONTRASEÑA",
+    "subtitle": "Ingresa tu correo electrónico",
+    "emailLabel": "CORREO ELECTRÓNICO",
+    "instructions": "Te enviaremos un correo electrónico con las instrucciones para restablecer tu contraseña.",
+    "loadingBtn": "ENVIANDO...",
+    "submitBtn": "CONTINUAR",
+    "rememberPwd": "¿Te acuerdas de la contraseña?",
+    "backBtn": "Volver",
+    "errors": {
+      "emailRequired": "Por favor, introduce tu correo electrónico.",
+      "default": "Ocurrió un error al procesar tu solicitud.",
+      "network": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    }
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "clouds": "Nubes",
+    "alerts": "Alertas",
+    "sources": "Fuentes y RSS",
+    "notifications": "Notificaciones",
+    "profile": "Mi perfil",
+    "logout": "Cerrar sesión"
+  },
+  "dashboard": {
+    "title": "DASHBOARD",
+    "loading": "Cargando datos del sistema...",
+    "errorTitle": "Error al conectar con NewsRadar",
+    "retryBtn": "Reintentar",
+    "sourcesCard": {
+      "title": "FUENTES",
+      "active": "Fuentes activas",
+      "rss": "Canales RSS",
+      "goBtn": "Ir a fuentes"
+    },
+    "newsCard": {
+      "title": "NOTICIAS DETECTADAS"
+    },
+    "alertsCard": {
+      "title": "ALERTAS CONFIGURADAS",
+      "goBtn": "Ir a alertas"
+    },
+    "charts": {
+      "evolutionTitle": "EVOLUCIÓN DE CAPTURA - NOTICIAS POR DÍA",
+      "categoriesTitle": "NOTICIAS POR CATEGORÍA",
+      "newsLabel": "Noticias: ",
+      "news": "Noticias"
+    },
+    "days": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mié",
+      "thu": "Jue",
+      "fri": "Vie",
+      "sat": "Sáb",
+      "sun": "Dom"
+    },
+    "categories": {
+      "politics": "Política",
+      "economy": "Economía",
+      "health": "Salud",
+      "tech": "Tecno"
+    }
+  },
+  "userProfile": {
+    "personalInfo": {
+      "title": "Información Personal",
+      "first_name": "NOMBRE",
+      "last_name": "APELLIDOS",
+      "organization": "ORGANIZACIÓN",
+      "email": "CORREO ELECTRÓNICO"
+    },
+    "actions": {
+      "edit": "Editar",
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "roles": {
+      "title": "Roles y Permisos",
+      "role_1": "Gestor de alertas",
+      "role_2": "Lector"
+    },
+    "security": {
+      "title": "Seguridad",
+      "changePassword": "Cambiar Contraseña",
+      "verifyEmail": "Verificar Email",
+      "deleteAccount": "Eliminar Cuenta"
+    },
+    "deleteModal": {
+      "title": "¿Está seguro de eliminar la cuenta?",
+      "warning": "Esta acción no se puede deshacer. Todos tus datos y alertas serán borrados permanentemente.",
+      "confirmText": "Para confirmar, escribe tu correo electrónico:",
+      "placeholder": "Escribe tu correo aquí...",
+      "keepBtn": "MANTENER",
+      "deletingBtn": "BORRANDO...",
+      "deleteBtn": "BORRAR CUENTA",
+      "errors": {
+        "emailMismatch": "El correo electrónico no coincide.",
+        "noUserId": "Error: No se ha encontrado el ID del usuario.",
+        "apiError": "Error al eliminar la cuenta. Inténtalo de nuevo."
+      }
+    }
+  },
+  "verifyAcc": {
+    "title": "VERIFICA TU CUENTA",
+    "subtitle": "Ingresa tu correo electrónico",
+    "emailLabel": "CORREO ELECTRÓNICO",
+    "instruction": "Te enviaremos un correo electrónico con las instrucciones para verificar tu cuenta.",
+    "buttonSending": "ENVIANDO...",
+    "buttonContinue": "CONTINUAR",
+    "footerQuestion": "¿Lo quieres hacer en otro momento?",
+    "backBtn": "Volver",
+    "errors": {
+      "emptyEmail": "Por favor, introduce tu correo electrónico.",
+      "defaultError": "Ocurrió un error al procesar tu solicitud.",
+      "networkError": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    },
+    "successDefault": "Se ha enviado un nuevo enlace de verificación a tu correo."
+  },
+  "confirmVerify": {
+    "title": "CONFIRMA TU REGISTRO",
+    "subtitle": "Estás a un paso de terminar",
+    "instruction": "Haz clic en el botón de \"verificar cuenta\" para poder verificar tu cuenta y empezar a usar ",
+    "buttonVerifying": "VERIFICANDO...",
+    "buttonVerify": "VERIFICAR CUENTA",
+    "footerQuestion": "¿Ya está todo listo?",
+    "loginBtn": "Iniciar sesión",
+    "errors": {
+      "noToken": "No se encontró ningún código de verificación en el enlace. Por favor, revisa tu correo.",
+      "defaultError": "El enlace es inválido o ha expirado.",
+      "networkError": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
+    },
+    "successDefault": "¡Tu cuenta ha sido verificada exitosamente!"
+  },
+  "clouds": {
+    "pageTitle": "NUBES",
+    "globalTitle": "NUBE GLOBAL DE DESCRIPTORES",
+    "categoriesTitle": "CATEGORÍAS",
+    "noData": "Sin datos disponibles",
+    "categories": {
+      "culture": "Cultura",
+      "consumption": "Consumo",
+      "sports": "Deportes",
+      "economy": "Economía",
+      "entertainment": "Entretenimiento",
+      "government": "Gobierno",
+      "international": "Internacional",
+      "national": "Nacional",
+      "politics": "Política",
+      "technology": "Tecnología"
+    }
+  }
 }
+
