@@ -5,64 +5,52 @@
       "url": "https://www.rtve.es",
       "channels": [
         {
-          "url": "https://www.rtve.es/rss/rss.xml",
+          "url": "https://api2.rtve.es/rss/temas_noticias.xml",
           "category": "Politica"
         },
         {
-          "url": "https://www.rtve.es/rss/noticias/",
+          "url": "https://api2.rtve.es/rss/temas_espana.xml",
           "category": "Politica"
         },
         {
-          "url": "https://www.rtve.es/rss/economia/",
+          "url": "https://api2.rtve.es/rss/temas_economia.xml",
           "category": "Economia"
         },
         {
-          "url": "https://www.rtve.es/rss/tecnologia/",
+          "url": "https://api2.rtve.es/rss/temas_tecnologia.xml",
           "category": "Tecnologia"
         },
         {
-          "url": "https://www.rtve.es/rss/sociedad/",
+          "url": "https://api2.rtve.es/rss/temas_sociedad.xml",
           "category": "Sociedad"
         },
         {
-          "url": "https://www.rtve.es/rss/cultura/",
+          "url": "https://api2.rtve.es/rss/temas_cultura.xml",
           "category": "Cultura"
         },
         {
-          "url": "https://www.rtve.es/rss/deportes/",
+          "url": "https://api2.rtve.es/rss/temas_deportes.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.rtve.es/rss/internacional/",
+          "url": "https://api2.rtve.es/rss/temas_mundo.xml",
           "category": "Internacional"
         },
         {
-          "url": "https://www.rtve.es/rss/ciencia/",
+          "url": "https://api2.rtve.es/rss/temas_ciencia.xml",
           "category": "Ciencia"
         },
         {
-          "url": "https://www.rtve.es/rss/salud/",
+          "url": "https://api2.rtve.es/rss/temas_salud.xml",
           "category": "Salud"
         },
         {
-          "url": "https://www.rtve.es/rss/medioambiente/",
+          "url": "https://api2.rtve.es/rss/temas_medioambiente.xml",
           "category": "Ciencia"
         },
         {
-          "url": "https://www.rtve.es/rss/educacion/",
+          "url": "https://api2.rtve.es/rss/temas_educacion.xml",
           "category": "Educacion"
-        },
-        {
-          "url": "https://www.rtve.es/rss/viajes/",
-          "category": "Viajes"
-        },
-        {
-          "url": "https://www.rtve.es/rss/gastronomia/",
-          "category": "Sociedad"
-        },
-        {
-          "url": "https://www.rtve.es/rss/fotografia/",
-          "category": "Cultura"
         }
       ]
     },
@@ -71,56 +59,60 @@
       "url": "https://elpais.com",
       "channels": [
         {
-          "url": "https://elpais.com/rss/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/espana/portada",
           "category": "Politica"
         },
         {
-          "url": "https://elpais.com/rss/opinion/",
+          "url": "https://feeds.elpais.com/mrss-s/list/ep/site/elpais.com/section/opinion",
           "category": "Politica"
         },
         {
-          "url": "https://elpais.com/rss/economia/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/economia/portada",
           "category": "Economia"
         },
         {
-          "url": "https://elpais.com/rss/tecnologia/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/tecnologia/portada",
           "category": "Tecnologia"
         },
         {
-          "url": "https://elpais.com/rss/sociedad/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/sociedad/portada",
           "category": "Sociedad"
         },
         {
-          "url": "https://elpais.com/rss/cultura/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/cultura/portada",
           "category": "Cultura"
         },
         {
-          "url": "https://elpais.com/rss/deportes/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/deportes/portada",
           "category": "Deportes"
         },
         {
-          "url": "https://elpais.com/rss/internacional/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada",
           "category": "Internacional"
         },
         {
-          "url": "https://elpais.com/rss/viajes/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/viajes/portada",
           "category": "Viajes"
         },
         {
-          "url": "https://elpais.com/rss/buscavidas/",
+          "url": "https://feeds.elpais.com/mrss-s/list/ep/site/elpais.com/section/buscavidas",
           "category": "Sociedad"
         },
         {
-          "url": "https://elpais.com/rss/clima/",
+          "url": "https://feeds.elpais.com/mrss-s/list/ep/site/elpais.com/section/clima-y-medio-ambiente",
           "category": "Ciencia"
         },
         {
-          "url": "https://elpais.com/rss/television/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/television/portada",
           "category": "Entretenimiento"
         },
         {
-          "url": "https://elpais.com/rss/estilo/",
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/estilo/portada",
           "category": "Sociedad"
+        },
+        {
+          "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/cincodias.elpais.com/portada",
+          "category": "Economia"
         }
       ]
     },
@@ -129,52 +121,98 @@
       "url": "https://www.abc.es",
       "channels": [
         {
-          "url": "https://www.abc.es/rss/",
+          "url": "https://www.abc.es/rss/atom/espana",
           "category": "Politica"
         },
         {
-          "url": "https://www.abc.es/rss/espana/",
+          "url": "https://www.abc.es/rss/atom/opinion",
           "category": "Politica"
         },
         {
-          "url": "https://www.abc.es/rss/economia/",
-          "category": "Economia"
-        },
-        {
-          "url": "https://www.abc.es/rss/tecnologia/",
-          "category": "Tecnologia"
-        },
-        {
-          "url": "https://www.abc.es/rss/sociedad/",
-          "category": "Sociedad"
-        },
-        {
-          "url": "https://www.abc.es/rss/cultura/",
-          "category": "Cultura"
-        },
-        {
-          "url": "https://www.abc.es/rss/deportes/",
-          "category": "Deportes"
-        },
-        {
-          "url": "https://www.abc.es/rss/internacional/",
+          "url": "https://www.abc.es/rss/atom/internacional",
           "category": "Internacional"
         },
         {
-          "url": "https://www.abc.es/rss/opinion/",
-          "category": "Politica"
+          "url": "https://www.abc.es/rss/atom/economia",
+          "category": "Economia"
         },
         {
-          "url": "https://www.abc.es/rss/educacion/",
+          "url": "https://www.abc.es/rss/atom/tecnologia",
+          "category": "Tecnologia"
+        },
+        {
+          "url": "https://www.abc.es/rss/atom/sociedad",
+          "category": "Sociedad"
+        },
+        {
+          "url": "https://www.abc.es/rss/atom/cultura",
+          "category": "Cultura"
+        },
+        {
+          "url": "https://www.abc.es/rss/atom/deportes",
+          "category": "Deportes"
+        },
+        {
+          "url": "https://www.abc.es/rss/atom/educacion",
           "category": "Educacion"
         },
         {
-          "url": "https://www.abc.es/rss/viajar/",
+          "url": "https://www.abc.es/rss/atom/viajar",
           "category": "Viajes"
         },
         {
-          "url": "https://www.abc.es/rss/estilo/",
+          "url": "https://www.abc.es/rss/atom/estilo",
           "category": "Sociedad"
+        },
+        {
+          "url": "https://www.abc.es/rss/atom/salud",
+          "category": "Salud"
+        }
+      ]
+    },
+    {
+      "name": "El Mundo",
+      "url": "https://www.elmundo.es",
+      "channels": [
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml",
+          "category": "Politica"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/espana.xml",
+          "category": "Politica"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/internacional.xml",
+          "category": "Internacional"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/economia.xml",
+          "category": "Economia"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/tecnologia.xml",
+          "category": "Tecnologia"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/cultura.xml",
+          "category": "Cultura"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/sociedad.xml",
+          "category": "Sociedad"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/ciencia.xml",
+          "category": "Ciencia"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundo/rss/salud.xml",
+          "category": "Salud"
+        },
+        {
+          "url": "https://e00-elmundo.uecdn.es/elmundodeporte/rss/portada.xml",
+          "category": "Deportes"
         }
       ]
     },
@@ -183,43 +221,43 @@
       "url": "https://www.marca.com",
       "channels": [
         {
-          "url": "https://www.marca.com/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/portada.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/futbol/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/futbol.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/baloncesto/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/baloncesto.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/tenis/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/tenis.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/motor/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/motor.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/mas-deportes/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/ciclismo.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/otros-deportes/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/atletismo.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/olimpiadas/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/golf.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/directo/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/olimpiadas.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.marca.com/curiosidades/rss.html",
+          "url": "https://e00-marca.uecdn.es/rss/curiosidades.xml",
           "category": "Sociedad"
         }
       ]
@@ -229,48 +267,86 @@
       "url": "https://www.elconfidencial.com",
       "channels": [
         {
-          "url": "https://www.elconfidencial.com/rss/",
+          "url": "https://rss.elconfidencial.com/espana/",
           "category": "Politica"
         },
         {
-          "url": "https://www.elconfidencial.com/mercados/rss/",
+          "url": "https://rss.blogs.elconfidencial.com/espana/el-confidente/",
+          "category": "Politica"
+        },
+        {
+          "url": "https://rss.elconfidencial.com/comunicacion/",
+          "category": "Politica"
+        },
+        {
+          "url": "https://rss.elconfidencial.com/mercados",
           "category": "Economia"
         },
         {
-          "url": "https://www.elconfidencial.com/tecnologia/rss/",
+          "url": "https://rss.elconfidencial.com/empresas",
+          "category": "Economia"
+        },
+        {
+          "url": "https://rss.elconfidencial.com/vivienda",
+          "category": "Economia"
+        },
+        {
+          "url": "https://rss.elconfidencial.com/tecnologia",
           "category": "Tecnologia"
         },
         {
-          "url": "https://www.elconfidencial.com/vivienda/rss/",
-          "category": "Economia"
-        },
-        {
-          "url": "https://www.elconfidencial.com/ciberseguridad/rss/",
-          "category": "Tecnologia"
-        },
-        {
-          "url": "https://www.elconfidencial.com/empresas/rss/",
-          "category": "Economia"
-        },
-        {
-          "url": "https://www.elconfidencial.com/consumo/rss/",
+          "url": "https://rss.elconfidencial.com/sociedad",
           "category": "Sociedad"
         },
         {
-          "url": "https://www.elconfidencial.com/internacionales/rss/",
+          "url": "https://rss.elconfidencial.com/mundo",
           "category": "Internacional"
         },
         {
-          "url": "https://www.elconfidencial.com/opinion/rss/",
-          "category": "Politica"
-        },
-        {
-          "url": "https://www.elconfidencial.com/cultura/rss/",
+          "url": "https://rss.elconfidencial.com/cultura",
           "category": "Cultura"
         },
         {
-          "url": "https://www.elconfidencial.com/elecciones/rss/",
+          "url": "https://rss.elconfidencial.com/deportes",
+          "category": "Deportes"
+        }
+      ]
+    },
+    {
+      "name": "El Español",
+      "url": "https://www.elespanol.com",
+      "channels": [
+        {
+          "url": "https://www.elespanol.com/rss/espana",
           "category": "Politica"
+        },
+        {
+          "url": "https://www.elespanol.com/rss/opinion",
+          "category": "Politica"
+        },
+        {
+          "url": "https://www.elespanol.com/rss/mundo",
+          "category": "Internacional"
+        },
+        {
+          "url": "https://www.elespanol.com/rss/invertia",
+          "category": "Economia"
+        },
+        {
+          "url": "https://www.elespanol.com/rss/sociedad",
+          "category": "Sociedad"
+        },
+        {
+          "url": "https://www.elespanol.com/rss/deportes",
+          "category": "Deportes"
+        },
+        {
+          "url": "https://www.elespanol.com/rss/el-cultural",
+          "category": "Cultura"
+        },
+        {
+          "url": "https://www.elespanol.com/rss/enclave-ods",
+          "category": "Ciencia"
         }
       ]
     },
@@ -279,43 +355,43 @@
       "url": "https://www.antena3.com",
       "channels": [
         {
-          "url": "https://www.antena3.com/rss/",
-          "category": "Politica"
-        },
-        {
           "url": "https://www.antena3.com/noticias/rss/",
           "category": "Politica"
         },
         {
-          "url": "https://www.antena3.com/programas/rss/",
-          "category": "Entretenimiento"
+          "url": "https://www.antena3.com/noticias/espana/rss/",
+          "category": "Politica"
         },
         {
-          "url": "https://www.antena3.com/deportes/rss/",
-          "category": "Deportes"
-        },
-        {
-          "url": "https://www.antena3.com/economia/rss/",
-          "category": "Economia"
-        },
-        {
-          "url": "https://www.antena3.com/tecnologia/rss/",
-          "category": "Tecnologia"
-        },
-        {
-          "url": "https://www.antena3.com/cultura/rss/",
-          "category": "Cultura"
-        },
-        {
-          "url": "https://www.antena3.com/sociedad/rss/",
-          "category": "Sociedad"
-        },
-        {
-          "url": "https://www.antena3.com/internacional/rss/",
+          "url": "https://www.antena3.com/noticias/mundo/rss/",
           "category": "Internacional"
         },
         {
-          "url": "https://www.antena3.com/gente/rss/",
+          "url": "https://www.antena3.com/noticias/economia/rss/",
+          "category": "Economia"
+        },
+        {
+          "url": "https://www.antena3.com/noticias/tecnologia/rss/",
+          "category": "Tecnologia"
+        },
+        {
+          "url": "https://www.antena3.com/noticias/cultura/rss/",
+          "category": "Cultura"
+        },
+        {
+          "url": "https://www.antena3.com/noticias/deportes/rss/",
+          "category": "Deportes"
+        },
+        {
+          "url": "https://www.antena3.com/noticias/sociedad/rss/",
+          "category": "Sociedad"
+        },
+        {
+          "url": "https://www.antena3.com/noticias/programas/rss/",
+          "category": "Entretenimiento"
+        },
+        {
+          "url": "https://www.antena3.com/noticias/gente-y-tendencias/rss/",
           "category": "Sociedad"
         }
       ]
@@ -329,108 +405,78 @@
           "category": "Politica"
         },
         {
-          "url": "https://www.esdiario.com/spain/rss.html",
+          "url": "https://www.esdiario.com/rss/nacional.xml",
           "category": "Politica"
         },
         {
-          "url": "https://www.esdiario.com/opinion/rss.html",
+          "url": "https://www.esdiario.com/rss/opinion.xml",
           "category": "Politica"
         },
         {
-          "url": "https://www.esdiario.com/economia/rss.html",
+          "url": "https://www.esdiario.com/rss/economia.xml",
           "category": "Economia"
         },
         {
-          "url": "https://www.esdiario.com/mundo/rss.html",
-          "category": "Internacional"
-        },
-        {
-          "url": "https://www.esdiario.com/tecnologia/rss.html",
-          "category": "Tecnologia"
-        },
-        {
-          "url": "https://www.esdiario.com/cultura/rss.html",
+          "url": "https://www.esdiario.com/rss/chismografo.xml",
           "category": "Cultura"
         },
         {
-          "url": "https://www.esdiario.com/deportes/rss.html",
+          "url": "https://www.esdiario.com/rss/internacional.xml",
+          "category": "Internacional"
+        },
+        {
+          "url": "https://www.esdiario.com/rss/motor.xml",
+          "category": "Tecnologia"
+        },
+        {
+          "url": "https://www.esdiario.com/rss/viajes.xml",
+          "category": "Viajes"
+        },
+        {
+          "url": "https://www.esdiario.com/rss/deportes.xml",
           "category": "Deportes"
         },
         {
-          "url": "https://www.esdiario.com/sociedad/rss.html",
-          "category": "Sociedad"
-        },
-        {
-          "url": "https://www.esdiario.com/empresa/rss.html",
-          "category": "Economia"
+          "url": "https://www.esdiario.com/rss/salud.xml",
+          "category": "Salud"
         }
       ]
     },
     {
-      "name": "Cadena SER",
-      "url": "https://cadenaser.com",
+      "name": "El Diario",
+      "url": "https://www.eldiario.es",
       "channels": [
         {
-          "url": "https://cadenaser.com/rss/politica.xml",
+          "url": "https://www.eldiario.es/rss",
           "category": "Politica"
         },
         {
-          "url": "https://cadenaser.com/rss/economia.xml",
+          "url": "https://eldiario.opennemas.com/rss/politica/",
+          "category": "Politica"
+        },
+        {
+          "url": "https://eldiario.opennemas.com/rss/economia/",
           "category": "Economia"
         },
         {
-          "url": "https://cadenaser.com/rss/tecnologia.xml",
-          "category": "Tecnologia"
-        },
-        {
-          "url": "https://cadenaser.com/rss/sociedad.xml",
+          "url": "https://eldiario.opennemas.com/rss/sociedad/",
           "category": "Sociedad"
         },
         {
-          "url": "https://cadenaser.com/rss/cultura.xml",
+          "url": "https://eldiario.opennemas.com/rss/cultura/",
           "category": "Cultura"
         },
         {
-          "url": "https://cadenaser.com/rss/deportes.xml",
-          "category": "Deportes"
-        },
-        {
-          "url": "https://cadenaser.com/rss/internacional.xml",
+          "url": "https://eldiario.opennemas.com/rss/internacional/",
           "category": "Internacional"
         },
         {
-          "url": "https://cadenaser.com/rss/otros.xml",
-          "category": "Sociedad"
-        }
-      ]
-    },
-    {
-      "name": "Ministerio de Economia",
-      "url": "https://www.mineco.gob.es",
-      "channels": [
-        {
-          "url": "https://portal.mineco.gob.es/es-es/ministerio/Paginas/Info_RSS.aspx",
-          "category": "Economia"
-        },
-        {
-          "url": "https://portal.mineco.gob.es/es-es/noticias/Paginas/Info_RSS.aspx",
-          "category": "Economia"
-        },
-        {
-          "url": "https://portal.mineco.gob.es/es-es/prensa/Paginas/Info_RSS.aspx",
-          "category": "Politica"
-        },
-        {
-          "url": "https://portal.mineco.gob.es/es-es/foment/Paginas/Info_RSS.aspx",
-          "category": "Economia"
-        },
-        {
-          "url": "https://portal.mineco.gob.es/es-es/innovacion/Paginas/Info_RSS.aspx",
+          "url": "https://eldiario.opennemas.com/rss/tecnologia/",
           "category": "Tecnologia"
         },
         {
-          "url": "https://portal.mineco.gob.es/es-es/industria/Paginas/Info_RSS.aspx",
-          "category": "Economia"
+          "url": "https://eldiario.opennemas.com/rss/deportes/",
+          "category": "Deportes"
         }
       ]
     },
@@ -443,20 +489,30 @@
           "category": "Politica"
         },
         {
-          "url": "https://www.lamoncloa.gob.es/presidente/cgobierno/paginas/rss.aspx",
+          "url": "https://www.lamoncloa.gob.es/paginas/rss.aspx?tipo=1",
           "category": "Politica"
         },
         {
-          "url": "https://www.lamoncloa.gob.es/comunicacion/news/paginas/rss.aspx",
+          "url": "https://www.lamoncloa.gob.es/paginas/rss.aspx?tipo=2",
           "category": "Politica"
         },
         {
-          "url": "https://www.lamoncloa.gob.es/lang_en/secciones/noticias/paginas/rss.aspx",
-          "category": "Internacional"
+          "url": "https://www.lamoncloa.gob.es/paginas/rss.aspx?tipo=20",
+          "category": "Politica"
+        }
+      ]
+    },
+    {
+      "name": "Consumo - AECOSAN",
+      "url": "https://www.consumo.gob.es",
+      "channels": [
+        {
+          "url": "https://consumo.gob.es/es/rss-noticias.xml",
+          "category": "Sociedad"
         },
         {
-          "url": "https://www.lamoncloa.gob.es/agendaprensa/actividades/paginas/rss.aspx",
-          "category": "Politica"
+          "url": "https://consumo.gob.es/es/rss-publicaciones.xml",
+          "category": "Sociedad"
         }
       ]
     }
