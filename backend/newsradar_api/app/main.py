@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import smtplib
 import logging
@@ -9,6 +10,8 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from uuid import uuid4
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +25,8 @@ from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
+from .services.ia_service import generate_synonyms, classify_iptc_level1
+from .services.rss_worker import RSSWorker
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -62,7 +67,7 @@ print("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD, flush=True)
 
 def send_verification_email(to_email: str, token: str) -> None:
     """Envía el correo de verificación de cuenta usando Gmail con contraseña de aplicación."""
-    verification_link = f"{FRONTEND_RESET_URL}?token={token}"  # Ajusta la URL según tu frontend
+    verification_link = f"{FRONTEND_VERIFY_URL}?token={token}"  # Ajusta la URL según tu frontend
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Verifica tu cuenta - NewsRadar"
@@ -206,6 +211,18 @@ class AlertUpdate(BaseModel):
     descriptors: Optional[List[str]] = None
     categories: Optional[List[AlertCategoryItem]] = None
     cron_expression: Optional[str] = Field(None, min_length=1, max_length=120)
+
+
+class SuggestSynonymsRequest(BaseModel):
+    """Request para generar sinónimos de palabras clave."""
+    keywords: List[str] = Field(..., min_items=1, max_items=5)
+    max_synonyms: int = Field(default=5, ge=3, le=10)
+
+
+class SuggestSynonymsResponse(BaseModel):
+    """Response con sugerencias de sinónimos."""
+    keywords: List[str]
+    suggested_synonyms: List[str]
 
 
 class Alert(AlertBase):
@@ -779,6 +796,35 @@ async def delete_role(
 
     await db.delete(role)
     await db.commit()
+
+
+# =========================================================================
+# ALERTS & IA ENDPOINTS
+# =========================================================================
+
+@app.post(
+    f"{API_PREFIX}/alerts/suggest-synonyms",
+    response_model=SuggestSynonymsResponse,
+    tags=["alerts"],
+)
+async def suggest_synonyms(
+    payload: SuggestSynonymsRequest,
+    _: UserInDB = Depends(get_current_user),
+) -> SuggestSynonymsResponse:
+    """
+    Sugiere sinónimos y palabras relacionadas para palabras clave.
+    
+    Utiliza IA (OpenAI gpt-3.5-turbo) para generar sinónimos que amplíen
+    la cobertura de búsqueda de noticias.
+    
+    RF-02: Sugerencia automática de sinónimos durante la creación de alertas
+    """
+    suggested = generate_synonyms(payload.keywords, payload.max_synonyms)
+    
+    return SuggestSynonymsResponse(
+        keywords=payload.keywords,
+        suggested_synonyms=suggested,
+    )
 
 
 @app.get(
