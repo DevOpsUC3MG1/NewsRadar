@@ -449,3 +449,143 @@
   flex: 1;
   font-weight: 700;
 }
+
+/* Añadir o modificar en frontend/src/pages/alerts/alerts.module.css */
+
+/* Permitir scroll en el modal porque ahora es más alto */
+.modalContent {
+  background: white;
+  width: 650px; /* Un poco más ancho para los canales */
+  max-height: 90vh; /* Límite de altura de la pantalla */
+  border-radius: 20px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.formBody {
+  overflow-y: auto; /* Scroll interno para el formulario */
+  padding-right: 10px; /* Espacio para la barra de scroll */
+}
+
+.formBody::-webkit-scrollbar {
+  width: 6px;
+}
+.formBody::-webkit-scrollbar-thumb {
+  background-color: #d9d9d9;
+  border-radius: 10px;
+}
+
+/* --- NUEVOS ESTILOS PARA LA CASCADA --- */
+
+.emptyStateText {
+  font-size: 0.85rem;
+  color: #888;
+  font-style: italic;
+  margin: 5px 0;
+}
+
+.labelWithSearch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.searchBox input {
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 0.75rem;
+  font-family: inherit;
+  width: 120px;
+}
+
+.channelsContainer {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.sourceCard {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.sourceCardTitle {
+  margin: 0 0 10px 0;
+  font-size: 0.8rem;
+  color: #0E0E1D;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.channelList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.channelCategoryBadge {
+  background-color: #eef2ff;
+  color: #0088FE;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 5px;
+  font-weight: 700;
+}
+
+/* --- CORRECCIÓN DEL BUSCADOR --- */
+.searchBox input {
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 0.75rem;
+  font-family: inherit;
+  width: 120px;
+  color: #0E0E1D; /* <-- AQUÍ EL COLOR NEGRO PARA LAS LETRAS */
+}
+
+.searchBox input::placeholder {
+  color: #888888;
+}
+
+/* --- ESTILOS PARA CONTENEDORES VACÍOS --- */
+.emptyContainerBox {
+  border: 1px dashed #ccc;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #fafafa;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50px;
+}
+
+.emptyStateText {
+  font-size: 0.85rem;
+  color: #888;
+  font-style: italic;
+  margin: 0;
+}
