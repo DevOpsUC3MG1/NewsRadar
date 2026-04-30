@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './fuentes.module.css';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -17,29 +18,40 @@ const FilterCheck = ({ label, checked, onToggle }) => (
 );
 
 // ─── FILA FUENTE ──────────────────────────────────────────────────────────────
-const FuenteRow = ({ item }) => (
-  <div className={styles.row}>
-    <span className={styles.rowName}>{item.nombre}</span>
-    <div className={styles.rowCats}>
-      {item.categorias && item.categorias.map((c, idx) => (
-        <span key={`${c}-${idx}`} className={styles.catBadge}>{c}</span>
-      ))}
+const FuenteRow = ({ item }) => {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.row}>
+      <span className={styles.rowName}>{item.nombre}</span>
+      <div className={styles.rowCats}>
+        {item.categorias && item.categorias.map((c, idx) => (
+          <span key={`${c}-${idx}`} className={styles.catBadge}>
+            {t(`categorias.${c}`, { defaultValue: c })}
+          </span>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── FILA CANAL RSS ───────────────────────────────────────────────────────────
-const CanalRow = ({ item }) => (
-  <div className={styles.row}>
-    <span className={styles.rowName}>{item.nombre}</span>
-    <div className={styles.rowCats}>
-      <span className={styles.catBadge}>{item.categoria}</span>
+const CanalRow = ({ item }) => {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.row}>
+      <span className={styles.rowName}>{item.nombre}</span>
+      <div className={styles.rowCats}>
+        <span className={styles.catBadge}>
+          {t(`categorias.${item.categoria}`, { defaultValue: item.categoria })}
+        </span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 const Fuentes = () => {
+  const { t } = useTranslation();
   const { fuentes, canales, categorias, newsLoading, newsError } = useContext(AuthContext);
 
   const [activeTab, setActiveTab]       = useState('fuentes');
@@ -47,8 +59,7 @@ const Fuentes = () => {
   const [selectedCats, setSelectedCats] = useState([]);
   const [selectedFts, setSelectedFts]   = useState([]);
 
-  // ─── NORMALIZACIÓN DE DATOS (Solución al pantallazo en blanco) ──────────────
-  // Extraemos solo los "nombres" (strings) por si el backend nos envía objetos enteros
+  // ─── NORMALIZACIÓN DE DATOS ─────────────────────────────────────────────────
   const safeCategorias = useMemo(() => {
     const cats = categorias || [];
     return [...new Set(cats.map(c => typeof c === 'object' && c !== null ? c.name : c))].filter(Boolean);
@@ -84,7 +95,6 @@ const Fuentes = () => {
 
   const isFuentesTab = activeTab === 'fuentes';
 
-  // Filtramos usando las listas seguras (safe...)
   const filteredFuentes = useMemo(() =>
     safeFuentes.filter((item) => {
       const matchSearch = !searchText.trim() || item.nombre.toLowerCase().includes(searchText.toLowerCase());
@@ -102,13 +112,12 @@ const Fuentes = () => {
     }),
   [safeCanales, searchText, selectedCats, selectedFts]);
 
-
   // ─── PANTALLAS DE CARGA Y ERROR ──────────────────────────────────────────────
   if (newsLoading) {
     return (
       <div className={styles.wrapper}>
         <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-          Cargando fuentes y canales desde el servidor...
+          {t('sources.loading')}
         </div>
       </div>
     );
@@ -118,7 +127,7 @@ const Fuentes = () => {
     return (
       <div className={styles.wrapper}>
         <div style={{ padding: '40px', textAlign: 'center', color: '#E02020' }}>
-          Ocurrió un error al cargar la información. Inténtalo de nuevo más tarde.
+          {t('sources.error')}
         </div>
       </div>
     );
@@ -127,23 +136,23 @@ const Fuentes = () => {
   // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────────
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.pageTitle}>Fuente y RSS – Gestión de fuentes</h1>
+      <h1 className={styles.pageTitle}>{t('sources.title')}</h1>
 
       <div className={styles.mainCard}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardHeaderTitle}>Fuentes e información</span>
+          <span className={styles.cardHeaderTitle}>{t('sources.cardTitle')}</span>
           <div className={styles.tabs}>
             <button
               className={`${styles.tab} ${isFuentesTab ? styles.tabActive : ''}`}
               onClick={() => handleTabChange('fuentes')}
             >
-              Fuentes
+              {t('sources.tabs.sources')}
             </button>
             <button
               className={`${styles.tab} ${!isFuentesTab ? styles.tabActive : ''}`}
               onClick={() => handleTabChange('canales')}
             >
-              Canales RSS
+              {t('sources.tabs.channels')}
             </button>
           </div>
         </div>
@@ -153,17 +162,19 @@ const Fuentes = () => {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="Buscar..."
+              placeholder={t('sources.sidebar.search')}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
 
-            <p className={styles.sidebarSection}>Categorías</p>
+            <p className={styles.sidebarSection}>{t('sources.sidebar.categories')}</p>
             <div className={styles.catList}>
               {safeCategorias.map((cat, idx) => (
                 <FilterCheck
                   key={`cat-${idx}`}
-                  label={cat}
+                  // Traducimos el texto que ve el usuario
+                  label={t(`categorias.${cat}`, { defaultValue: cat })}
+                  // Comparamos usando el valor original
                   checked={selectedCats.includes(cat)}
                   onToggle={() => toggleCat(cat)}
                 />
@@ -172,7 +183,7 @@ const Fuentes = () => {
 
             {!isFuentesTab && (
               <>
-                <p className={styles.sidebarSection}>Fuentes</p>
+                <p className={styles.sidebarSection}>{t('sources.sidebar.sources')}</p>
                 <div className={styles.catList}>
                   {safeFuentes.map((f) => (
                     <FilterCheck
@@ -191,19 +202,28 @@ const Fuentes = () => {
             <div className={styles.listScroll}>
               {isFuentesTab ? (
                 filteredFuentes.length === 0
-                  ? <div className={styles.emptyState}>No se encontraron fuentes con los filtros actuales.</div>
+                  ? <div className={styles.emptyState}>{t('sources.empty.sources')}</div>
                   : filteredFuentes.map((item) => <FuenteRow key={`f-row-${item.id}`} item={item} />)
               ) : (
                 filteredCanales.length === 0
-                  ? <div className={styles.emptyState}>No se encontraron canales con los filtros actuales.</div>
+                  ? <div className={styles.emptyState}>{t('sources.empty.channels')}</div>
                   : filteredCanales.map((item) => <CanalRow key={`c-row-${item.id}`} item={item} />)
               )}
             </div>
 
             <div className={styles.listFooter}>
               {isFuentesTab
-                ? `Mostrando ${filteredFuentes.length} de ${safeFuentes.length} fuentes – ${safeCanales.length} canales RSS totales`
-                : `Mostrando ${filteredCanales.length} de ${safeCanales.length} canales – ${safeFuentes.length} fuentes totales`}
+                ? t('sources.footer.sources', {
+                    filtered: filteredFuentes.length,
+                    total: safeFuentes.length,
+                    channels: safeCanales.length
+                  })
+                : t('sources.footer.channels', {
+                    filtered: filteredCanales.length,
+                    total: safeCanales.length,
+                    sources: safeFuentes.length
+                  })
+              }
             </div>
           </div>
         </div>
