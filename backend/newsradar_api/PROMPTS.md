@@ -5,7 +5,7 @@ Requisito RNF-06: Mantener registro documentado de todos los prompts IA utilizad
 ## IA-001: Generación de Sinónimos
 
 **Ubicación**: `app/services/ia_service.py:generate_synonyms()`  
-**Modelo**: OpenAI gpt-3.5-turbo  
+**Modelo**: Gemini (`GEMINI_MODEL`, por defecto `gemini-1.5-flash`) o OpenAI (`OPENAI_MODEL`)  
 **Endpoint**: POST `/api/v1/alerts/suggest-synonyms`
 
 ### Propósito
@@ -63,7 +63,7 @@ Response:
 ## IA-002: Clasificación Automática IPTC
 
 **Ubicación**: `app/services/ia_service.py:classify_iptc_level1()`  
-**Modelo**: OpenAI gpt-3.5-turbo  
+**Modelo**: Gemini (`GEMINI_MODEL`, por defecto `gemini-1.5-flash`) o OpenAI (`OPENAI_MODEL`)  
 **Ejecución**: Automática en background durante ingestión RSS
 
 ### Propósito
@@ -120,8 +120,13 @@ Output: `Technology`
 ## Variables de Entorno Requeridas
 
 ```bash
-OPENAI_API_KEY=sk-...          # Tu API key de OpenAI
-OPENAI_MODEL=gpt-3.5-turbo     # Modelo a usar (por defecto)
+GOOGLE_API_KEY=AIza...         # Tu API key de Google AI Studio (recomendado)
+GEMINI_MODEL=gemini-1.5-flash  # Modelo a usar (por defecto)
+IA_PROVIDER=gemini             # Opcional (autodetecta si hay GOOGLE_API_KEY)
+
+# Legacy / opcional:
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-3.5-turbo
 ```
 
 ## Notas de Implementación
