@@ -202,3 +202,69 @@ curl -s "http://localhost:8000/api/v1/resumen/clouds/technology?days=30&limit=20
   -H "Authorization: Bearer TU_TOKEN"
 ```
 
+## Integración en frontend (guía rápida)
+
+El frontend ya tiene mocks en:
+
+- `frontend/src/pages/dashboard/dashboard.jsx`
+- `frontend/src/pages/resumen/nubes.jsx`
+
+La integración consiste en **reemplazar los mocks por llamadas HTTP** a los endpoints del backend.
+
+### Requisitos
+
+- Tener el `token` (Bearer) disponible donde el frontend lo gestione (localStorage/context/etc).
+- Usar la base URL que ya tengáis configurada (p. ej. `VITE_API_URL`).
+
+Ejemplo (helper mínimo):
+
+```js
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const token = localStorage.getItem('token'); // o donde lo guardeis
+
+const apiFetch = async (path) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Accept-Language': navigator.language || 'en',
+    },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+```
+
+### Dashboard (`dashboard.jsx`)
+
+Reemplazar `fetchDashboardData()` para que haga:
+
+```js
+const response = await apiFetch(`/api/v1/dashboard?days=7`);
+setData(response);
+```
+
+Si queréis que el toggle 1D/7D afecte al backend, entonces:
+
+```js
+const days = newsFilter === '1D' ? 1 : 7;
+const response = await apiFetch(`/api/v1/dashboard?days=${days}`);
+setData(response);
+```
+
+### Nubes (`nubes.jsx`)
+
+Reemplazar:
+
+- `fetchNubeGlobal()` por:
+
+```js
+return apiFetch(`/api/v1/resumen/clouds/global?days=30&limit=20`);
+```
+
+- `fetchNubeCategoria(categoria)` por:
+
+```js
+return apiFetch(`/api/v1/resumen/clouds/${categoria}?days=30&limit=20`);
+```
+
+Con eso, `WordCloud` ya puede pintar directamente porque la respuesta es `[{term, count}]`.
