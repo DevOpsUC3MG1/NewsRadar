@@ -25,7 +25,7 @@ from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
-from .services.ia_service import generate_synonyms, classify_iptc_level1
+from .services.ia_service import generate_synonyms, classify_iptc_level1, upsert_synonyms
 from .services.rss_worker import RSSWorker
 
 # Cargar variables de entorno desde el archivo .env
@@ -59,11 +59,7 @@ FRONTEND_VERIFY_URL = os.getenv("FRONTEND_VERIFY_URL")
 
 logger = logging.getLogger("uvicorn.error")
 logger.debug("GMAIL_SENDER: %s", GMAIL_SENDER)
-logger.debug("GMAIL_APP_PASSWORD: %s", GMAIL_APP_PASSWORD)
-
-
-print("GMAIL_SENDER:", GMAIL_SENDER, flush=True)
-print("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD, flush=True)
+# No loguear secretos (passwords/tokens)
 
 def send_verification_email(to_email: str, token: str) -> None:
     """Envía el correo de verificación de cuenta usando Gmail con contraseña de aplicación."""
@@ -814,6 +810,7 @@ async def delete_role(
 async def suggest_synonyms(
     payload: SuggestSynonymsRequest,
     _: UserInDB = Depends(get_current_user),
+    mongo_db = Depends(get_mongo_db),
 ) -> SuggestSynonymsResponse:
     """
     Sugiere sinónimos y palabras relacionadas para palabras clave.
@@ -824,6 +821,14 @@ async def suggest_synonyms(
     RF-02: Sugerencia automática de sinónimos durante la creación de alertas
     """
     suggested = generate_synonyms(payload.keywords, payload.max_synonyms)
+
+    # Guardar en diccionario cacheado (MongoDB) para reutilizar en el worker.
+    # Solo persistimos cuando se pide sobre 1 keyword (evita mezclar sinónimos de varios temas).
+    if len(payload.keywords) == 1:
+        try:
+            await upsert_synonyms(mongo_db, keyword=payload.keywords[0], synonyms=suggested, provider="api")
+        except Exception as e:
+            logger.warning("No se pudo actualizar keyword_dictionary: %s", str(e))
     
     return SuggestSynonymsResponse(
         keywords=payload.keywords,
