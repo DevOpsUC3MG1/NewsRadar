@@ -13,7 +13,7 @@ from uuid import uuid4
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
@@ -25,8 +25,9 @@ from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
-from .services.ia_service import generate_synonyms, classify_iptc_level1
+from .services.ia_service import generate_synonyms, classify_iptc_level1, upsert_synonyms
 from .services.rss_worker import RSSWorker
+from .services.analytics_service import build_dashboard, build_wordcloud
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -59,11 +60,7 @@ FRONTEND_VERIFY_URL = os.getenv("FRONTEND_VERIFY_URL")
 
 logger = logging.getLogger("uvicorn.error")
 logger.debug("GMAIL_SENDER: %s", GMAIL_SENDER)
-logger.debug("GMAIL_APP_PASSWORD: %s", GMAIL_APP_PASSWORD)
-
-
-print("GMAIL_SENDER:", GMAIL_SENDER, flush=True)
-print("GMAIL_APP_PASSWORD:", GMAIL_APP_PASSWORD, flush=True)
+# No loguear secretos (passwords/tokens)
 
 def send_verification_email(to_email: str, token: str) -> None:
     """Envía el correo de verificación de cuenta usando Gmail con contraseña de aplicación."""
@@ -354,6 +351,41 @@ class ResetPasswordRequest(BaseModel):
 class UserEmailVerificationStatus(BaseModel):
     email: EmailStr
     is_verified: bool
+
+
+class WordCloudItem(BaseModel):
+    term: str = Field(..., min_length=1, max_length=80)
+    count: int = Field(..., ge=1, le=100)
+
+
+class DashboardFuentes(BaseModel):
+    activas: int = Field(..., ge=0)
+    rss: int = Field(..., ge=0)
+
+
+class DashboardNoticias(BaseModel):
+    hoy: int = Field(..., ge=0)
+    semana: int = Field(..., ge=0)
+
+
+class DashboardEvolutionItem(BaseModel):
+    name: str = Field(..., min_length=1, max_length=16)  # etiqueta dia (Mon/Lun)
+    date: str = Field(..., min_length=10, max_length=10)  # YYYY-MM-DD
+    noticias: int = Field(..., ge=0)
+
+
+class DashboardCategoryItem(BaseModel):
+    key: str = Field(..., min_length=1, max_length=30)
+    name: str = Field(..., min_length=1, max_length=60)
+    value: int = Field(..., ge=0)
+
+
+class DashboardResponse(BaseModel):
+    fuentes: DashboardFuentes
+    noticias: DashboardNoticias
+    alertas: int = Field(..., ge=0)
+    evolucion: List[DashboardEvolutionItem]
+    categorias: List[DashboardCategoryItem]
 
 # Token storage (in-memory for simplicity, could be moved to Redis in production)
 # password_reset_tokens almacena {token: user_id} — en producción usar Redis con TTL
@@ -814,6 +846,7 @@ async def delete_role(
 async def suggest_synonyms(
     payload: SuggestSynonymsRequest,
     _: UserInDB = Depends(get_current_user),
+    mongo_db = Depends(get_mongo_db),
 ) -> SuggestSynonymsResponse:
     """
     Sugiere sinónimos y palabras relacionadas para palabras clave.
@@ -824,10 +857,85 @@ async def suggest_synonyms(
     RF-02: Sugerencia automática de sinónimos durante la creación de alertas
     """
     suggested = generate_synonyms(payload.keywords, payload.max_synonyms)
+
+    # Guardar en diccionario cacheado (MongoDB) para reutilizar en el worker.
+    # Solo persistimos cuando se pide sobre 1 keyword (evita mezclar sinónimos de varios temas).
+    if len(payload.keywords) == 1:
+        try:
+            await upsert_synonyms(mongo_db, keyword=payload.keywords[0], synonyms=suggested, provider="api")
+        except Exception as e:
+            logger.warning("No se pudo actualizar keyword_dictionary: %s", str(e))
     
     return SuggestSynonymsResponse(
         keywords=payload.keywords,
         suggested_synonyms=suggested,
+    )
+
+
+# =========================================================================
+# DASHBOARD & RESUMEN (ANALYTICS)
+# =========================================================================
+
+@app.get(
+    f"{API_PREFIX}/dashboard",
+    response_model=DashboardResponse,
+    tags=["dashboard"],
+)
+async def get_dashboard(
+    days: int = 7,
+    _: UserInDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    mongo_db = Depends(get_mongo_db),
+    request: Request = None,
+):
+    accept_language = request.headers.get("accept-language") if request else None
+    return await build_dashboard(db=db, mongo_db=mongo_db, days=days, accept_language=accept_language)
+
+
+@app.get(
+    f"{API_PREFIX}/resumen/clouds/global",
+    response_model=List[WordCloudItem],
+    tags=["resumen"],
+)
+async def get_wordcloud_global(
+    days: int = 30,
+    limit: int = 20,
+    _: UserInDB = Depends(get_current_user),
+    mongo_db = Depends(get_mongo_db),
+    request: Request = None,
+):
+    accept_language = request.headers.get("accept-language") if request else None
+    return await build_wordcloud(
+        mongo_db=mongo_db,
+        days=days,
+        limit=limit,
+        accept_language=accept_language,
+        cloud_category=None,
+    )
+
+
+@app.get(
+    f"{API_PREFIX}/resumen/clouds/{{category}}",
+    response_model=List[WordCloudItem],
+    tags=["resumen"],
+)
+async def get_wordcloud_by_category(
+    category: str,
+    days: int = 30,
+    limit: int = 20,
+    _: UserInDB = Depends(get_current_user),
+    mongo_db = Depends(get_mongo_db),
+    request: Request = None,
+):
+    accept_language = request.headers.get("accept-language") if request else None
+    # category esperada por frontend (ver nubes.jsx): culture, consumption, sports, economy, entertainment,
+    # government, international, national, politics, technology
+    return await build_wordcloud(
+        mongo_db=mongo_db,
+        days=days,
+        limit=limit,
+        accept_language=accept_language,
+        cloud_category=category,
     )
 
 

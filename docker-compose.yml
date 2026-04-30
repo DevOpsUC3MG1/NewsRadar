@@ -43,6 +43,11 @@ services:
       - MONGODB_URL=${MONGODB_URL}
     ports:
       - "8000:8000"
+    command: >
+      sh -c "export PYTHONPATH=/app/newsradar_api &&
+      python /app/newsradar_api/init_db.py &&
+      python -m app.seed &&
+      uvicorn newsradar_api.app.main:app --host 0.0.0.0 --port 8000"
 
   # Frontend: La interfaz de usuario
   frontend:

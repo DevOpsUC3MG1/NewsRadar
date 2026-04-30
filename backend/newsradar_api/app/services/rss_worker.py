@@ -19,7 +19,7 @@ from sqlalchemy import select
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..models import Alert as AlertModel, RSSChannel as RSSChannelModel, Category as CategoryModel
-from .ia_service import classify_iptc_level1
+from .ia_service import classify_iptc_level1, expand_keywords
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +62,24 @@ class RSSWorker:
         # 2. Obtener descriptores y sinónimos de la alerta
         descriptors = alert.descriptors or []
         # descriptors son List[str] en el modelo
-        keywords = descriptors if isinstance(descriptors, list) else [descriptors]
+        base_keywords = descriptors if isinstance(descriptors, list) else [descriptors]
         
-        if not keywords:
+        if not base_keywords:
             logger.info(f"Alerta {alert_id} sin descriptores")
             return stats
-        
+
+        # 2b. Ampliar keywords usando diccionario (MongoDB) + IA (si hace falta)
+        try:
+            keywords = await expand_keywords(
+                self.mongo_db,
+                keywords=base_keywords,
+                max_synonyms_per_keyword=5,
+                max_age_days=30,
+            )
+        except Exception as e:
+            logger.error("Error expandiendo keywords con diccionario: %s", str(e))
+            keywords = base_keywords
+
         # 3. Obtener canales RSS asociados a las categorías de la alerta
         rss_channels = await self._get_alert_channels(alert)
         stats["channels_processed"] = len(rss_channels)
