@@ -99,6 +99,9 @@ echo "Inicializando esquema de base de datos..."
 export PYTHONPATH=$PYTHONPATH:.
 python -m init_db
 
+echo "Ejecutando seed de datos iniciales..."
+python -m app.seed
+
 echo ""
 echo "======================================="
 echo -e "${GREEN}✅ Setup completado exitosamente!${NC}"
