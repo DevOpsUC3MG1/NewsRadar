@@ -20,7 +20,7 @@ export default function Header() {
 
       {/* Sección Izquierda: Logo y Título */}
       <Link
-        to="/app"
+        to="/dashboard"
         className={styles.logoSection}
         style={{ textDecoration: 'none', color: 'inherit' }}
       >

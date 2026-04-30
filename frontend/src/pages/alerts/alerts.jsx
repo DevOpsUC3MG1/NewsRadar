@@ -12,7 +12,7 @@ const CATEGORIAS_DISPONIBLES = [
   "Seguridad", "Terrorismo", "Internacional", "Deportes"
 ];
 
-// Datos simulados para probar la cascada (En el futuro esto vendrá de tu API)
+// Datos simulados (Se sustituirán por llamadas a la API o CatalogContext)
 const MOCK_SOURCES = [
   {
     id: "src_elpais", name: "El País",
@@ -42,10 +42,10 @@ const MOCK_SOURCES = [
 const Alerts = () => {
   const [alerts, setAlerts] = useState([
     {
-      id: '1', nombre: "Atentado en Madrid", keyword: "Atentado",
-      descriptores: ["bomba", "policía"], categorias: ["Seguridad"],
-      information_sources_ids: [], rss_channels_ids: [],
-      periodicidad: "0 0 * * *"
+      id: '1', nombre: "Seguimiento Ibex 35", keyword: "Ibex",
+      descriptores: ["bolsa", "mercado"], categorias: ["Economía"],
+      information_sources_ids: ["src_elpais"], rss_channels_ids: ["ch_ep_eco"],
+      periodicidad: "0 9 * * 1-5"
     },
   ]);
 
@@ -54,23 +54,17 @@ const Alerts = () => {
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
-
-  // Estado para el buscador de canales
   const [channelSearch, setChannelSearch] = useState("");
 
   const [form, setForm] = useState({
-    nombre: '',
-    keyword: '',
-    periodicidad: '',
-    descriptores: [],
-    categorias: [],
-    information_sources_ids: [],
-    rss_channels_ids: []
+    nombre: '', keyword: '', periodicidad: '',
+    descriptores: [], categorias: [],
+    information_sources_ids: [], rss_channels_ids: []
   });
 
   const [suggestedDescriptors, setSuggestedDescriptors] = useState([]);
 
-  // Validación de expresión cron
+  // Validación básica de CRON
   const isValidCron = (cron) => {
     const cronRegex = /^(\*|([0-5]?\d)(-[0-5]?\d)?(,[0-5]?\d)*)(\s+(\*|([0-5]?\d)(-[0-5]?\d)?(,[0-5]?\d)*)){4}$/;
     return cronRegex.test(cron.trim());
@@ -82,64 +76,37 @@ const Alerts = () => {
       return;
     }
     if (!isValidCron(form.periodicidad)) {
-      setErrorMsg("La expresión cron no es válida. Ejemplo: * * * * *");
+      setErrorMsg("La expresión cron no es válida.");
       return;
     }
-
-    setErrorMsg("");
-
     if (editingAlert) {
       setAlerts(alerts.map(a => a.id === editingAlert.id ? { ...form, id: a.id } : a));
     } else {
-      const newAlert = { ...form, id: Date.now().toString() };
-      setAlerts([...alerts, newAlert]);
+      setAlerts([...alerts, { ...form, id: Date.now().toString() }]);
     }
     setIsModalOpen(false);
   };
 
   const handleCloseAttempt = () => {
-    if (form.nombre || form.keyword || form.periodicidad || form.descriptores.length > 0 || form.categorias.length > 0) {
-      setShowConfirmClose(true);
-    } else {
-      setIsModalOpen(false);
-    }
+    const isDirty = form.nombre || form.keyword || form.categorias.length > 0;
+    if (isDirty) setShowConfirmClose(true);
+    else setIsModalOpen(false);
   };
 
   const handleToggleDescriptor = (desc) => {
-    const current = form.descriptores;
-    setForm({ ...form, descriptores: current.includes(desc) ? current.filter(d => d !== desc) : [...current, desc] });
+    setForm(prev => ({
+      ...prev,
+      descriptores: prev.descriptores.includes(desc)
+        ? prev.descriptores.filter(d => d !== desc)
+        : [...prev.descriptores, desc]
+    }));
   };
 
-  const handleToggleCategory = (cat) => {
-    const current = form.categorias;
-    setForm({ ...form, categorias: current.includes(cat) ? current.filter(c => c !== cat) : [...current, cat] });
-  };
-
-  const handleToggleSource = (sourceId) => {
-    const current = form.information_sources_ids;
-    setForm({ ...form, information_sources_ids: current.includes(sourceId) ? current.filter(id => id !== sourceId) : [...current, sourceId] });
-  };
-
-  const handleToggleChannel = (channelId) => {
-    const current = form.rss_channels_ids;
-    setForm({ ...form, rss_channels_ids: current.includes(channelId) ? current.filter(id => id !== channelId) : [...current, channelId] });
-  };
-
-  useEffect(() => {
-    if (form.keyword.length > 2) {
-      setSuggestedDescriptors(["urgente", "oficial", "noticia", "relevante", "impacto", "suceso"]);
-    }
-  }, [form.keyword]);
-
-  // --- LÓGICA DE FILTRADO EN CASCADA ---
-  // 1. Fuentes disponibles basadas en las categorías seleccionadas
+  // --- FILTRADO EN CASCADA ---
   const availableSources = useMemo(() => {
-    return MOCK_SOURCES.filter(source =>
-      source.channels.some(ch => form.categorias.includes(ch.category))
-    );
+    return MOCK_SOURCES.filter(src => src.channels.some(ch => form.categorias.includes(ch.category)));
   }, [form.categorias]);
 
-  // 2. Canales disponibles agrupados por fuente, basados en categorías, fuentes y búsqueda
   const availableChannelsBySource = useMemo(() => {
     const grouped = {};
     MOCK_SOURCES.filter(src => form.information_sources_ids.includes(src.id)).forEach(source => {
@@ -147,12 +114,28 @@ const Alerts = () => {
         form.categorias.includes(ch.category) &&
         ch.name.toLowerCase().includes(channelSearch.toLowerCase())
       );
-      if (validChannels.length > 0) {
-        grouped[source.name] = validChannels;
-      }
+      if (validChannels.length > 0) grouped[source.name] = validChannels;
     });
     return grouped;
   }, [form.categorias, form.information_sources_ids, channelSearch]);
+
+  const allAvailableChannelIds = useMemo(() => Object.values(availableChannelsBySource).flat().map(ch => ch.id), [availableChannelsBySource]);
+
+  // --- TRADUCCIÓN DE IDs A NOMBRES PARA LA TABLA ---
+  const getSourceNames = (ids) => ids.map(id => MOCK_SOURCES.find(s => s.id === id)?.name || id).join(", ");
+  const getChannelNames = (ids) => {
+    const all = MOCK_SOURCES.flatMap(s => s.channels);
+    return ids.map(id => all.find(c => c.id === id)?.name || id).join(", ");
+  };
+
+  // --- ESTILOS DE BOTONES "PÍLDORA" ---
+  const btnPillStyle = (type) => ({
+    background: type === 'all' ? '#EEF2FF' : '#F7FAFC',
+    border: `1px solid ${type === 'all' ? '#D0D7F6' : '#E2E8F0'}`,
+    color: type === 'all' ? '#4B6A9B' : '#718096',
+    fontSize: '0.75rem', fontWeight: '600', cursor: 'pointer',
+    padding: '4px 12px', borderRadius: '20px', transition: 'all 0.2s ease',
+  });
 
   return (
     <div className={styles.alertsWrapper}>
@@ -164,9 +147,7 @@ const Alerts = () => {
         <button className={styles.newAlertBtn} onClick={() => {
           setEditingAlert(null);
           setForm({nombre:'', keyword:'', periodicidad:'', descriptores:[], categorias:[], information_sources_ids:[], rss_channels_ids:[]});
-          setChannelSearch("");
-          setErrorMsg("");
-          setIsModalOpen(true);
+          setErrorMsg(""); setIsModalOpen(true);
         }}>
           <Plus size={18} /> NUEVA ALERTA
         </button>
@@ -184,10 +165,10 @@ const Alerts = () => {
             <thead>
               <tr>
                 <th style={{ width: '40px' }}></th>
-                <th>NOMBRE</th>
+                <th style={{ width: '20%' }}>NOMBRE</th>
                 <th>FILTROS</th>
-                <th>PERIODICIDAD</th>
-                <th className={styles.actionsHeader}>ACCIONES</th>
+                <th style={{ width: '15%' }}>PERIODICIDAD</th>
+                <th className={styles.actionsHeader} style={{ width: '10%' }}>ACCIONES</th>
               </tr>
             </thead>
             <Droppable droppableId="alerts-list">
@@ -199,16 +180,17 @@ const Alerts = () => {
                         <tr ref={provided.innerRef} {...provided.draggableProps}>
                           <td {...provided.dragHandleProps} className={styles.dragCell}><GripVertical size={18} color="#ccc" /></td>
                           <td className={styles.alertName}>{alert.nombre}</td>
-                          <td>
-                            <div style={{fontSize: '0.8rem', color: '#666', lineHeight: '1.4'}}>
-                              <strong>Categorías:</strong> {alert.categorias.join(", ")} <br/>
-                              <strong>Fuentes:</strong> {alert.information_sources_ids.length} selec. <br/>
-                              <strong>Canales:</strong> {alert.rss_channels_ids.length} selec.
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ fontSize: '0.85rem', color: '#555', lineHeight: '1.6' }}>
+                              <div><strong>Palabra clave:</strong> <span style={{ fontWeight: '600', color: '#0E0E1D' }}>{alert.keyword}</span></div>
+                              {alert.categorias.length > 0 && <div><strong>Categorías:</strong> {alert.categorias.join(", ")}</div>}
+                              {alert.information_sources_ids.length > 0 && <div><strong>Fuentes:</strong> {getSourceNames(alert.information_sources_ids)}</div>}
+                              {alert.rss_channels_ids.length > 0 && <div><strong>Canales:</strong> {getChannelNames(alert.rss_channels_ids)}</div>}
                             </div>
                           </td>
                           <td className={styles.cronText}>{alert.periodicidad}</td>
                           <td className={styles.actionsCell}>
-                            <button className={styles.editBtn} onClick={() => {setEditingAlert(alert); setForm(alert); setChannelSearch(""); setErrorMsg(""); setIsModalOpen(true);}}><Pencil size={18} /></button>
+                            <button className={styles.editBtn} onClick={() => {setEditingAlert(alert); setForm(alert); setIsModalOpen(true);}}><Pencil size={18} /></button>
                             <button className={styles.deleteBtn} onClick={() => setShowConfirmDelete(alert.id)}><Trash2 size={18} /></button>
                           </td>
                         </tr>
@@ -223,7 +205,6 @@ const Alerts = () => {
         </DragDropContext>
       </div>
 
-      {/* --- MODAL CREACIÓN / EDICIÓN --- */}
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -248,7 +229,52 @@ const Alerts = () => {
                 <div className={styles.inputGroup}>
                   <label className={styles.labelWithInfo}>
                     PERIODICIDAD
-                    <div className={styles.infoWrapper}><Info size={14} /><span className={styles.tooltip}>Formato: min hora día mes sem</span></div>
+                    <div className={styles.infoWrapper}>
+                      <Info size={14} />
+                      {/* FIX DEL TOOLTIP: Modificamos top, bottom, margin, left y transform para que baje */}
+                      <div className={styles.tooltip} style={{
+                        width: 'max-content',
+                        maxWidth: '350px',
+                        padding: '12px',
+                        textAlign: 'left',
+                        lineHeight: '1.5',
+                        fontSize: '0.8rem',
+                        fontWeight: 'normal',
+                        zIndex: 100,
+                        top: '100%',            /* Fuerza a que el recuadro empiece debajo del icono */
+                        bottom: 'auto',         /* Anula el comportamiento normal de ir hacia arriba */
+                        marginTop: '10px',      /* Separa el recuadro un poco del icono */
+                        left: '0',              /* Lo alinea a la izquierda para no salirse de la pantalla */
+                        transform: 'none'       /* Elimina centrados extraños */
+                      }}>
+                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem' }}>Formato CRON (5 valores)</strong>
+                        <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr', gap: '4px', marginBottom: '8px' }}>
+                          <strong>min:</strong> <span>0-59</span>
+                          <strong>hora:</strong> <span>0-23</span>
+                          <strong>día:</strong> <span>1-31</span>
+                          <strong>mes:</strong> <span>1-12</span>
+                          <strong>sem:</strong> <span>0-6 (0=Dom)</span>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '8px', marginBottom: '8px' }}>
+                          <strong style={{ display: 'block', marginBottom: '4px' }}>Caracteres especiales:</strong>
+                          <div style={{ display: 'grid', gridTemplateColumns: '20px 1fr', gap: '4px' }}>
+                            <strong style={{textAlign: 'center'}}>*</strong> <span>Cualquier valor</span>
+                            <strong style={{textAlign: 'center'}}>,</strong> <span>Lista (ej. 1,15)</span>
+                            <strong style={{textAlign: 'center'}}>-</strong> <span>Rango (ej. 1-5)</span>
+                            <strong style={{textAlign: 'center'}}>/</strong> <span>Intervalo (ej. */15)</span>
+                          </div>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '8px' }}>
+                          <strong>Estructura:</strong><br/>
+                          <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px', display: 'inline-block', marginBottom: '8px' }}>min hora día mes sem</code><br/>
+                          <strong>Ejemplos rápidos:</strong><br/>
+                          <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px', marginRight: '6px' }}>* * * * *</code> Cada minuto<br/>
+                          <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px', marginRight: '6px' }}>0 9 * * 1-5</code> Lun-Vie a las 09:00
+                        </div>
+                      </div>
+                    </div>
                   </label>
                   <input type="text" value={form.periodicidad} onChange={(e) => setForm({...form, periodicidad: e.target.value})} placeholder="* * * * *" />
                 </div>
@@ -258,30 +284,43 @@ const Alerts = () => {
                 <label>DESCRIPTORES GENERADOS (IA)</label>
                 <div className={styles.tagsContainer}>
                   {suggestedDescriptors.map((desc, i) => (
-                    <button key={i} className={form.descriptores.includes(desc) ? styles.tagSelected : styles.tagUnselected} onClick={() => handleToggleDescriptor(desc)}>
+                    <button type="button" key={i} className={form.descriptores.includes(desc) ? styles.tagSelected : styles.tagUnselected} onClick={() => handleToggleDescriptor(desc)}>
                       {desc}
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* CATEGORÍAS */}
               <div className={styles.sectionContainer}>
-                <label>1. CATEGORÍAS (Requerido)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <label style={{ margin: 0 }}>1. CATEGORÍAS (Requerido)</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" style={btnPillStyle('all')} onClick={() => setForm({...form, categorias: CATEGORIAS_DISPONIBLES})}>Seleccionar todo</button>
+                    <button type="button" style={btnPillStyle('none')} onClick={() => setForm({...form, categorias: []})}>Deseleccionar todo</button>
+                  </div>
+                </div>
                 <div className={styles.checkboxGrid}>
-                  {CATEGORIAS_DISPONIBLES.map((cat) => (
+                  {CATEGORIAS_DISPONIBLES.map(cat => (
                     <label key={cat} className={styles.customCheckboxContainer}>
                       <input type="checkbox" checked={form.categorias.includes(cat)} onChange={() => handleToggleCategory(cat)} className={styles.hiddenCheckbox} />
-                      <span className={styles.checkmark}></span>
-                      {cat}
+                      <span className={styles.checkmark}></span> {cat}
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* PASO 2: FUENTES EN CASCADA (SIEMPRE VISIBLE) */}
+              {/* FUENTES */}
               <div className={styles.sectionContainer}>
-                <label>2. FUENTES DISPONIBLES (Opcional)</label>
-
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <label style={{ margin: 0 }}>2. FUENTES DISPONIBLES (Opcional)</label>
+                  {form.categorias.length > 0 && availableSources.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button type="button" style={btnPillStyle('all')} onClick={() => setForm({...form, information_sources_ids: availableSources.map(s => s.id)})}>Seleccionar todo</button>
+                      <button type="button" style={btnPillStyle('none')} onClick={() => setForm({...form, information_sources_ids: []})}>Deseleccionar todo</button>
+                    </div>
+                  )}
+                </div>
                 {form.categorias.length === 0 ? (
                   <div className={styles.emptyContainerBox}>
                     <p className={styles.emptyStateText}>👆 Selecciona al menos una categoría para ver las fuentes.</p>
@@ -292,59 +331,48 @@ const Alerts = () => {
                   </div>
                 ) : (
                   <div className={styles.tagsContainer}>
-                    {availableSources.map(source => (
-                      <button
-                        key={source.id}
-                        className={form.information_sources_ids.includes(source.id) ? styles.tagSelected : styles.tagUnselected}
-                        onClick={() => handleToggleSource(source.id)}
-                      >
-                        {source.name}
-                      </button>
+                    {availableSources.map(s => (
+                      <button type="button" key={s.id} className={form.information_sources_ids.includes(s.id) ? styles.tagSelected : styles.tagUnselected} onClick={() => handleToggleSource(s.id)}>{s.name}</button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* PASO 3: CANALES EN CASCADA (SIEMPRE VISIBLE) */}
+              {/* CANALES */}
               <div className={styles.sectionContainer}>
-                <div className={styles.labelWithSearch}>
-                  <label>3. CANALES RSS ESPECÍFICOS</label>
-                  <div className={styles.searchBox}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ margin: 0 }}>3. CANALES RSS ESPECÍFICOS</label>
+                    {Object.keys(availableChannelsBySource).length > 0 && (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button type="button" style={btnPillStyle('all')} onClick={() => setForm({...form, rss_channels_ids: allAvailableChannelIds})}>Seleccionar todo</button>
+                        <button type="button" style={btnPillStyle('none')} onClick={() => setForm({...form, rss_channels_ids: []})}>Deseleccionar todo</button>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.searchBox} style={{ width: '100%', maxWidth: '350px' }}>
                     <Search size={14} color="#888" />
-                    <input
-                      type="text"
-                      placeholder="Buscar canal..."
-                      value={channelSearch}
-                      onChange={(e) => setChannelSearch(e.target.value)}
-                      disabled={form.information_sources_ids.length === 0}
-                    />
+                    <input type="text" placeholder="Buscar canal..." value={channelSearch} onChange={(e) => setChannelSearch(e.target.value)} disabled={form.information_sources_ids.length === 0} />
                   </div>
                 </div>
-
                 <div className={styles.channelsContainer}>
                   {form.information_sources_ids.length === 0 ? (
-                    <div className={styles.emptyContainerBox} style={{ border: 'none', backgroundColor: 'transparent' }}>
+                    <div className={styles.emptyContainerBox} style={{ border: 'none', backgroundColor: 'transparent', padding: 0 }}>
                       <p className={styles.emptyStateText}>👆 Selecciona al menos una fuente para ver sus canales.</p>
                     </div>
                   ) : Object.keys(availableChannelsBySource).length === 0 ? (
-                    <div className={styles.emptyContainerBox} style={{ border: 'none', backgroundColor: 'transparent' }}>
+                    <div className={styles.emptyContainerBox} style={{ border: 'none', backgroundColor: 'transparent', padding: 0 }}>
                       <p className={styles.emptyStateText}>No se encontraron canales con esos filtros.</p>
                     </div>
                   ) : (
-                    Object.entries(availableChannelsBySource).map(([sourceName, channels]) => (
-                      <div key={sourceName} className={styles.sourceCard}>
-                        <h4 className={styles.sourceCardTitle}>{sourceName}</h4>
+                    Object.entries(availableChannelsBySource).map(([srcName, channels]) => (
+                      <div key={srcName} className={styles.sourceCard}>
+                        <h4 className={styles.sourceCardTitle}>{srcName}</h4>
                         <div className={styles.channelList}>
                           {channels.map(ch => (
                             <label key={ch.id} className={styles.customCheckboxContainer}>
-                              <input
-                                type="checkbox"
-                                checked={form.rss_channels_ids.includes(ch.id)}
-                                onChange={() => handleToggleChannel(ch.id)}
-                                className={styles.hiddenCheckbox}
-                              />
-                              <span className={styles.checkmark}></span>
-                              {ch.name} <span className={styles.channelCategoryBadge}>{ch.category}</span>
+                              <input type="checkbox" checked={form.rss_channels_ids.includes(ch.id)} onChange={() => handleToggleChannel(ch.id)} className={styles.hiddenCheckbox} />
+                              <span className={styles.checkmark}></span> {ch.name} <span className={styles.channelCategoryBadge}>{ch.category}</span>
                             </label>
                           ))}
                         </div>
@@ -353,42 +381,23 @@ const Alerts = () => {
                   )}
                 </div>
               </div>
-
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={handleCloseAttempt}>
-                <Ban size={18} /> CANCELAR
-              </button>
-              <button className={styles.saveBtn} onClick={handleSave}>
-                <Save size={18} /> GUARDAR
-              </button>
+              <button className={styles.cancelBtn} onClick={handleCloseAttempt}><Ban size={18} /> CANCELAR</button>
+              <button className={styles.saveBtn} onClick={handleSave}><Save size={18} /> GUARDAR</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* --- DIÁLOGOS DE CONFIRMACIÓN --- */}
       {showConfirmClose && (
         <div className={styles.miniOverlay}>
           <div className={styles.confirmBox}>
-            <AlertCircle size={40} color="#FFBB28" />
-            <p>¿Estás seguro de cerrar la edición? Perderás los cambios no guardados.</p>
+            <AlertCircle size={40} color="#FFBB28" /><p>¿Cerrar sin guardar cambios?</p>
             <div className={styles.confirmActions}>
               <button className={styles.confirmBoxBtnDanger} onClick={() => {setShowConfirmClose(false); setIsModalOpen(false);}}>Descartar</button>
-              <button className={styles.confirmBoxBtnSafe} onClick={() => setShowConfirmClose(false)}>Seguir editando</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showConfirmDelete && (
-        <div className={styles.miniOverlay}>
-          <div className={styles.confirmBox}>
-            <Trash2 size={40} color="#E02020" />
-            <p>¿Estás seguro de eliminar esta alerta permanentemente?</p>
-            <div className={styles.confirmActions}>
-              <button className={styles.confirmBoxBtnSafe} onClick={() => setShowConfirmDelete(null)}>No, mantener</button>
-              <button className={styles.confirmBoxBtnDanger} onClick={() => { setAlerts(alerts.filter(a => a.id !== showConfirmDelete)); setShowConfirmDelete(null); }}>Confirmar</button>
+              <button className={styles.confirmBoxBtnSafe} onClick={() => setShowConfirmClose(false)}>Seguir</button>
             </div>
           </div>
         </div>
