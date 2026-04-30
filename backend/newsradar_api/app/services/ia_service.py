@@ -230,6 +230,96 @@ Responde SOLO con el nombre de la categoría, sin explicación.
     return category
 
 
+async def generate_wordcloud_terms(*, texts: List[str], lang: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """
+    Genera una nube de terminos [{term, count}] a partir de textos (titulos/descripciones).
+
+    PROMPT_ID: IA-003-WORDCLOUD
+    """
+    provider = _effective_provider()
+    if provider == "none":
+        return []
+
+    # Recortamos entrada para evitar prompts enormes
+    limit = max(5, min(int(limit), 50))
+    joined = "\n\n---\n\n".join(texts[:200])
+    joined = joined[:12000]
+
+    language_name = "espanol" if (lang or "").lower().startswith("es") else "ingles"
+
+    prompt = f"""
+Vas a construir una nube de palabras para un dashboard de noticias.
+
+Entrada: una lista de titulos y descripciones de noticias.
+Objetivo: extraer las {limit} palabras o frases clave mas representativas.
+
+Reglas:
+- Idioma de salida: {language_name}
+- Usa MAYUSCULAS en term
+- Prioriza frases clave (1 a 3 palabras) frente a palabras sueltas
+- No incluyas stopwords ni conectores (ej: "de", "la", "and")
+- No incluyas nombres de secciones tipo "Opinion" si no aportan tema
+- Devuelve JSON estricto: una lista de objetos con campos "term" (string) y "count" (int 1..100)
+- Ordena por count descendente
+- No devuelvas texto extra fuera del JSON
+
+Noticias:
+{joined}
+""".strip()
+
+    if provider == "gemini":
+        raw = _gemini_generate_text(prompt=prompt, temperature=0.3, max_output_tokens=800) or "[]"
+    else:
+        raw = (
+            _openai_generate_text(
+                system="Eres un asistente que extrae keywords para visualizaciones tipo wordcloud.",
+                user=prompt,
+                temperature=0.3,
+                max_tokens=800,
+            )
+            or "[]"
+        )
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        logger.error("Wordcloud: respuesta no es JSON: %s", raw[:200])
+        return []
+
+    if not isinstance(data, list):
+        return []
+
+    out: List[Dict[str, Any]] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        term = item.get("term")
+        count = item.get("count")
+        if not isinstance(term, str) or not term.strip():
+            continue
+        if not isinstance(count, int):
+            try:
+                count = int(count)
+            except Exception:
+                continue
+        count = max(1, min(count, 100))
+        out.append({"term": term.strip().upper(), "count": count})
+
+    # Dedup simple
+    seen = set()
+    dedup: List[Dict[str, Any]] = []
+    for it in out:
+        k = it["term"]
+        if k in seen:
+            continue
+        seen.add(k)
+        dedup.append(it)
+        if len(dedup) >= limit:
+            break
+
+    return dedup
+
+
 # ---------------------------------------------------------------------------
 # Keyword dictionary (MongoDB) para cachear sinónimos
 # ---------------------------------------------------------------------------
@@ -327,4 +417,3 @@ async def expand_keywords(
             out.append(syn)
 
     return out
-
