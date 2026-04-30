@@ -224,6 +224,126 @@
       "politics": "Política",
       "technology": "Tecnología"
     }
+  },
+  "alerts": {
+    "title": "ALERTAS",
+    "active": "activas",
+    "newAlert": "NUEVA ALERTA",
+    "loading": "Cargando alertas...",
+    "generalCat": "General",
+    "table": {
+      "name": "NOMBRE",
+      "filters": "FILTROS",
+      "periodicity": "PERIODICIDAD",
+      "actions": "ACCIONES",
+      "keyword": "Palabra clave",
+      "descriptors": "Descriptores",
+      "categories": "Categorías",
+      "sources": "Fuentes",
+      "channels": "Canales"
+    },
+    "modal": {
+      "createTitle": "CREAR NUEVA ALERTA",
+      "editTitle": "EDITAR ALERTA",
+      "cancelBtn": "CANCELAR",
+      "saveBtn": "GUARDAR",
+      "confirmCloseMsg": "¿Cerrar sin guardar cambios?",
+      "discardBtn": "Descartar",
+      "continueBtn": "Seguir",
+      "confirmDeleteMsg": "¿Estás seguro de eliminar esta alerta permanentemente?",
+      "keepBtn": "No, mantener",
+      "deleteBtn": "Confirmar"
+    },
+    "form": {
+      "nameLabel": "NOMBRE DE LA ALERTA",
+      "namePlaceholder": "Ej: Seguimiento Bolsa...",
+      "keywordLabel": "PALABRA CLAVE (OBLIGATORIO)",
+      "keywordPlaceholder": "Ej: Ibex",
+      "iaBtn": "IA",
+      "cronLabel": "PERIODICIDAD",
+      "descriptorsLabel": "DESCRIPTORES / SINÓNIMOS (OPCIONALES)",
+      "iaSuccess": "¡IA ha sugerido sinónimos!",
+      "iaHint": "Pulsa el botón de IA para generar descriptores adicionales.",
+      "catLabel": "1. CATEGORÍAS (Requerido)",
+      "selectAll": "Seleccionar todo",
+      "unselectAll": "Deseleccionar todo",
+      "srcLabel": "2. FUENTES DISPONIBLES (Opcional)",
+      "srcHintCat": "👆 Selecciona al menos una categoría para ver las fuentes.",
+      "srcHintEmpty": "No hay fuentes para las categorías seleccionadas.",
+      "chanLabel": "3. CANALES RSS ESPECÍFICOS",
+      "searchChannel": "Buscar canal...",
+      "chanHintSrc": "👆 Selecciona al menos una fuente para ver sus canales.",
+      "chanHintEmpty": "No se encontraron canales con esos filtros."
+    },
+    "tooltip": {
+      "title": "Formato CRON (5 valores)",
+      "min": "min",
+      "hour": "hora",
+      "day": "día",
+      "month": "mes",
+      "week": "sem",
+      "sun": "Dom",
+      "special": "Caracteres especiales",
+      "any": "Cualquier valor",
+      "list": "Lista",
+      "range": "Rango",
+      "interval": "Intervalo",
+      "structure": "Estructura",
+      "examples": "Ejemplos rápidos",
+      "exMin": "Cada minuto",
+      "exWork": "Lun-Vie a las 09:00"
+    },
+    "errors": {
+      "fetch": "Error cargando alertas:",
+      "missingFields": "Nombre, palabra clave, periodicidad y al menos una categoría son obligatorios.",
+      "invalidCron": "La expresión cron no es válida.",
+      "save": "Error guardando la alerta:",
+      "serverSave": "Error al guardar la alerta en el servidor.",
+      "delete": "Error borrando la alerta:",
+      "cantDelete": "No se pudo borrar la alerta.",
+      "missingKeywordIA": "Debes escribir una Palabra Clave antes de generar descriptores.",
+      "noIAData": "La IA no devolvió ningún descriptor adicional.",
+      "iaCall": "Error llamando a la IA:",
+      "iaConfig": "Error al generar descriptores con la IA. Comprueba la configuración."
+    }
+  },
+  "categorias": {
+    "Politica": "Política",
+    "Economia": "Economía",
+    "Tecnologia": "Tecnología",
+    "Deportes": "Deportes",
+    "Cultura": "Cultura",
+    "Sociedad": "Sociedad",
+    "Internacional": "Internacional",
+    "Salud": "Salud",
+    "Educacion": "Educación",
+    "Ciencia": "Ciencia",
+    "Viajes": "Viajes",
+    "Entretenimiento": "Entretenimiento",
+    "General": "General"
+  },
+  "sources": {
+    "loading": "Cargando fuentes y canales desde el servidor...",
+    "error": "Ocurrió un error al cargar la información. Inténtalo de nuevo más tarde.",
+    "title": "Fuente y RSS – Gestión de fuentes",
+    "cardTitle": "Fuentes e información",
+    "tabs": {
+      "sources": "Fuentes",
+      "channels": "Canales RSS"
+    },
+    "sidebar": {
+      "search": "Buscar...",
+      "categories": "Categorías",
+      "sources": "Fuentes"
+    },
+    "empty": {
+      "sources": "No se encontraron fuentes con los filtros actuales.",
+      "channels": "No se encontraron canales con los filtros actuales."
+    },
+    "footer": {
+      "sources": "Mostrando {{filtered}} de {{total}} fuentes – {{channels}} canales RSS totales",
+      "channels": "Mostrando {{filtered}} de {{total}} canales – {{sources}} fuentes totales"
+    }
   }
 }
 
