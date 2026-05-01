@@ -18,12 +18,16 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Configuración IA
 # ---------------------------------------------------------------------------
+# Asegura carga de .env también cuando este módulo se importa antes que main.py
+load_dotenv()
+
 # IA_PROVIDER: "gemini" | "openai" (si está vacío se autodetecta)
 IA_PROVIDER = (os.getenv("IA_PROVIDER") or "").strip().lower()
 
@@ -149,7 +153,8 @@ Eres un asistente especializado en generación de palabras clave relacionadas pa
 
 Dadas estas palabras clave: {keywords_str}
 
-Genera entre 3 y 10 sinónimos o palabras relacionadas que podrían mejorar la búsqueda y captura de noticias relevantes.
+Genera entre 4 y 5 sinónimos o palabras relacionadas cuando sea posible.
+Si el término tiene pocas variantes reales, devuelve menos (1-3), pero prioriza 4-5 siempre que existan opciones válidas.
 Las palabras deben ser:
 - En español
 - Relevantes al tema
@@ -160,20 +165,36 @@ Responde SOLO con las palabras, sin explicación adicional.
 Ejemplo de respuesta: "economía digital, transformación digital, negocio electrónico"
 """.strip()
 
-    if provider == "gemini":
-        text = _gemini_generate_text(prompt=prompt, temperature=0.7, max_output_tokens=150) or ""
-    else:
-        text = (
+    def _call_model(user_prompt: str) -> str:
+        if provider == "gemini":
+            return _gemini_generate_text(prompt=user_prompt, temperature=0.7, max_output_tokens=180) or ""
+        return (
             _openai_generate_text(
                 system="Eres un asistente experto en generación de palabras clave para búsqueda de noticias.",
-                user=prompt,
+                user=user_prompt,
                 temperature=0.7,
-                max_tokens=150,
+                max_tokens=180,
             )
             or ""
         )
 
+    text = _call_model(prompt)
     synonyms = [s.strip() for s in text.split(",") if s.strip()]
+
+    # Reintento dirigido: si salen pocas opciones pero el cliente admite >=4,
+    # intentamos forzar mayor cobertura sin perder relevancia.
+    target_min = min(4, max_synonyms)
+    if len(synonyms) < target_min and max_synonyms >= 4:
+        retry_prompt = (
+            prompt
+            + "\n\nNecesito al menos 4 opciones si existen. "
+            "Si no hay 4 sinónimos estrictos, incluye términos relacionados de alta relevancia."
+        )
+        retry_text = _call_model(retry_prompt)
+        retry_synonyms = [s.strip() for s in retry_text.split(",") if s.strip()]
+        if len(retry_synonyms) > len(synonyms):
+            synonyms = retry_synonyms
+
     logger.info("Sinónimos generados para %s: %s", keywords_str, synonyms)
     return synonyms[:max_synonyms]
 
