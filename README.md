@@ -1,56 +1,73 @@
-# NewsRadar API
+# NewsRadar
 
-API REST construida con FastAPI, versionada bajo `/api/v1`, con autenticación por usuario/contraseña y documentación OpenAPI.
+API REST para monitorización de noticias basada en alertas RSS, construida con FastAPI y MongoDB.
 
 ## Requisitos
 
-- Python 3.10+
+- Docker y Docker Compose instalados
+- Puertos disponibles: 8000 (API), 27017 (MongoDB), 5173 (Frontend)
 
-## Instalación
+## Ejecución con Docker Compose
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-## Ejecución
+### Desarrollo (servicios principales)
 
 ```bash
-uvicorn app.main:app --reload
+docker-compose -f docker-compose.dev.yml up --build
 ```
+
+Esto inicia:
+- **API** en `http://localhost:8000`
+- **MongoDB** en `localhost:27017`
+- **Frontend** en `http://localhost:5173`
+
+### Producción
+
+```bash
+docker-compose up --build
+```
+
+Inicia todos los servicios definidos en `docker-compose.yml`.
+
+### Tests
+
+```bash
+docker-compose -f docker-compose.test.yml up --build
+```
+
+## Servicios
+
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| API | 8000 | Backend FastAPI |
+| MongoDB | 27017 | Base de datos |
+| Frontend | 5173 | Interfaz React |
 
 ## Documentación
 
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
+- Swagger UI: `http://localhost:8000/docs`
+- OpenAPI JSON: `http://localhost:8000/openapi.json`
 
 ## Autenticación
 
-1. Usuario semilla en arranque:
-  - email: `admin@newsradar.com`
-   - password: `admin123`
+1. Usuario administrador inicial (creado automáticamente):
+   - **email:** `admin@newsradar.com`
+   - **password:** `admin123`
+
 2. Obtener token en `POST /api/v1/auth/login`
+
 3. Usar el token como `Bearer <token>` en el header `Authorization`.
-1. Usuario semilla en el web:
-  - email: `admin@newsradar.ai`
-   - password: `admin123`
-## Flujo de URLs
 
-- Usuario → Alertas:
-  - `/api/v1/users/{user_id}/alerts`
-- Alertas → Notificaciones:
-  - `/api/v1/users/{user_id}/alerts/{alert_id}/notifications`
-- Fuente de información → Canales RSS:
-  - `/api/v1/information-sources/{source_id}/rss-channels`
+## Estructura de endpoints
 
-## Entidades con CRUD
+- `/api/v1/auth/*` — Autenticación (login, register, verify, reset-password)
+- `/api/v1/users/*` — Gestión de usuarios
+- `/api/v1/users/{user_id}/alerts/*` — Alertas y notificaciones
+- `/api/v1/information-sources/*` — Fuentes de información
+- `/api/v1/information-sources/{source_id}/rss-channels/*` — Canales RSS
+- `/api/v1/categories/*` — Categorías (IPTC)
+- `/api/v1/stats/*` — Estadísticas
+- `/api/v1/health` — Endpoint de salud
 
-- Usuarios
-- Roles
-- Alertas
-- Categorías
-- Notificaciones
-- Fuentes de información
-- Canales RSS
-- Stats
+## Entidades
+
+- Usuarios, Roles, Alertas, Categorías, Notificaciones, Fuentes de información, Canales RSS, Stats

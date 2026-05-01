@@ -20,3 +20,6 @@ email-validator==2.1.1
 pytest
 pytest-cov
 httpx
+apscheduler==3.10.4
+openai
+feedparser
