@@ -158,7 +158,7 @@ const Dashboard = () => {
         <div className={styles.card}>
           <span className={styles.cardTitle}>{t('dashboard.alertsCard.title')}</span>
           <span className={styles.metricValue}>{data.alertas || 0}</span>
-          <button className={styles.btnNavigate} onClick={() => navigate('/alertas')}>
+          <button className={styles.btnNavigate} onClick={() => navigate('/alerts')}>
             {t('dashboard.alertsCard.goBtn')} <ChevronRight size={14} />
           </button>
         </div>
