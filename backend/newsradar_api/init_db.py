@@ -33,13 +33,19 @@ async def init_database():
         # Crear roles
         admin_role = Role(name="admin")
         user_role = Role(name="user")
+        lector_role = Role(name="Lector")
+        gestor_role = Role(name="Gestor")
         session.add(admin_role)
         session.add(user_role)
+        session.add(lector_role)
+        session.add(gestor_role)
         await session.flush()
         
         # Guardar IDs antes del commit
         admin_role_id = admin_role.id
         user_role_id = user_role.id
+        lector_role_id = lector_role.id
+        gestor_role_id = gestor_role.id
         
         # Crear usuario admin
         admin_user = User(
@@ -55,7 +61,7 @@ async def init_database():
         
         await session.commit()
         print(f"✓ Usuario admin creado con email: admin@newsradar.com")
-        print(f"✓ Roles creados: admin (ID: {admin_role_id}), user (ID: {user_role_id})")
+        print(f"✓ Roles creados: admin (ID: {admin_role_id}), user (ID: {user_role_id}), lector (ID: {lector_role_id}), gestor (ID: {gestor_role_id})D")
     
     await engine.dispose()
     print("\n✅ Base de datos inicializada correctamente!")

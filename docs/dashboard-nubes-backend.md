@@ -108,10 +108,17 @@ Respuesta (shape):
 
 El backend:
 
-1. Lee noticias recientes desde Mongo (`news`) con `title`, `description` y `iptc_category`.
-2. (Si es por categoría) filtra por categoría usando un mapeo desde `iptc_category` a las 10 categorías del frontend.
-3. Pasa un subconjunto (hasta 200 noticias) a la IA para extraer `{term,count}`.
-4. Devuelve lista ya lista para UI.
+1. Obtiene las alertas del usuario autenticado desde Postgres.
+2. Toma solo las noticias recientes de Mongo (`news`) asociadas a esas alertas del usuario.
+3. (Si es por categoría) filtra por categoría usando un mapeo desde `iptc_category` a las 10 categorías del frontend.
+4. Pasa un subconjunto (hasta 200 noticias) a la IA para extraer `{term,count}`.
+5. Devuelve lista ya lista para UI.
+
+Consecuencia funcional:
+
+- La nube global no representa "todas las noticias del sistema".
+- La nube global representa solo noticias pertenecientes a alertas del usuario autenticado.
+- Si el usuario no tiene alertas, la respuesta es `[]`.
 
 Implementación:
 
@@ -140,6 +147,7 @@ El cache se indexa por:
 
 - scope (`global` o `category`)
 - category (si aplica)
+- user_id
 - days
 - limit
 - lang (derivado de `Accept-Language`)

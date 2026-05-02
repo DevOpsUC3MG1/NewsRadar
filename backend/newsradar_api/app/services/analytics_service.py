@@ -175,6 +175,8 @@ async def build_dashboard(
 
 async def build_wordcloud(
     *,
+    db: AsyncSession,
+    user_id: int,
     mongo_db,
     days: int,
     limit: int,
@@ -190,9 +192,18 @@ async def build_wordcloud(
     now = _now_utc()
     start = now - timedelta(days=max(1, min(days, 90)))
 
+    user_alerts = (
+        await db.execute(select(AlertModel).where(AlertModel.user_id == user_id))
+    ).scalars().all()
+    alert_ids = [int(a.id) for a in user_alerts]
+
+    if not alert_ids:
+        return []
+
     cache_key = {
         "scope": "category" if cloud_category else "global",
         "category": cloud_category,
+        "user_id": int(user_id),
         "days": int(days),
         "limit": int(limit),
         "lang": lang,
@@ -206,7 +217,10 @@ async def build_wordcloud(
             if isinstance(terms, list):
                 return terms
 
-    match: Dict[str, Any] = {"created_at": {"$gte": start.replace(tzinfo=None)}}
+    match: Dict[str, Any] = {
+        "created_at": {"$gte": start.replace(tzinfo=None)},
+        "alert_id": {"$in": alert_ids},
+    }
     if cloud_category:
         # Filtramos por iptc->cloud category
         # Guardamos iptc_category en news; filtramos por un set equivalente.
@@ -248,4 +262,3 @@ async def build_wordcloud(
         upsert=True,
     )
     return terms
-
