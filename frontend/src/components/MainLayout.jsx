@@ -8,18 +8,16 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile]       = useState(window.innerWidth <= 900);
 
-  // Detectar si estamos en móvil/tablet
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 900;
       setIsMobile(mobile);
-      if (!mobile) setSidebarOpen(false); // cerrar al pasar a desktop
+      if (!mobile) setSidebarOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Bloquear scroll del body cuando el sidebar está abierto
   useEffect(() => {
     document.body.style.overflow = (isMobile && sidebarOpen) ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -35,13 +33,11 @@ export default function MainLayout() {
       overflow: 'hidden',
     }}>
 
-      {/* HEADER */}
       <Header onMenuToggle={() => setSidebarOpen((prev) => !prev)} />
 
-      {/* CUERPO */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
 
-        {/* OVERLAY oscuro — solo en móvil/tablet con sidebar abierto */}
+        {/* OVERLAY */}
         {isMobile && sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
@@ -55,47 +51,63 @@ export default function MainLayout() {
           />
         )}
 
-        {/* SIDEBAR */}
+        {/* SIDEBAR WRAPPER */}
         <div style={isMobile ? {
+          // Cubre TODA la pantalla desde el borde superior
           position: 'fixed',
           top: 0,
           left: 0,
-          height: '100vh',
           width: '100vw',
+          height: '100vh',
           zIndex: 300,
           transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
-          overflowY: 'auto',
+          // Flex column: botón ✕ arriba + sidebar ocupa el resto
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         } : {
           flexShrink: 0,
           height: '100%',
-          overflowY: 'auto',
         }}>
-          {/* Botón cerrar — solo en móvil/tablet */}
+
+          {/* Barra superior con el botón ✕ — solo en móvil/tablet */}
           {isMobile && (
-            <button
-              onClick={() => setSidebarOpen(false)}
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                width: '100%',
-                padding: '16px 20px',
-                background: 'none',
-                border: 'none',
-                color: '#ffffff',
-                fontSize: '1.4rem',
-                cursor: 'pointer',
-                boxSizing: 'border-box',
-              }}
-            >
-              ✕
-            </button>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              padding: '12px 16px',
+              backgroundColor: 'var(--color-nav, #12141d)',
+              flexShrink: 0,          // no se comprime
+            }}>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '1.3rem',
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
           )}
-          <Sidebar onNavigate={() => setSidebarOpen(false)} />
+
+          {/* SIDEBAR — ocupa el espacio restante */}
+          <div style={isMobile ? { flex: 1, overflowY: 'auto', minHeight: 0 } : { height: '100%' }}>
+            <Sidebar onNavigate={() => setSidebarOpen(false)} />
+          </div>
+
         </div>
 
         {/* CONTENIDO PRINCIPAL */}
-        <main style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
+        <main style={{ flex: 1, padding: isMobile ? '0' : '30px', overflowY: 'auto' }}>
           <Outlet />
         </main>
 

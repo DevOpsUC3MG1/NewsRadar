@@ -6,6 +6,9 @@
   padding: 24px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .pageTitle {
@@ -34,6 +37,8 @@
   flex-direction: column;
   position: relative;
   min-height: 160px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .cardTitle {
@@ -142,6 +147,21 @@
   min-height: 300px;
 }
 
+/* Wrapper scrollable horizontalmente en móvil */
+.chartScrollWrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Altura fija: la tarjeta no crece, solo el contenido interior se desplaza */
+  height: 280px;
+}
+
+/* Contenedor interior con ancho mínimo para evitar aplastamiento */
+.chartInner {
+  width: 100%;
+  height: 100%;
+}
+
 /* ─── TOOLTIPS ───────────────────────────────────────────────────────────── */
 .customTooltip {
   background-color: #ffffff;
@@ -241,6 +261,10 @@
     grid-column: 1 / -1;
   }
 
+  .card {
+    padding-bottom: 56px;
+  }
+
   /* Gráficas en columna */
   .bottomRow {
     grid-template-columns: 1fr;
@@ -289,6 +313,7 @@
   .card {
     min-height: 130px;
     padding: 18px;
+    padding-bottom: 56px; /* espacio para los botones absolutos */
   }
 
   .largeCard {
@@ -297,6 +322,15 @@
 
   .chartContainer {
     min-height: 220px;
+  }
+
+  /* La gráfica de barras tiene ancho mínimo para poder desplazarse dentro del recuadro */
+  .chartScrollWrapper {
+    height: 240px;
+  }
+
+  .chartInner {
+    min-width: 520px;
   }
 
   .metricValue {
