@@ -6,10 +6,13 @@ import {
   Cell, PieChart, Pie, Legend
 } from 'recharts';
 import { ChevronRight, Loader2 } from 'lucide-react';
+import authService from '../../services/authService';
 import styles from './dashboard.module.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const Dashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,38 +23,62 @@ const Dashboard = () => {
     setLoading(true);
     setError(false);
     try {
-      // Simulación de carga
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const token = authService.getToken();
+      if (!token) throw new Error("No hay token disponible");
 
-      // Aplicamos traducciones a los datos simulados para las gráficas
-      const response = {
-        fuentes: { activas: 12, rss: 104 },
-        noticias: { hoy: 145, semana: "1,420" },
-        alertas: 8,
-        evolucion: [
-          { name: t('dashboard.days.mon'), noticias: 45 }, { name: t('dashboard.days.tue'), noticias: 52 },
-          { name: t('dashboard.days.wed'), noticias: 38 }, { name: t('dashboard.days.thu'), noticias: 65 },
-          { name: t('dashboard.days.fri'), noticias: 48 }, { name: t('dashboard.days.sat'), noticias: 20 },
-          { name: t('dashboard.days.sun'), noticias: 15 }
-        ],
-        categorias: [
-          { name: t('dashboard.categories.politics'), value: 400 }, { name: t('dashboard.categories.economy'), value: 300 },
-          { name: t('dashboard.categories.health'), value: 200 }, { name: t('dashboard.categories.tech'), value: 100 }
-        ]
+      const days = newsFilter === '1D' ? 1 : 7;
+
+      const response = await fetch(`${API_BASE}/api/v1/dashboard?days=${days}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Accept-Language': i18n.language || navigator.language || 'es'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      const backendData = await response.json();
+
+      // --- DICCIONARIOS DE NORMALIZACIÓN ---
+      // Evita los errores de "missingKey" de i18next traduciendo del backend a tu JSON
+      const dayMap = { lun: 'mon', mar: 'tue', mie: 'wed', jue: 'thu', vie: 'fri', sab: 'sat', dom: 'sun' };
+      const catMap = { politica: 'politics', economia: 'economy', salud: 'health', tecnologia: 'tech', tecno: 'tech' };
+
+      const translatedData = {
+        ...backendData,
+        evolucion: backendData.evolucion?.map(item => {
+          const rawName = item.name?.toLowerCase() || '';
+          const mappedKey = dayMap[rawName] || rawName;
+          return {
+            ...item,
+            name: t(`dashboard.days.${mappedKey}`, { defaultValue: item.name })
+          };
+        }) || [],
+        categorias: backendData.categorias?.map(item => {
+          const rawName = item.name?.toLowerCase() || '';
+          const mappedKey = catMap[rawName] || rawName;
+          return {
+            ...item,
+            name: t(`dashboard.categories.${mappedKey}`, { defaultValue: item.name })
+          };
+        }) || []
       };
 
-      setData(response);
+      setData(translatedData);
     } catch (err) {
+      console.error("Error al cargar datos del dashboard:", err);
       setError(true);
     } finally {
       setLoading(false);
     }
   };
 
-  // Añadimos 't' a las dependencias para que recargue el mock si se cambia el idioma sobre la marcha
   useEffect(() => {
     fetchDashboardData();
-  }, [t]);
+  }, [t, newsFilter]);
 
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -65,7 +92,6 @@ const Dashboard = () => {
     return null;
   };
 
-  // PANTALLA DE ERROR
   if (error) {
     return (
       <div className={styles.dashboardWrapper}>
@@ -79,7 +105,6 @@ const Dashboard = () => {
     );
   }
 
-  // PANTALLA DE CARGA (Aparece mientras loading es true)
   if (loading || !data) {
     return (
       <div className={styles.dashboardWrapper}>
@@ -91,25 +116,21 @@ const Dashboard = () => {
     );
   }
 
-  // RENDERIZADO PRINCIPAL
   return (
     <div className={styles.dashboardWrapper}>
-      {/* TÍTULO DE LA PÁGINA */}
       <h1 className={styles.pageTitle}>{t('dashboard.title')}</h1>
 
-      {/* FILA 1: KPIs */}
       <div className={styles.topRow}>
-        {/* FUENTES */}
         <div className={styles.card}>
           <span className={styles.cardTitle}>{t('dashboard.sourcesCard.title')}</span>
           <div className={styles.sourcesList}>
             <div className={styles.sourceItem}>
               <span>{t('dashboard.sourcesCard.active')}</span>
-              <span className={styles.sourceValue}>{data.fuentes.activas}</span>
+              <span className={styles.sourceValue}>{data.fuentes?.activas || 0}</span>
             </div>
             <div className={styles.sourceItem}>
               <span>{t('dashboard.sourcesCard.rss')}</span>
-              <span className={styles.sourceValue}>{data.fuentes.rss}</span>
+              <span className={styles.sourceValue}>{data.fuentes?.rss || 0}</span>
             </div>
           </div>
           <button className={styles.btnNavigate} onClick={() => navigate('/fuentes')}>
@@ -117,11 +138,10 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* NOTICIAS DETECTADAS */}
         <div className={styles.card}>
           <span className={styles.cardTitle}>{t('dashboard.newsCard.title')}</span>
           <span className={styles.metricValue}>
-            {newsFilter === '1D' ? data.noticias.hoy : data.noticias.semana}
+            {newsFilter === '1D' ? (data.noticias?.hoy || 0) : (data.noticias?.semana || 0)}
           </span>
           <div className={styles.filterContainer}>
             <button
@@ -135,22 +155,21 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* ALERTAS */}
         <div className={styles.card}>
           <span className={styles.cardTitle}>{t('dashboard.alertsCard.title')}</span>
-          <span className={styles.metricValue}>{data.alertas}</span>
+          <span className={styles.metricValue}>{data.alertas || 0}</span>
           <button className={styles.btnNavigate} onClick={() => navigate('/alertas')}>
             {t('dashboard.alertsCard.goBtn')} <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
-      {/* FILA 2: GRÁFICAS */}
       <div className={styles.bottomRow}>
         <div className={`${styles.card} ${styles.largeCard}`}>
           <span className={styles.cardTitle}>{t('dashboard.charts.evolutionTitle')}</span>
-          <div className={styles.chartContainer}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div className={styles.chartContainer} style={{ width: '100%', height: '300px', minHeight: '300px' }}>
+            {/* SOLUCIÓN AL WARNING: minWidth={1} y minHeight={1} obligan a recharts a no leer valores negativos iniciales */}
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <BarChart data={data.evolucion}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} />
@@ -164,8 +183,9 @@ const Dashboard = () => {
 
         <div className={`${styles.card} ${styles.largeCard}`}>
           <span className={styles.cardTitle}>{t('dashboard.charts.categoriesTitle')}</span>
-          <div className={styles.chartContainer}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div className={styles.chartContainer} style={{ width: '100%', height: '300px', minHeight: '300px' }}>
+             {/* SOLUCIÓN AL WARNING */}
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <PieChart>
                 <Pie
                   data={data.categorias}
@@ -174,7 +194,7 @@ const Dashboard = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {data.categorias.map((entry, index) => (
+                  {data.categorias?.map((entry, index) => (
                     <Cell key={index} fill={['#0E0E1D', '#4CC9F0', '#B5179E', '#7209B7'][index % 4]} />
                   ))}
                 </Pie>

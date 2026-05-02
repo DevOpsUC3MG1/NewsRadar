@@ -224,5 +224,125 @@
       "politics": "Politics",
       "technology": "Technology"
     }
+  },
+  "alerts": {
+    "title": "ALERTS",
+    "active": "active",
+    "newAlert": "NEW ALERT",
+    "loading": "Loading alerts...",
+    "generalCat": "General",
+    "table": {
+      "name": "NAME",
+      "filters": "FILTERS",
+      "periodicity": "PERIODICITY",
+      "actions": "ACTIONS",
+      "keyword": "Keyword",
+      "descriptors": "Descriptors",
+      "categories": "Categories",
+      "sources": "Sources",
+      "channels": "Channels"
+    },
+    "modal": {
+      "createTitle": "CREATE NEW ALERT",
+      "editTitle": "EDIT ALERT",
+      "cancelBtn": "CANCEL",
+      "saveBtn": "SAVE",
+      "confirmCloseMsg": "Close without saving changes?",
+      "discardBtn": "Discard",
+      "continueBtn": "Continue",
+      "confirmDeleteMsg": "Are you sure you want to permanently delete this alert?",
+      "keepBtn": "No, keep it",
+      "deleteBtn": "Confirm"
+    },
+    "form": {
+      "nameLabel": "ALERT NAME",
+      "namePlaceholder": "E.g.: Stock Market Tracker...",
+      "keywordLabel": "KEYWORD (REQUIRED)",
+      "keywordPlaceholder": "E.g.: Nasdaq",
+      "iaBtn": "AI",
+      "cronLabel": "PERIODICITY",
+      "descriptorsLabel": "DESCRIPTORS / SYNONYMS (OPTIONAL)",
+      "iaSuccess": "AI has suggested synonyms!",
+      "iaHint": "Press the AI button to generate additional descriptors.",
+      "catLabel": "1. CATEGORIES (Required)",
+      "selectAll": "Select all",
+      "unselectAll": "Unselect all",
+      "srcLabel": "2. AVAILABLE SOURCES (Optional)",
+      "srcHintCat": "👆 Select at least one category to see sources.",
+      "srcHintEmpty": "No sources available for the selected categories.",
+      "chanLabel": "3. SPECIFIC RSS CHANNELS",
+      "searchChannel": "Search channel...",
+      "chanHintSrc": "👆 Select at least one source to see its channels.",
+      "chanHintEmpty": "No channels found with these filters."
+    },
+    "tooltip": {
+      "title": "CRON Format (5 values)",
+      "min": "min",
+      "hour": "hour",
+      "day": "day",
+      "month": "month",
+      "week": "week",
+      "sun": "Sun",
+      "special": "Special characters",
+      "any": "Any value",
+      "list": "List",
+      "range": "Range",
+      "interval": "Interval",
+      "structure": "Structure",
+      "examples": "Quick examples",
+      "exMin": "Every minute",
+      "exWork": "Mon-Fri at 09:00"
+    },
+    "errors": {
+      "fetch": "Error loading alerts:",
+      "missingFields": "Name, keyword, periodicity, and at least one category are required.",
+      "invalidCron": "The cron expression is invalid.",
+      "save": "Error saving alert:",
+      "serverSave": "Error saving the alert on the server.",
+      "delete": "Error deleting alert:",
+      "cantDelete": "Could not delete the alert.",
+      "missingKeywordIA": "You must write a Keyword before generating descriptors.",
+      "noIAData": "The AI did not return any additional descriptors.",
+      "iaCall": "Error calling AI:",
+      "iaConfig": "Error generating descriptors with AI. Check your configuration."
+    }
+  },
+  "categorias": {
+    "Politica": "Politics",
+    "Economia": "Economy",
+    "Tecnologia": "Technology",
+    "Deportes": "Sports",
+    "Cultura": "Culture",
+    "Sociedad": "Society",
+    "Internacional": "International",
+    "Salud": "Health",
+    "Educacion": "Education",
+    "Ciencia": "Science",
+    "Viajes": "Travel",
+    "Entretenimiento": "Entertainment",
+    "General": "General"
+  },
+  "sources": {
+    "loading": "Loading sources and channels from the server...",
+    "error": "An error occurred while loading the information. Please try again later.",
+    "title": "Sources and RSS – Source Management",
+    "cardTitle": "Sources and Information",
+    "tabs": {
+      "sources": "Sources",
+      "channels": "RSS Channels"
+    },
+    "sidebar": {
+      "search": "Search...",
+      "categories": "Categories",
+      "sources": "Sources"
+    },
+    "empty": {
+      "sources": "No sources found with the current filters.",
+      "channels": "No channels found with the current filters."
+    },
+    "footer": {
+      "sources": "Showing {{filtered}} of {{total}} sources – {{channels}} total RSS channels",
+      "channels": "Showing {{filtered}} of {{total}} channels – {{sources}} total sources"
+    }
   }
 }

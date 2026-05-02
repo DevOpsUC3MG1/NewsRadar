@@ -43,6 +43,8 @@ services:
       - MONGODB_URL=${MONGODB_URL}
     ports:
       - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
     command: >
       sh -c "export PYTHONPATH=/app/newsradar_api &&
       python /app/newsradar_api/init_db.py &&
