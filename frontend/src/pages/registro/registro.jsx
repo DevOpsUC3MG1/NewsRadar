@@ -56,7 +56,7 @@ export default function Registro() {
         last_name: data.apellidos,
         organization: data.organizacion,
         password: data.password,
-        role_ids: []
+        role_ids: [4]
       };
 
       await registerUser(apiPayload);
