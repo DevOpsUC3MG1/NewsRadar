@@ -900,12 +900,15 @@ async def get_dashboard(
 async def get_wordcloud_global(
     days: int = 30,
     limit: int = 20,
-    _: UserInDB = Depends(get_current_user),
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     mongo_db = Depends(get_mongo_db),
     request: Request = None,
 ):
     accept_language = request.headers.get("accept-language") if request else None
     return await build_wordcloud(
+        db=db,
+        user_id=current_user.id,
         mongo_db=mongo_db,
         days=days,
         limit=limit,
@@ -923,7 +926,8 @@ async def get_wordcloud_by_category(
     category: str,
     days: int = 30,
     limit: int = 20,
-    _: UserInDB = Depends(get_current_user),
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     mongo_db = Depends(get_mongo_db),
     request: Request = None,
 ):
@@ -931,6 +935,8 @@ async def get_wordcloud_by_category(
     # category esperada por frontend (ver nubes.jsx): culture, consumption, sports, economy, entertainment,
     # government, international, national, politics, technology
     return await build_wordcloud(
+        db=db,
+        user_id=current_user.id,
         mongo_db=mongo_db,
         days=days,
         limit=limit,
