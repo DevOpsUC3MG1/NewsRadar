@@ -14,7 +14,7 @@ import Alertas from './pages/alerts/alerts.jsx'
 import Profile from './pages/user_profile/user_profile.jsx'
 import Home from './pages/Home'
 import About from './pages/About'
-import UiTesting from './pages/UiTesting'
+import UiTesting from './pages/UITesting'
 import MainLayout from './components/MainLayout'
 import Prueba from './pages/prueba.jsx'
 
