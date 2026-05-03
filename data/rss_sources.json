@@ -1,6 +1,16 @@
 {
   "sources": [
     {
+      "name": "Mock RSS Test",
+      "url": "http://mock_rss:8080",
+      "channels": [
+        { "url": "http://mock_rss:8080/test.xml", "category": "Politica" },
+        { "url": "http://mock_rss:8080/politica.xml", "category": "Politica" },
+        { "url": "http://mock_rss:8080/economia.xml", "category": "Economia" },
+        { "url": "http://mock_rss:8080/deportes.xml", "category": "Deportes" }
+      ]
+    },
+    {
       "name": "RTVE",
       "url": "https://www.rtve.es",
       "channels": [

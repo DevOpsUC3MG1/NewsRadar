@@ -449,34 +449,52 @@ async def ensure_role_ids_exist(role_ids: List[int], db: AsyncSession) -> None:
 async def create_seed_data() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     async with AsyncSession(engine) as db:
-        # Check if admin user already exists
-        result = await db.execute(select(UserModel).where(UserModel.email == "admin@newsradar.com"))
-        existing_admin = result.scalar_one_or_none()
-        if existing_admin:
-            return
+        # --- Roles (idempotente) ---
+        result = await db.execute(select(RoleModel).where(RoleModel.name == "admin"))
+        admin_role = result.scalar_one_or_none()
+        if not admin_role:
+            admin_role = RoleModel(name="admin")
+            db.add(admin_role)
 
-        # Create roles
-        admin_role = RoleModel(name="admin")
-        user_role = RoleModel(name="user")
-        db.add(admin_role)
-        db.add(user_role)
-        await db.flush()
+        result = await db.execute(select(RoleModel).where(RoleModel.name == "user"))
+        user_role = result.scalar_one_or_none()
+        if not user_role:
+            user_role = RoleModel(name="user")
+            db.add(user_role)
 
-        # Create admin user
-        admin_user = UserModel(
-            email="admin@newsradar.com",
-            first_name="Admin",
-            last_name="NewsRadar",
-            organization="NewsRadar",
-            role_ids=[admin_role.id],
-            password="admin123",
-            is_verified=True
-        )
-        db.add(admin_user)
+        await db.flush()  # asegura que los roles tienen ID antes de usarlos
+
+        # --- Usuarios seed (cada uno se comprueba por su cuenta) ---
+        seed_users = [
+            {
+                "email": "admin@newsradar.com",
+                "first_name": "Admin",
+                "last_name": "NewsRadar",
+                "organization": "NewsRadar",
+                "password": "admin123",
+                "role_ids": [admin_role.id],
+            },
+            {
+                "email": "100472296@alumnos.uc3m.es",
+                "first_name": "admin2",
+                "last_name": "NewsRadar",
+                "organization": "NewsRadar",
+                "password": "adminadmin",
+                "role_ids": [admin_role.id],
+            },
+        ]
+
+        for u in seed_users:
+            result = await db.execute(
+                select(UserModel).where(UserModel.email == u["email"])
+            )
+            if result.scalar_one_or_none():
+                continue  # ya existe, saltamos
+            db.add(UserModel(**u, is_verified=True))
+
         await db.commit()
-
 
 @app.on_event("startup")
 async def on_startup() -> None:
@@ -968,6 +986,8 @@ async def list_user_alerts(
             name=a.name,
             descriptors=a.descriptors or [],
             categories=[AlertCategoryItem(**c) for c in (a.categories or [])],
+            rss_channels_ids=a.rss_channels_ids or [],
+            information_sources_ids=a.information_sources_ids or [],
             cron_expression=a.cron_expression,
         )
         for a in alerts
@@ -1003,6 +1023,8 @@ async def create_user_alert(
         name=alert.name,
         descriptors=alert.descriptors or [],
         categories=[AlertCategoryItem(**c) for c in (alert.categories or [])],
+        rss_channels_ids=alert.rss_channels_ids or [],
+        information_sources_ids=alert.information_sources_ids or [],
         cron_expression=alert.cron_expression,
     )
 
@@ -1031,6 +1053,8 @@ async def get_user_alert(
         name=alert.name,
         descriptors=alert.descriptors or [],
         categories=[AlertCategoryItem(**c) for c in (alert.categories or [])],
+        rss_channels_ids=alert.rss_channels_ids or [],
+        information_sources_ids=alert.information_sources_ids or [],
         cron_expression=alert.cron_expression,
     )
 
@@ -1070,6 +1094,8 @@ async def update_user_alert(
         name=alert.name,
         descriptors=alert.descriptors or [],
         categories=[AlertCategoryItem(**c) for c in (alert.categories or [])],
+        rss_channels_ids=alert.rss_channels_ids or [],
+        information_sources_ids=alert.information_sources_ids or [],
         cron_expression=alert.cron_expression,
     )
 
