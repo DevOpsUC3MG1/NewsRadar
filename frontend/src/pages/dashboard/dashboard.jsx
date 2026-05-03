@@ -158,7 +158,7 @@ const Dashboard = () => {
         <div className={styles.card}>
           <span className={styles.cardTitle}>{t('dashboard.alertsCard.title')}</span>
           <span className={styles.metricValue}>{data.alertas || 0}</span>
-          <button className={styles.btnNavigate} onClick={() => navigate('/alertas')}>
+          <button className={styles.btnNavigate} onClick={() => navigate('/alerts')}>
             {t('dashboard.alertsCard.goBtn')} <ChevronRight size={14} />
           </button>
         </div>
@@ -167,17 +167,19 @@ const Dashboard = () => {
       <div className={styles.bottomRow}>
         <div className={`${styles.card} ${styles.largeCard}`}>
           <span className={styles.cardTitle}>{t('dashboard.charts.evolutionTitle')}</span>
-          <div className={styles.chartContainer} style={{ width: '100%', height: '300px', minHeight: '300px' }}>
+          <div className={styles.chartScrollWrapper}>
+            <div className={styles.chartInner}>
             {/* SOLUCIÓN AL WARNING: minWidth={1} y minHeight={1} obligan a recharts a no leer valores negativos iniciales */}
-            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-              <BarChart data={data.evolucion}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <Tooltip cursor={{fill: '#f0f0f0'}} />
-                <Bar dataKey="noticias" name={t('dashboard.charts.news')} fill="#0088FE" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                <BarChart data={data.evolucion}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{fill: '#f0f0f0'}} />
+                  <Bar dataKey="noticias" name={t('dashboard.charts.news')} fill="#0088FE" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>  
           </div>
         </div>
 

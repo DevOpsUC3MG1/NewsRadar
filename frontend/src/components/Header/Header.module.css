@@ -1,14 +1,23 @@
+/* Header.module.css */
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 15px 30px;
-  background-color: var(--color-header); /* Fondo oscuro general */
-  border-bottom: 1px solid #1a1c24; /* Línea sutil para separar el header del contenido */
+  background-color: var(--color-header);
+  border-bottom: 1px solid #1a1c24;
   font-family: var(--sans, sans-serif);
+  flex-shrink: 0;
 }
 
-/* --- SECCIÓN IZQUIERDA (LOGO) --- */
+/* ─── SECCIÓN IZQUIERDA: hamburguesa + logo ──────────────────────────────── */
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .logoSection {
   display: flex;
   align-items: center;
@@ -27,7 +36,24 @@
   letter-spacing: 1px;
 }
 
-/* --- SECCIÓN DERECHA (BUSCADOR Y PERFIL) --- */
+/* ─── BOTÓN HAMBURGUESA — oculto en desktop ──────────────────────────────── */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.hamburger:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ─── SECCIÓN DERECHA ────────────────────────────────────────────────────── */
 .rightSection {
   display: flex;
   align-items: center;
@@ -37,11 +63,11 @@
 .searchBar {
   display: flex;
   align-items: center;
-  background-color: #12141d; /* Un tono ligeramente diferente al fondo para que destaque la caja */
+  background-color: #12141d;
   border-radius: 8px;
   padding: 8px 16px;
   gap: 10px;
-  width: 320px; /* Ancho de la barra de búsqueda */
+  width: 320px;
 }
 
 .searchIcon {
@@ -51,24 +77,23 @@
 .searchInput {
   background: transparent;
   border: none;
-  color: #FFFFFF; /* El texto que escribe el usuario en blanco */
+  color: #FFFFFF;
   font-family: inherit;
-  font-weight: 300; /* Peso Light */
+  font-weight: 300;
   width: 100%;
-  outline: none; /* Quita el borde azul que ponen los navegadores por defecto al hacer clic */
+  outline: none;
 }
 
-/* Aplica el color gris solo al texto temporal (placeholder) */
 .searchInput::placeholder {
   color: #626262;
   font-weight: 300;
 }
 
-/* --- EXTRA: AVATAR DE USUARIO --- */
+/* ─── AVATAR ─────────────────────────────────────────────────────────────── */
 .userProfile {
   width: 36px;
   height: 36px;
-  background-color: #073a5a; /* Color azulado sacado de la imagen */
+  background-color: #073a5a;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -81,7 +106,7 @@
   opacity: 0.8;
 }
 
-/* Estilos del botón de idioma */
+/* ─── IDIOMA ─────────────────────────────────────────────────────────────── */
 .langBtn {
   background: none;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -101,4 +126,44 @@
 .langBtn:hover {
   background-color: rgba(255, 255, 255, 0.1);
   border-color: white;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .header {
+    padding: 12px 16px;
+  }
+
+  /* Mostrar hamburguesa */
+  .hamburger {
+    display: flex;
+  }
+
+  /* Ocultar barra de búsqueda en tablet/móvil */
+  .searchBar {
+    display: none;
+  }
+
+  .rightSection {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding: 10px 12px;
+  }
+
+  .logoText {
+    font-size: 1.05rem;
+  }
+
+  .logoIcon {
+    width: 22px;
+    height: 22px;
+  }
 }

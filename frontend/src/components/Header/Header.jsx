@@ -1,13 +1,13 @@
+// Header.jsx
 import React from 'react';
-import { User, Globe } from 'lucide-react';
+import { User, Globe, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from './Header.module.css';
 
-export default function Header() {
+export default function Header({ onMenuToggle }) {
   const { i18n } = useTranslation();
 
-  // Detectamos el idioma actual con seguridad
   const currentLang = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const toggleLanguage = () => {
@@ -18,29 +18,37 @@ export default function Header() {
   return (
     <header className={styles.header}>
 
-      {/* Sección Izquierda: Logo y Título */}
-      <Link
-        to="/dashboard"
-        className={styles.logoSection}
-        style={{ textDecoration: 'none', color: 'inherit' }}
-      >
-        <img src="/newsradar-icon.svg" alt="NewsRadar Logo" className={styles.logoIcon} />
-        <span className={styles.logoText}>NEWSRADAR</span>
-      </Link>
+      {/* Sección Izquierda: Hamburguesa (solo móvil/tablet) + Logo */}
+      <div className={styles.leftSection}>
+        <button
+          className={styles.hamburger}
+          onClick={onMenuToggle}
+          aria-label="Abrir menú"
+        >
+          <Menu size={22} color="#FFFFFF" />
+        </button>
+
+        <Link
+          to="/dashboard"
+          className={styles.logoSection}
+          style={{ textDecoration: 'none', color: 'inherit' }}
+        >
+          <img src="/newsradar-icon.svg" alt="NewsRadar Logo" className={styles.logoIcon} />
+          <span className={styles.logoText}>NEWSRADAR</span>
+        </Link>
+      </div>
 
       {/* Sección Derecha: Idioma y Perfil */}
       <div className={styles.rightSection}>
-
         <button onClick={toggleLanguage} className={styles.langBtn}>
           <Globe size={18} />
           <span>{currentLang.toUpperCase()}</span>
         </button>
 
-        {/* El circulito del usuario */}
         <Link
-            to="/profile"
-            className={styles.userProfile}
-            style={{ textDecoration: 'none' }}
+          to="/profile"
+          className={styles.userProfile}
+          style={{ textDecoration: 'none' }}
         >
           <User size={20} color="#FFFFFF" />
         </Link>

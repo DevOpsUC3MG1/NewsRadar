@@ -3,7 +3,6 @@
 .pageContainer {
   display: flex;
   flex-direction: column;
-  /* CAMBIO: Fijamos a 100vh exactos y ocultamos el desbordamiento para asegurar 0 scroll */
   height: 100vh;
   overflow: hidden;
   background-color: #1E1E20;
@@ -21,12 +20,11 @@
 .pwdCard {
   width: 100%;
   max-width: 600px;
-  /* CAMBIO: Altura dinámica fijada al 85% de la ventana */
   height: 85vh;
-  min-height: 480px; /* Altura mínima de seguridad para pantallas muy pequeñas */
-  max-height: 700px; /* Límite de altura para que no quede gigante en pantallas 4K */
+  min-height: 480px;
+  max-height: 700px;
   display: flex;
-  flex-direction: column; /* Permite organizar internamente el header y el form */
+  flex-direction: column;
   background-color: #FFFFFF;
   border-radius: 8px;
   overflow: hidden;
@@ -62,12 +60,10 @@
 
 /* SECCIÓN 2: Formulario */
 .lightForm {
-  /* CAMBIO: Flex 1 hace que la zona blanca ocupe el espacio restante de ese 85vh */
   flex: 1;
   padding: 40px 50px;
   display: flex;
   flex-direction: column;
-  /* CAMBIO: Empuja el form arriba y el footer al fondo de la tarjeta */
   justify-content: space-between;
 }
 
@@ -97,7 +93,6 @@
 .formInput {
   padding: 12px 15px;
   border: 1px solid #06060D;
-  /* CAMBIO: Color de texto negro al escribir */
   color: #06060D;
   border-radius: 4px;
   font-size: 1rem;
@@ -114,7 +109,6 @@
 
 .instructionText {
   text-align: left;
-  /* CAMBIO: Tamaño más pequeño y color específico solicitado */
   font-size: 0.7rem;
   color: #09090F;
   margin-bottom: 35px;
@@ -151,7 +145,6 @@
 }
 
 .footerText {
-  /* CAMBIO: Tamaño más pequeño y color específico solicitado */
   font-size: 0.7rem;
   color: #09090F;
   margin-bottom: 12px;
@@ -174,4 +167,146 @@
 
 .loginButton:hover {
   background-color: rgba(91, 141, 233, 0.1);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Tablet (≤ 900px) ───────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pageContainer {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+    justify-content: center;
+  }
+
+  .mainContent {
+    padding: 20px 24px;
+    align-items: center;
+    flex: 1;
+  }
+
+  .pwdCard {
+    height: auto;
+    min-height: unset;
+    max-height: unset;
+    border-radius: 16px;
+  }
+
+  .darkHeader {
+    padding: 32px 36px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .titleText {
+    font-size: 1.8rem;   /* mantiene buen tamaño en tablet */
+    white-space: normal; /* permite que el título haga salto de línea si hace falta */
+    letter-spacing: 0.5px;
+  }
+
+  .subtitleText {
+    font-size: 1rem;     /* más grande que en escritorio para tablet */
+  }
+
+  .lightForm {
+    padding: 32px 36px;
+  }
+
+  .formLabel {
+    font-size: 1rem;     /* más legible en tablet */
+  }
+
+  .formInput {
+    font-size: 1rem;
+    padding: 14px 15px;
+  }
+
+  .instructionText {
+    font-size: 0.88rem;  /* más legible en tablet */
+  }
+
+  .continueButton {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .footerText {
+    font-size: 0.88rem;
+  }
+
+  .loginButton {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+}
+
+/* ─── Móvil (≤ 600px) ────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .pageContainer {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+    justify-content: center;
+  }
+
+  .mainContent {
+    padding: 16px 16px;
+    align-items: center;
+    flex: 1;
+  }
+
+  .pwdCard {
+    border-radius: 16px;
+  }
+
+  .darkHeader {
+    padding: 28px 24px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .titleText {
+    font-size: 1.4rem;   /* más pequeño para que quepa en pantallas estrechas */
+    white-space: normal;
+    letter-spacing: 0.3px;
+  }
+
+  .subtitleText {
+    font-size: 0.9rem;
+  }
+
+  .lightForm {
+    padding: 28px 24px 32px;
+  }
+
+  .formLabel {
+    font-size: 0.9rem;
+  }
+
+  .instructionText {
+    font-size: 0.82rem;
+    margin-bottom: 24px;
+  }
+
+  .continueButton {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .footerText {
+    font-size: 0.82rem;
+  }
+
+  .loginButton {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+    box-sizing: border-box;
+  }
 }

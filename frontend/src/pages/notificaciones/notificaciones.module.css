@@ -98,13 +98,11 @@
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.18);
 }
 
-/* ─── ESTADO NO LEÍDA ────────────────────────────────────────────────────── */
 .unread {
   background-color: #ffffff;
   border-left: 4px solid #4e8df5;
 }
 
-/* ─── ESTADO LEÍDA: apagada / grisácea ──────────────────────────────────── */
 .read {
   background-color: #e8e8ed;
   border-left: 4px solid transparent;
@@ -116,12 +114,10 @@
   box-shadow: none;
 }
 
-/* Texto apagado en notificaciones leídas */
 .readText {
   color: #999 !important;
 }
 
-/* ─── PUNTO DE NO LEÍDA ──────────────────────────────────────────────────── */
 .unreadDot {
   position: absolute;
   top: 18px;
@@ -146,13 +142,15 @@
 /* ─── CONTENIDO ──────────────────────────────────────────────────────────── */
 .notificationContent {
   flex-grow: 1;
+  min-width: 0;
 }
 
 .contentHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 5px;
+  gap: 8px;
 }
 
 .notifTitle {
@@ -166,7 +164,7 @@
   font-size: 0.78rem;
   color: #999;
   flex-shrink: 0;
-  margin-left: 12px;
+  white-space: nowrap;
 }
 
 .notifMessage {
@@ -209,8 +207,7 @@
   border-radius: 4px;
 }
 
-/* Skeleton card usa el estilo base .notificationCard + .unread para que tenga fondo */
-.notificationCard .skeletonIcon {
+.skeletonIcon {
   width: 48px;
   height: 48px;
   border-radius: 10px;
@@ -274,4 +271,144 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
+}
+
+/* ─── MODAL DE CONFIRMACIÓN ──────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+  animation: fadeInOverlay 0.15s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modalBox {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: popIn 0.2s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.93); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.modalTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #05050A;
+  margin: 0;
+}
+
+.modalText {
+  font-size: 0.88rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modalCancel {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1.5px solid #d0d0dc;
+  background: #ffffff;
+  color: #444;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.modalCancel:hover { background: #f4f4f8; }
+
+.modalConfirm {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: #e74c3c;
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.modalConfirm:hover { opacity: 0.88; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .pageWrapper {
+    padding: 20px 16px;
+  }
+
+  .notificationCard {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .contentHeader {
+    flex-wrap: wrap;
+  }
+
+  .notifTitle {
+    font-size: 0.92rem;
+  }
+
+  .notifDate {
+    font-size: 0.72rem;
+  }
+
+  .notifMessage {
+    font-size: 0.85rem;
+  }
+
+  .iconContainer {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Solo en móvil: título arriba, botones debajo alineados a la izquierda */
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .headerActions {
+    justify-content: flex-start;
+    gap: 16px;
+  }
 }

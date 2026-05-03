@@ -267,7 +267,127 @@
   font-style: italic;
 }
 
-/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
-.listScroll::-webkit-scrollbar { width: 5px; }
-.listScroll::-webkit-scrollbar-track { background: transparent; }
-.listScroll::-webkit-scrollbar-thumb { background: #d8d8e8; border-radius: 3px; }
+/* ─── SKELETON ───────────────────────────────────────────────────────────── */
+.skeleton {
+  display: inline-block;
+  background: linear-gradient(90deg, #e8e8ee 25%, #f4f4f8 50%, #e8e8ee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── ERROR STATE ────────────────────────────────────────────────────────── */
+.errorState {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.retryButton {
+  background-color: #4db8e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 22px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.retryButton:hover { opacity: 0.85; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .wrapper {
+    padding: 16px 12px;
+    gap: 14px;
+  }
+
+  .pageTitle {
+    font-size: 1.4rem;
+  }
+
+  /* Header: apilar título y tabs verticalmente con más separación */
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 18px;
+  }
+
+  .cardHeaderTitle {
+    font-size: 1.05rem;
+  }
+
+  .tabs {
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+  }
+
+  /* Body: apilar sidebar encima de la lista */
+  .cardBody {
+    flex-direction: column;
+  }
+
+  /* Sidebar: ancho completo, sin borde derecho, con borde inferior */
+  .sidebar {
+    width: 100%;
+    box-sizing: border-box;
+    border-right: none;
+    border-bottom: 1px solid #e8e8ee;
+    padding: 16px 18px;
+    gap: 12px;
+  }
+
+  /* Categorías y fuentes en dos columnas */
+  .catList {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+  }
+
+  /* Lista de resultados debajo */
+  .listPanel {
+    width: 100%;
+  }
+
+  .row {
+    padding: 12px 18px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .rowName {
+    font-size: 0.9rem;
+  }
+
+  .catBadge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+
+  .listFooter {
+    padding: 10px 18px;
+    font-size: 0.75rem;
+  }
+}
