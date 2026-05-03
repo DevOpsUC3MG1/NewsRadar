@@ -21,12 +21,14 @@ class User(Base):
     alerts = relationship("Alert", back_populates="user", cascade="all, delete")
 
 class Alert(Base):
-    __tablename__ = "alerts"
+    _tablename_ = "alerts"
     id = Column(Integer, primary_key=True)
     name = Column(String(200))
     descriptors = Column(JSON, default=[])
     categories = Column(JSON, default=[])
     cron_expression = Column(String(120))
+    information_sources_ids = Column(JSON, default=[])
+    rss_channels_ids = Column(JSON, default=[])
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="alerts")
 
