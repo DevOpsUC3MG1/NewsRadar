@@ -493,8 +493,8 @@ async def create_seed_data() -> None:
             },
             # TODO: quitar este
             {
-                "email": "100472296@alumnos.uc3m.es",
-                "first_name": "admin2",
+                "email": "ejemplo@newsradar.com",
+                "first_name": "ejemplo",
                 "last_name": "NewsRadar",
                 "organization": "NewsRadar",
                 "password": "adminadmin",
