@@ -182,12 +182,26 @@ class NewsRadarAPIClient:
         alert_id: int,
         timestamp: datetime,
         metrics: list[dict],
+        title: str | None = None,
+        content: str | None = None,
+        news: list[dict] | None = None,
     ) -> dict:
-        """Crea una notificación en MongoDB vía API."""
-        body = {
+        """Crea una notificación en MongoDB vía API.
+
+        title, content y news son opcionales: si no se pasan, no se envían en
+        el body, así la API se comporta exactamente igual que antes.
+        """
+        body: dict = {
             "timestamp": timestamp.isoformat(),
             "metrics": metrics,
         }
+        if title is not None:
+            body["title"] = title
+        if content is not None:
+            body["content"] = content
+        if news:
+            body["news"] = news
+
         resp = await self._request(
             "POST",
             f"/users/{user_id}/alerts/{alert_id}/notifications",

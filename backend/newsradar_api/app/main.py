@@ -141,6 +141,13 @@ class Metric(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     value: float
 
+class NewsRef(BaseModel):
+    """Referencia a una noticia incluida en una notificación."""
+    title: str = Field(..., min_length=1, max_length=500)
+    link: str = Field(..., min_length=1, max_length=2000)
+    source_name: str = Field(..., min_length=1, max_length=200)
+    category: str = Field(..., min_length=1, max_length=100)
+    published: Optional[datetime] = None
 
 class RoleBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -252,6 +259,11 @@ class Category(CategoryBase):
 class NotificationBase(BaseModel):
     timestamp: datetime
     metrics: List[Metric] = Field(default_factory=list)
+    # Campos opcionales para el feed/buzón. Se omiten en la respuesta
+    # cuando están vacíos (response_model_exclude_none + exclude_defaults).
+    title: Optional[str] = Field(default=None, max_length=300)
+    content: Optional[str] = Field(default=None, max_length=10000)
+    news: List[NewsRef] = Field(default_factory=list)
 
 
 class NotificationCreate(NotificationBase):
@@ -261,6 +273,9 @@ class NotificationCreate(NotificationBase):
 class NotificationUpdate(BaseModel):
     timestamp: Optional[datetime] = None
     metrics: Optional[List[Metric]] = None
+    title: Optional[str] = Field(default=None, max_length=300)
+    content: Optional[str] = Field(default=None, max_length=10000)
+    news: Optional[List[NewsRef]] = None
 
 
 class Notification(NotificationBase):
@@ -476,6 +491,7 @@ async def create_seed_data() -> None:
                 "password": "admin123",
                 "role_ids": [admin_role.id],
             },
+            # TODO: quitar este
             {
                 "email": "100472296@alumnos.uc3m.es",
                 "first_name": "admin2",
@@ -1053,8 +1069,6 @@ async def get_user_alert(
         name=alert.name,
         descriptors=alert.descriptors or [],
         categories=[AlertCategoryItem(**c) for c in (alert.categories or [])],
-        rss_channels_ids=alert.rss_channels_ids or [],
-        information_sources_ids=alert.information_sources_ids or [],
         cron_expression=alert.cron_expression,
     )
 
@@ -1094,8 +1108,6 @@ async def update_user_alert(
         name=alert.name,
         descriptors=alert.descriptors or [],
         categories=[AlertCategoryItem(**c) for c in (alert.categories or [])],
-        rss_channels_ids=alert.rss_channels_ids or [],
-        information_sources_ids=alert.information_sources_ids or [],
         cron_expression=alert.cron_expression,
     )
 
@@ -1131,6 +1143,8 @@ async def delete_user_alert(
 @app.get(
     f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications",
     response_model=List[Notification],
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
     tags=["notifications"],
 )
 async def list_alert_notifications(
@@ -1155,6 +1169,9 @@ async def list_alert_notifications(
             alert_id=n["alert_id"],
             timestamp=n["timestamp"],
             metrics=[Metric(**m) for m in n.get("metrics", [])],
+            title=n.get("title"),
+            content=n.get("content"),
+            news=[NewsRef(**x) for x in n.get("news", [])],
         )
         for n in notifications
     ]
@@ -1163,6 +1180,8 @@ async def list_alert_notifications(
 @app.post(
     f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications",
     response_model=Notification,
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
     status_code=201,
     tags=["notifications"],
 )
@@ -1180,7 +1199,6 @@ async def create_alert_notification(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
     
-    # Get next ID
     last_doc = await mongo_db.notifications.find_one(sort=[("_id", -1)])
     next_id = (last_doc["_id"] + 1) if last_doc else 1
     
@@ -1190,6 +1208,15 @@ async def create_alert_notification(
         "timestamp": payload.timestamp,
         "metrics": [m.model_dump() for m in payload.metrics],
     }
+    # Solo guardamos los campos extra si vienen, así las notificaciones
+    # creadas por clientes viejos quedan idénticas a las anteriores.
+    if payload.title is not None:
+        doc["title"] = payload.title
+    if payload.content is not None:
+        doc["content"] = payload.content
+    if payload.news:
+        doc["news"] = [n.model_dump(mode="json") for n in payload.news]
+
     await mongo_db.notifications.insert_one(doc)
     
     return Notification(
@@ -1197,12 +1224,17 @@ async def create_alert_notification(
         alert_id=alert_id,
         timestamp=payload.timestamp,
         metrics=payload.metrics,
+        title=payload.title,
+        content=payload.content,
+        news=payload.news,
     )
 
 
 @app.get(
     f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}",
     response_model=Notification,
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
     tags=["notifications"],
 )
 async def get_alert_notification(
@@ -1228,12 +1260,17 @@ async def get_alert_notification(
         alert_id=doc["alert_id"],
         timestamp=doc["timestamp"],
         metrics=[Metric(**m) for m in doc.get("metrics", [])],
+        title=doc.get("title"),
+        content=doc.get("content"),
+        news=[NewsRef(**x) for x in doc.get("news", [])],
     )
 
 
 @app.put(
     f"{API_PREFIX}/users/{{user_id}}/alerts/{{alert_id}}/notifications/{{notification_id}}",
     response_model=Notification,
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
     tags=["notifications"],
 )
 async def update_alert_notification(
@@ -1260,6 +1297,12 @@ async def update_alert_notification(
         update_data["timestamp"] = payload.timestamp
     if payload.metrics is not None:
         update_data["metrics"] = [m.model_dump() for m in payload.metrics]
+    if payload.title is not None:
+        update_data["title"] = payload.title
+    if payload.content is not None:
+        update_data["content"] = payload.content
+    if payload.news is not None:
+        update_data["news"] = [n.model_dump(mode="json") for n in payload.news]
     
     if update_data:
         await mongo_db.notifications.update_one(
@@ -1273,6 +1316,9 @@ async def update_alert_notification(
         alert_id=doc["alert_id"],
         timestamp=doc["timestamp"],
         metrics=[Metric(**m) for m in doc.get("metrics", [])],
+        title=doc.get("title"),
+        content=doc.get("content"),
+        news=[NewsRef(**x) for x in doc.get("news", [])],
     )
 
 

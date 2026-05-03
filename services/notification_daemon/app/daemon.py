@@ -3,7 +3,7 @@ Demonio NewsRadar.
 
 Flujo:
   1. Login contra la API.
-  2. Carga rss_sources.json + categorías + alertas + canales RSS desde la API.
+  2. Carga rss_sources.json y sincroniza alertas vía API.
   3. Programa cada alerta en APScheduler según su cron_expression.
   4. Cada disparo:
         - calcula `since` (última ejecución de esa alerta).
@@ -13,7 +13,7 @@ Flujo:
   5. Refresca alertas periódicamente (por si se crean/borran/editan).
 
 Uso:
-    python -m newsradar_daemon.daemon
+    python -m app.daemon
 """
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -59,6 +60,9 @@ class Config:
             os.getenv("ALERT_REFRESH_INTERVAL", "300")
         )
         self.log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+        # Zona horaria para mostrar fechas en el asunto/cuerpo de los emails
+        # y notificaciones. El scheduler internamente sigue en UTC.
+        self.display_timezone = os.getenv("DISPLAY_TIMEZONE", "UTC")
 
 
 # ----------------------------------------------------------- registro de jobs
@@ -132,60 +136,30 @@ def resolve_alert_channels(
 
     raw_ch_ids = alert.get("rss_channels_ids", [])
     raw_src_ids = alert.get("information_sources_ids", [])
-    logger.info(
-        "[DEBUG resolve] Alerta %s | rss_channels_ids=%r (tipos=%r) | information_sources_ids=%r (tipos=%r)",
-        alert_id,
-        raw_ch_ids, [type(x).__name__ for x in raw_ch_ids],
-        raw_src_ids, [type(x).__name__ for x in raw_src_ids],
-    )
-    logger.info(
-        "[DEBUG resolve] Alerta %s | api_channels_by_id keys (primeras 20)=%r",
-        alert_id, list(api_channels_by_id.keys())[:20],
-    )
-    logger.info(
-        "[DEBUG resolve] Alerta %s | api_sources_by_id keys=%r",
-        alert_id, list(api_sources_by_id.keys()),
-    )
 
     # 1) canales explícitos
     for ch_id in raw_ch_ids:
-        key = str(ch_id)
-        ch = api_channels_by_id.get(key)
+        ch = api_channels_by_id.get(str(ch_id))
         if ch and ch.get("url"):
             selected_urls.add(ch["url"])
-            logger.info(
-                "[DEBUG resolve] Alerta %s | canal id=%r -> URL=%s",
-                alert_id, ch_id, ch["url"],
-            )
         else:
             logger.warning(
-                "[DEBUG resolve] Alerta %s | canal id=%r (key=%r) NO encontrado o sin url. ch=%r",
-                alert_id, ch_id, key, ch,
+                "Alerta %s | canal id=%r no encontrado en api_channels_by_id",
+                alert_id, ch_id,
             )
 
     # 2) fuentes -> todos sus canales
     for src_id in raw_src_ids:
-        key = str(src_id)
-        src = api_sources_by_id.get(key)
+        src = api_sources_by_id.get(str(src_id))
         if not src:
             logger.warning(
-                "[DEBUG resolve] Alerta %s | fuente id=%r (key=%r) NO encontrada",
-                alert_id, src_id, key,
+                "Alerta %s | fuente id=%r no encontrada en api_sources_by_id",
+                alert_id, src_id,
             )
             continue
-        src_channels = src.get("_channels", [])
-        logger.info(
-            "[DEBUG resolve] Alerta %s | fuente id=%r tiene %d canales",
-            alert_id, src_id, len(src_channels),
-        )
-        for ch in src_channels:
+        for ch in src.get("_channels", []):
             if ch.get("url"):
                 selected_urls.add(ch["url"])
-
-    logger.info(
-        "[DEBUG resolve] Alerta %s | URLs únicas seleccionadas (%d): %r",
-        alert_id, len(selected_urls), list(selected_urls),
-    )
 
     # 3) cruzar con rss_sources.json para obtener source_name + category
     url_index = rss_sources["url_index"]
@@ -194,27 +168,14 @@ def resolve_alert_channels(
         info = url_index.get(url)
         if info:
             channels.append(info)
-            logger.info(
-                "[DEBUG resolve] Alerta %s | URL %s -> source=%s cat=%s",
-                alert_id, url, info["source_name"], info["category"],
-            )
         else:
             # canal en API que no está en rss_sources.json: lo incluimos
             # con categoría "Desconocida" para no perder noticias.
-            logger.warning(
-                "[DEBUG resolve] Alerta %s | URL %s NO está en rss_sources.json (url_index tiene %d entradas)",
-                alert_id, url, len(url_index),
-            )
             channels.append({
                 "source_name": "Desconocida",
                 "category": "Desconocida",
                 "url": url,
             })
-
-    logger.info(
-        "[DEBUG resolve] Alerta %s | TOTAL canales devueltos: %d",
-        alert_id, len(channels),
-    )
     return channels
 
 
@@ -234,6 +195,18 @@ async def process_alert(
     """
     fired_at = datetime.now(timezone.utc)
 
+    # Convertimos a la zona horaria de display para el asunto del email
+    # y el título de la notificación. El scheduler/timestamps internos
+    # siguen siendo UTC.
+    try:
+        local_tz = ZoneInfo(cfg.display_timezone)
+    except Exception:
+        logger.warning(
+            "DISPLAY_TIMEZONE=%r no válida; usando UTC", cfg.display_timezone,
+        )
+        local_tz = timezone.utc
+    fired_local = fired_at.astimezone(local_tz)
+
     # 1. cargar alerta fresca desde la API
     try:
         alerts = await api.list_user_alerts(user_id)
@@ -251,23 +224,10 @@ async def process_alert(
         "Procesando alerta id=%s name='%s' user=%s",
         alert_id, alert_name, user_id,
     )
-    logger.info(
-        "[DEBUG alert] Alerta %s | descriptors=%r | categories=%r | "
-        "rss_channels_ids=%r | information_sources_ids=%r",
-        alert_id,
-        alert.get("descriptors"),
-        alert.get("categories"),
-        alert.get("rss_channels_ids"),
-        alert.get("information_sources_ids"),
-    )
 
     # 2. cargar fuentes y canales frescos
     try:
         sources = await api.list_information_sources()
-        logger.info(
-            "[DEBUG load] Alerta %s | API devolvió %d fuentes",
-            alert_id, len(sources),
-        )
         api_sources_by_id: dict[str, dict] = {}
         api_channels_by_id: dict[str, dict] = {}
         for src in sources:
@@ -277,10 +237,6 @@ async def process_alert(
             api_sources_by_id[src_id] = src
             for ch in channels_of_src:
                 api_channels_by_id[str(ch["id"])] = ch
-        logger.info(
-            "[DEBUG load] Alerta %s | tras carga: %d fuentes y %d canales en diccionarios",
-            alert_id, len(api_sources_by_id), len(api_channels_by_id),
-        )
     except NewsRadarAPIError as e:
         logger.error("No se pudieron cargar fuentes/canales: %s", e)
         return
@@ -297,8 +253,8 @@ async def process_alert(
     # 4. fecha desde la que buscar noticias
     since = registry.get_last_run(alert_id)
     if since is None:
-        # primera ejecución: cogemos las del último ciclo cron aproximado.
-        # Para no spamear, usamos "ahora" -> solo noticias futuras.
+        # primera ejecución: usamos "ahora" como baseline para no notificar
+        # noticias antiguas al arrancar.
         since = fired_at
         logger.info(
             "Primera ejecución de alerta %s; baseline = %s",
@@ -335,7 +291,7 @@ async def process_alert(
         logger.error("No se pudo obtener email de user %s: %s", user_id, e)
         return
 
-    # 8. enviar email
+    # 8. enviar email (usando hora local en el asunto y cuerpo)
     if cfg.gmail_sender and cfg.gmail_app_password:
         try:
             # smtplib es bloqueante; lo movemos a un thread para no bloquear el loop
@@ -348,7 +304,7 @@ async def process_alert(
                 to_email=user_email,
                 user_first_name=user_first_name,
                 alert_name=alert_name,
-                fired_at=fired_at,
+                fired_at=fired_local,
                 items=matched,
             )
         except Exception as e:
@@ -371,14 +327,55 @@ async def process_alert(
             sum(1 for it in matched if it.matched_category)
         )},
     ]
+
+    # Título: "Actualización de <alerta> en <día/hora>" en hora local
+    fired_str = fired_local.strftime("%d/%m/%Y %H:%M")
+    title = f"Actualización de {alert_name} en {fired_str}"
+
+    # Contenido: resumen + lista de noticias en bullets.
+    content_lines = [
+        f"Tu alerta '{alert_name}' tiene {len(matched)} noticia(s) nueva(s):",
+        "",
+    ]
+    for it in matched:
+        if it.published:
+            published_str = it.published.astimezone(local_tz).strftime("%d/%m/%Y %H:%M")
+        else:
+            published_str = "fecha n/d"
+        content_lines.append(
+            f"• [{it.source_name} · {it.channel_category}] {it.title}"
+        )
+        content_lines.append(f"  {it.link}")
+        content_lines.append(f"  Publicado: {published_str}")
+        content_lines.append("")
+    content = "\n".join(content_lines).strip()
+
+    # Lista estructurada de las noticias para que el frontend las renderice.
+    news_payload = [
+        {
+            "title": it.title[:500],
+            "link": it.link[:2000],
+            "source_name": it.source_name[:200],
+            "category": it.channel_category[:100],
+            "published": it.published.isoformat() if it.published else None,
+        }
+        for it in matched
+    ]
+
     try:
         await api.create_notification(
             user_id=user_id,
             alert_id=alert_id,
             timestamp=fired_at,
             metrics=metrics,
+            title=title,
+            content=content,
+            news=news_payload,
         )
-        logger.info("Notificación creada en API para alerta %s", alert_id)
+        logger.info(
+            "Notificación creada en API para alerta %s con título '%s'",
+            alert_id, title,
+        )
     except NewsRadarAPIError as e:
         logger.error("Error creando notificación en API: %s", e)
 
@@ -432,7 +429,7 @@ async def sync_alerts_to_scheduler(
             scheduler.remove_job(job_id)
 
         try:
-            trigger = CronTrigger.from_crontab(cron_expr, timezone=timezone.utc)
+            trigger = CronTrigger.from_crontab(cron_expr, timezone=scheduler.timezone)
         except ValueError as e:
             logger.error(
                 "cron_expression inválido en alerta %s ('%s'): %s",
@@ -443,9 +440,7 @@ async def sync_alerts_to_scheduler(
         scheduler.add_job(
             process_alert,
             trigger=trigger,
-            args=[
-                alert_id, user_id, cfg, api, rss_sources, registry,
-            ],
+            args=[alert_id, user_id, cfg, api, rss_sources, registry],
             id=job_id,
             replace_existing=True,
             misfire_grace_time=60,
@@ -489,7 +484,15 @@ async def main() -> None:
     await api.login()
 
     registry = AlertRegistry()
-    scheduler = AsyncIOScheduler(timezone=timezone.utc)
+    try:
+        scheduler_tz = ZoneInfo(cfg.display_timezone)
+    except Exception:
+        logger.warning(
+            "DISPLAY_TIMEZONE=%r no válida para el scheduler; usando UTC",
+            cfg.display_timezone,
+        )
+        scheduler_tz = timezone.utc
+    scheduler = AsyncIOScheduler(timezone=scheduler_tz)
     scheduler.start()
 
     # primera sincronización
