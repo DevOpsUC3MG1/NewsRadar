@@ -1,4 +1,4 @@
-    /* verify_acc.module.css */
+/* verify_acc.module.css */
 
 .pageContainer {
   display: flex;
@@ -48,7 +48,8 @@
   margin: 0 0 5px 0;
   font-weight: bold;
   letter-spacing: 1px;
-  white-space: nowrap;
+  /* Eliminado white-space: nowrap para que el título pueda saltar de línea */
+  white-space: normal;
 }
 
 .subtitleText {
@@ -151,6 +152,24 @@
   font-weight: 300;
 }
 
+.loginButton {
+  background-color: transparent;
+  color: #5B8DE9;
+  border: 1px solid #5B8DE9;
+  padding: 8px 30px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.loginButton:hover {
+  background-color: rgba(91, 141, 233, 0.1);
+}
+
 .backButton {
   background-color: transparent;
   color: #5B8DE9;
@@ -167,4 +186,84 @@
 
 .backButton:hover {
   background-color: rgba(91, 141, 233, 0.1);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE — igual que forgot_pwd
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .pageContainer {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+    justify-content: center;
+  }
+
+  .mainContent {
+    padding: 20px 24px;
+    align-items: center;
+    flex: 1;
+  }
+
+  .accCard {
+    height: auto;
+    min-height: unset;
+    max-height: unset;
+    border-radius: 16px;
+  }
+
+  .darkHeader {
+    padding: 28px 28px 22px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .titleText {
+    font-size: 1.6rem;
+  }
+
+  .subtitleText {
+    font-size: 0.95rem;
+  }
+
+  .lightForm {
+    padding: 28px 28px 32px;
+  }
+
+  .continueButton {
+    width: 100%;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .mainContent {
+    padding: 16px 16px;
+    align-items: center;
+  }
+
+  .accCard {
+    border-radius: 16px;
+  }
+
+  .darkHeader {
+    padding: 24px 22px 20px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .titleText {
+    font-size: 1.35rem;
+    letter-spacing: 0.3px;
+  }
+
+  .lightForm {
+    padding: 24px 22px 28px;
+  }
+
+  .continueButton {
+    width: 100%;
+  }
 }
