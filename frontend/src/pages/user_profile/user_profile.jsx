@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, CheckCircle, Pencil, Save, X, Key, Mail, Trash2, Check, AlertTriangle } from 'lucide-react';
-import { useTranslation } from 'react-i18next'; // <-- Importamos el hook
+import { User, CheckCircle, Pencil, Save, X, Key, Mail, Trash2, Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import styles from './user_profile.module.css';
-import { checkVerificationStatus, deleteUserAccount } from '../../services/userService';
+import { checkVerificationStatus, deleteUserAccount, updateUser } from '../../services/userService';
 import authService from '../../services/authService';
 
 const UserProfile = () => {
-  const { t } = useTranslation(); // <-- Inicializamos traducción
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [userData, setUserData] = useState({
@@ -15,10 +15,9 @@ const UserProfile = () => {
   });
 
   const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [isSavingInfo, setIsSavingInfo] = useState(false); // Estado de carga para el botón guardar
+  const [infoError, setInfoError] = useState("");
   const [tempInfo, setTempInfo] = useState({});
-
-  const [isEditingRoles, setIsEditingRoles] = useState(false);
-  const [tempRoles, setTempRoles] = useState([]);
 
   const [isVerified, setIsVerified] = useState(false);
 
@@ -40,7 +39,6 @@ const UserProfile = () => {
 
     setUserData(savedUser);
     setTempInfo(savedUser);
-    setTempRoles(savedUser.role_ids);
 
     if (savedUser.email) {
       const token = authService.getToken();
@@ -50,32 +48,43 @@ const UserProfile = () => {
     }
   }, []);
 
-  const handleSaveInfo = () => {
-    const updatedUser = { ...userData, ...tempInfo };
-    setUserData(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setIsEditingInfo(false);
+  // --- FUNCIÓN PARA GUARDAR EN EL BACKEND ---
+  const handleSaveInfo = async () => {
+    setIsSavingInfo(true);
+    setInfoError("");
+
+    try {
+      const token = authService.getToken();
+
+      // Preparamos solo los datos permitidos por UserUpdate en el backend
+      const updatePayload = {
+        first_name: tempInfo.first_name,
+        last_name: tempInfo.last_name,
+        organization: tempInfo.organization
+      };
+
+      // Llamamos a la API
+      const updatedDataFromBackend = await updateUser(userData.id, updatePayload, token);
+
+      // Actualizamos el estado y el localStorage con lo que nos devuelve el servidor
+      const updatedUser = { ...userData, ...updatedDataFromBackend };
+      setUserData(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      setIsEditingInfo(false);
+    } catch (error) {
+      console.error(error);
+      setInfoError("Error al guardar los cambios en el servidor."); // Puedes traducirlo con i18next si quieres
+    } finally {
+      setIsSavingInfo(false);
+    }
   };
 
-  // Traducimos los nombres de los roles dinámicamente
+  // Definición de roles con los nuevos IDs reales
   const availableRoles = [
-    { id: 1, name: t('userProfile.roles.role_1') },
-    { id: 2, name: t('userProfile.roles.role_2') }
+    { id: 3, name: 'Lector' }, // Cambia esto por t('userProfile.roles.lector') si lo tienes en el JSON
+    { id: 4, name: 'Gestor' }  // Cambia esto por t('userProfile.roles.gestor') si lo tienes en el JSON
   ];
-
-  const handleEditRoles = () => setIsEditingRoles(true);
-  const handleCancelRoles = () => { setTempRoles(userData.role_ids); setIsEditingRoles(false); };
-  const handleSaveRoles = () => {
-    const updatedUser = { ...userData, role_ids: tempRoles };
-    setUserData(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setIsEditingRoles(false);
-  };
-
-  const toggleRole = (roleId) => {
-    if (!isEditingRoles) return;
-    setTempRoles(tempRoles.includes(roleId) ? tempRoles.filter(id => id !== roleId) : [...tempRoles, roleId]);
-  };
 
   // --- LÓGICA PARA ELIMINAR CUENTA ---
   const handleDeleteAccount = async () => {
@@ -124,17 +133,23 @@ const UserProfile = () => {
           {/* Información Personal */}
           <div className={styles.card} style={{ flex: 2 }}>
             <span className={styles.cardTitle}>{t('userProfile.personalInfo.title')}</span>
+
+            {infoError && (
+              <div style={{ color: '#B65753', marginBottom: '15px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                {infoError}
+              </div>
+            )}
+
             <div className={styles.infoGrid}>
               {['first_name','last_name','organization'].map(field => (
                 <div key={field} className={styles.inputGroup}>
-                  {/* Usamos el field dinámicamente para acceder al JSON */}
                   <label>{t(`userProfile.personalInfo.${field}`)}</label>
                   <input
                     type="text"
                     name={field}
                     value={tempInfo[field] || ''}
                     onChange={e => setTempInfo({...tempInfo, [field]: e.target.value})}
-                    disabled={!isEditingInfo}
+                    disabled={!isEditingInfo || isSavingInfo}
                     className={`${styles.inputField} ${isEditingInfo ? styles.activeInput : styles.disabledInput}`}
                   />
                 </div>
@@ -144,6 +159,7 @@ const UserProfile = () => {
                 <input type="email" value={userData.email} disabled className={`${styles.inputField} ${styles.emailInput}`} />
               </div>
             </div>
+
             <div className={styles.buttonContainer}>
               {!isEditingInfo ? (
                 <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={() => setIsEditingInfo(true)}>
@@ -151,43 +167,44 @@ const UserProfile = () => {
                 </button>
               ) : (
                 <>
-                  <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={() => { setTempInfo(userData); setIsEditingInfo(false); }}>
+                  <button className={`${styles.btnAction} ${styles.btnDanger}`} disabled={isSavingInfo} onClick={() => { setTempInfo(userData); setIsEditingInfo(false); setInfoError(""); }}>
                     <X size={16} /> {t('userProfile.actions.cancel')}
                   </button>
-                  <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleSaveInfo}>
-                    <Save size={16} /> {t('userProfile.actions.save')}
+                  <button className={`${styles.btnAction} ${styles.btnDark}`} disabled={isSavingInfo} onClick={handleSaveInfo}>
+                    {isSavingInfo ? <Loader2 size={16} className={styles.spinner} /> : <Save size={16} />}
+                    {t('userProfile.actions.save')}
                   </button>
                 </>
               )}
             </div>
           </div>
 
-          {/* Roles */}
+          {/* Roles (SECCIÓN FIJA Y DESHABILITADA) */}
           <div className={styles.card} style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <span className={styles.cardTitle}>{t('userProfile.roles.title')}</span>
               <div className={styles.buttonContainer} style={{ marginTop: 0 }}>
-                {!isEditingRoles ? (
-                  <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleEditRoles}>
-                    <Pencil size={16}/> {t('userProfile.actions.edit')}
-                  </button>
-                ) : (
-                  <>
-                    <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={handleCancelRoles}>
-                      <X size={16}/> {t('userProfile.actions.cancel')}
-                    </button>
-                    <button className={`${styles.btnAction} ${styles.btnDark}`} onClick={handleSaveRoles}>
-                      <Save size={16}/> {t('userProfile.actions.save')}
-                    </button>
-                  </>
-                )}
+                {/* Botón visualmente bloqueado */}
+                <button
+                  className={`${styles.btnAction} ${styles.btnDark}`}
+                  disabled
+                  style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                >
+                  <Pencil size={16}/> {t('userProfile.actions.edit')}
+                </button>
               </div>
             </div>
-            <div className={`${styles.rolesList} ${!isEditingRoles ? styles.rolesDisabled : ''}`}>
+
+            {/* Lista visualmente bloqueada */}
+            <div className={`${styles.rolesList} ${styles.rolesDisabled}`}>
               {availableRoles.map(role => {
-                const isSelected = tempRoles.includes(role.id);
+                // Forzamos que el rol Gestor (ID 4) sea el que siempre aparece seleccionado
+                const isSelected = role.id === 4;
                 return (
-                  <div key={role.id} onClick={() => toggleRole(role.id)} className={`${styles.roleItem} ${isSelected ? styles.roleSelected : styles.roleUnselected}`}>
+                  <div
+                    key={role.id}
+                    className={`${styles.roleItem} ${isSelected ? styles.roleSelected : styles.roleUnselected}`}
+                  >
                     <div className={`${styles.tickCircle} ${isSelected ? styles.tickSelected : styles.tickUnselected}`}>
                       {isSelected && <Check size={12} color="#0E0E1D" />}
                     </div>
@@ -216,7 +233,7 @@ const UserProfile = () => {
         </div>
       </div>
 
-      {/* MODAL DE ELIMINAR CUENTA */}
+      {/* MODAL DE ELIMINAR CUENTA (Se mantiene igual) */}
       {showDeleteModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -260,7 +277,6 @@ const UserProfile = () => {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '15px', marginTop: '20px' }}>
-              {/* BOTÓN MANTENER */}
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
@@ -277,7 +293,6 @@ const UserProfile = () => {
                 {t('userProfile.deleteModal.keepBtn')}
               </button>
 
-              {/* BOTÓN BORRAR CUENTA */}
               <button
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}

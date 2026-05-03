@@ -2,11 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Search, Newspaper, Bell, MailOpen } from 'lucide-react';
 import styles from './notificaciones.module.css';
 
+// ─── Modal de confirmación ────────────────────────────────────────────────────
+const ConfirmModal = ({ onConfirm, onCancel }) => (
+  <div className={styles.modalOverlay} onClick={onCancel}>
+    <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+      <h3 className={styles.modalTitle}>Limpiar buzón</h3>
+      <p className={styles.modalText}>
+        ¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.
+      </p>
+      <div className={styles.modalActions}>
+        <button className={styles.modalCancel} onClick={onCancel}>Cancelar</button>
+        <button className={styles.modalConfirm} onClick={onConfirm}>Eliminar todo</button>
+      </div>
+    </div>
+  </div>
+);
+
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(4);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState(false);
+  const [visibleCount, setVisibleCount]   = useState(4);
+  const [showModal, setShowModal]         = useState(false);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -37,16 +54,14 @@ const Notifications = () => {
   const markAllAsRead = () =>
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
 
-  const clearAllNotifications = () => {
-    if (window.confirm('¿Estás seguro de que quieres vaciar el buzón?')) {
-      setNotifications([]);
-    }
+  const handleClearConfirmed = () => {
+    setNotifications([]);
+    setShowModal(false);
   };
 
   const visibleNotifications = notifications.slice(0, visibleCount);
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  // ── Icono + color según tipo ──────────────────────────────────────────────
   const getIconData = (type, isRead) => {
     const opacity = isRead ? 0.45 : 1;
     switch (type) {
@@ -61,7 +76,6 @@ const Notifications = () => {
     }
   };
 
-  // ── Skeleton ──────────────────────────────────────────────────────────────
   const SkeletonNotification = () => (
     <div className={styles.notificationCard}>
       <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
@@ -85,6 +99,14 @@ const Notifications = () => {
 
   return (
     <div className={styles.pageWrapper}>
+      {/* Modal de confirmación */}
+      {showModal && (
+        <ConfirmModal
+          onConfirm={handleClearConfirmed}
+          onCancel={() => setShowModal(false)}
+        />
+      )}
+
       <div className={styles.centerContainer}>
 
         {/* CABECERA */}
@@ -97,7 +119,7 @@ const Notifications = () => {
               </button>
             )}
             {notifications.length > 0 && (
-              <button className={styles.clearButton} onClick={clearAllNotifications}>
+              <button className={styles.clearButton} onClick={() => setShowModal(true)}>
                 Limpiar buzón
               </button>
             )}

@@ -190,6 +190,11 @@
       "defaultError": "Ocurrió un error al procesar tu solicitud.",
       "networkError": "No se pudo conectar con el servidor. Inténtalo de nuevo más tarde."
     },
+    "modal": {
+      "title": "Cuenta verificada correctamente",
+      "text": "Esta cuenta ya se encuentra verificada. No es necesario enviar otro correo electrónico.",
+      "button": "Volver al perfil"
+    },
     "successDefault": "Se ha enviado un nuevo enlace de verificación a tu correo."
   },
   "confirmVerify": {

@@ -122,7 +122,9 @@
 .actionsCell {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
+  height: 100%;
 }
 
 .editBtn, .deleteBtn {
@@ -165,7 +167,8 @@
 
 .modalContent {
   background: white;
-  width: 600px;
+  width: 650px;
+  max-height: 90vh;
   border-radius: 20px;
   padding: 30px;
   display: flex;
@@ -200,6 +203,14 @@
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+.formBody {
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.formBody::-webkit-scrollbar { width: 6px; }
+.formBody::-webkit-scrollbar-thumb { background-color: #d9d9d9; border-radius: 10px; }
 
 .formBody label {
   display: block;
@@ -259,14 +270,10 @@
   z-index: 10;
 }
 
-.infoWrapper:hover .tooltip {
-  visibility: visible;
-}
+.infoWrapper:hover .tooltip { visibility: visible; }
 
 /* --- CONTENEDORES --- */
-.sectionContainer {
-  margin-bottom: 20px;
-}
+.sectionContainer { margin-bottom: 20px; }
 
 .tagsContainer, .checkboxGrid {
   border: 1px solid #09090F;
@@ -305,7 +312,7 @@
   text-transform: uppercase;
 }
 
-/* --- CATEGORÍAS (CHECKBOXES REPARADOS) --- */
+/* --- CATEGORÍAS (CHECKBOXES) --- */
 .checkboxGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -323,17 +330,15 @@
   margin: 0;
 }
 
-.hiddenCheckbox {
-  display: none;
-}
+.hiddenCheckbox { display: none; }
 
 .checkmark {
-  display: flex; /* Forzamos bloque flex para que no se aplaste */
+  display: flex;
   justify-content: center;
   align-items: center;
   width: 18px;
   height: 18px;
-  min-width: 18px; /* Evita que el contenedor lo encoja a 0 */
+  min-width: 18px;
   min-height: 18px;
   border: 1px solid #09090F;
   background-color: #FFFFFF;
@@ -342,9 +347,7 @@
   box-sizing: border-box;
 }
 
-.hiddenCheckbox:checked + .checkmark {
-  background-color: #09090F;
-}
+.hiddenCheckbox:checked + .checkmark { background-color: #09090F; }
 
 .checkmark:after {
   content: "";
@@ -354,12 +357,10 @@
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
-  margin-bottom: 2px; /* Ajuste óptico para centrar el tick */
+  margin-bottom: 2px;
 }
 
-.hiddenCheckbox:checked + .checkmark:after {
-  display: block;
-}
+.hiddenCheckbox:checked + .checkmark:after { display: block; }
 
 /* --- FOOTER DEL MODAL --- */
 .modalFooter {
@@ -415,19 +416,10 @@
   box-shadow: 0 10px 40px rgba(0,0,0,0.2);
 }
 
-.confirmBox p {
-  font-weight: 600;
-  margin: 20px 0;
-  color: #333;
-}
+.confirmBox p { font-weight: 600; margin: 20px 0; color: #333; }
 
-.confirmActions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
+.confirmActions { display: flex; justify-content: center; gap: 10px; }
 
-/* --- BOTONES DE CONFIRMACIÓN (NUEVOS COLORES) --- */
 .confirmBoxBtnDanger {
   background-color: #B65753;
   color: #FFFFFF;
@@ -450,39 +442,12 @@
   font-weight: 700;
 }
 
-/* Añadir o modificar en frontend/src/pages/alerts/alerts.module.css */
-
-/* Permitir scroll en el modal porque ahora es más alto */
-.modalContent {
-  background: white;
-  width: 650px; /* Un poco más ancho para los canales */
-  max-height: 90vh; /* Límite de altura de la pantalla */
-  border-radius: 20px;
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-}
-
-.formBody {
-  overflow-y: auto; /* Scroll interno para el formulario */
-  padding-right: 10px; /* Espacio para la barra de scroll */
-}
-
-.formBody::-webkit-scrollbar {
-  width: 6px;
-}
-.formBody::-webkit-scrollbar-thumb {
-  background-color: #d9d9d9;
-  border-radius: 10px;
-}
-
-/* --- NUEVOS ESTILOS PARA LA CASCADA --- */
-
+/* --- CASCADA: FUENTES Y CANALES --- */
 .emptyStateText {
   font-size: 0.85rem;
   color: #888;
   font-style: italic;
-  margin: 5px 0;
+  margin: 0;
 }
 
 .labelWithSearch {
@@ -509,7 +474,10 @@
   font-size: 0.75rem;
   font-family: inherit;
   width: 120px;
+  color: #0E0E1D;
 }
+
+.searchBox input::placeholder { color: #888888; }
 
 .channelsContainer {
   background: #f9f9f9;
@@ -539,11 +507,7 @@
   padding-bottom: 5px;
 }
 
-.channelList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.channelList { display: flex; flex-direction: column; gap: 8px; }
 
 .channelCategoryBadge {
   background-color: #eef2ff;
@@ -555,22 +519,6 @@
   font-weight: 700;
 }
 
-/* --- CORRECCIÓN DEL BUSCADOR --- */
-.searchBox input {
-  border: none;
-  background: none;
-  outline: none;
-  font-size: 0.75rem;
-  font-family: inherit;
-  width: 120px;
-  color: #0E0E1D; /* <-- AQUÍ EL COLOR NEGRO PARA LAS LETRAS */
-}
-
-.searchBox input::placeholder {
-  color: #888888;
-}
-
-/* --- ESTILOS PARA CONTENEDORES VACÍOS --- */
 .emptyContainerBox {
   border: 1px dashed #ccc;
   padding: 20px;
@@ -583,9 +531,46 @@
   min-height: 50px;
 }
 
-.emptyStateText {
-  font-size: 0.85rem;
-  color: #888;
-  font-style: italic;
-  margin: 0;
+/* --- SPINNER IA --- */
+.spinner { animation: rotate 1s linear infinite; }
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .alertsWrapper { padding: 20px 16px; }
+  .pageTitle { font-size: 1.4rem; }
+
+  /* Tabla con scroll horizontal */
+  .tableContainer {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+  .alertsTable { min-width: 600px; }
+}
+
+@media (max-width: 600px) {
+  .header { flex-wrap: wrap; gap: 12px; }
+  .titleGroup { gap: 8px; }
+  .pageTitle { font-size: 1.2rem; }
+
+  .newAlertBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .alertsTable { min-width: 550px; }
+
+  /* Modal ocupa casi todo el ancho en móvil */
+  .modalContent {
+    width: calc(100% - 32px);
+    max-height: 92vh;
+  }
 }

@@ -1,7 +1,9 @@
 // frontend/src/services/userService.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api/v1`
+  : 'http://localhost:8000/api/v1';
 
 export const checkVerificationStatus = async (email, token) => {
   try {
@@ -17,7 +19,6 @@ export const checkVerificationStatus = async (email, token) => {
   }
 };
 
-// NUEVA FUNCIÓN: Eliminar cuenta de usuario
 export const deleteUserAccount = async (userId, token) => {
   try {
     const response = await axios.delete(`${API_URL}/users/${userId}`, {
@@ -28,6 +29,21 @@ export const deleteUserAccount = async (userId, token) => {
     return response.data;
   } catch (error) {
     console.error('Error al eliminar la cuenta:', error);
-    throw error; // Lanzamos el error para capturarlo en el componente
+    throw error;
+  }
+};
+
+// NUEVA FUNCIÓN: Actualizar datos del usuario
+export const updateUser = async (userId, userData, token) => {
+  try {
+    const response = await axios.put(`${API_URL}/users/${userId}`, userData, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al actualizar el usuario:', error);
+    throw error;
   }
 };

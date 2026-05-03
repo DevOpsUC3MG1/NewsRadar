@@ -224,3 +224,64 @@
 .btnAction {
   min-width: 100px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Tablet (≤ 900px): añadir margen y centrar ──────────────────────────── */
+@media (max-width: 900px) {
+  .pageWrapper {
+    padding: 28px 32px;
+  }
+
+  .mainGrid {
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+}
+
+/* ─── Móvil (≤ 600px): apilar todo verticalmente ────────────────────────── */
+@media (max-width: 600px) {
+  .pageWrapper {
+    padding: 20px 16px;
+    gap: 20px;
+  }
+
+  .userName {
+    font-size: 1.5rem;
+  }
+
+  /* Una sola columna: info personal → roles → seguridad */
+  .mainGrid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "left"
+      "security";
+  }
+
+  .leftColumn {
+    grid-area: left;
+  }
+
+  .securityCard {
+    grid-area: security;
+  }
+
+  /* Campos del formulario en 1 columna */
+  .infoGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* Botones de seguridad en columna */
+  .securityTopActions {
+    gap: 12px;
+  }
+
+  .btnAction {
+    width: 100%;
+    padding: 13px;
+    font-size: 0.85rem;
+  }
+}

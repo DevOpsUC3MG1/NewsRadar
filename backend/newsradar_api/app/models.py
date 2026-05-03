@@ -21,7 +21,7 @@ class User(Base):
     alerts = relationship("Alert", back_populates="user", cascade="all, delete")
 
 class Alert(Base):
-    __tablename__ = "alerts"
+    _tablename_ = "alerts"
     id = Column(Integer, primary_key=True)
     name = Column(String(200))
     descriptors = Column(JSON, default=[])

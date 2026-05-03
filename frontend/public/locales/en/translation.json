@@ -190,6 +190,11 @@
       "defaultError": "An error occurred while processing your request.",
       "networkError": "Could not connect to the server. Please try again later."
     },
+    "modal": {
+      "title": "Account verified successfully",
+      "text": "This account is already verified. There is no need to send another email.",
+      "button": "Back to profile"
+    },
     "successDefault": "A new verification link has been sent to your email."
   },
   "confirmVerify": {
