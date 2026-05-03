@@ -54,8 +54,8 @@
 }
 
 .formGroup {
-  position: relative; /* Esto es clave para que el error se posicione respecto a este div */
-  padding-bottom: 20px; /* Reserva el espacio en blanco de antemano para el texto de error */
+  position: relative;
+  padding-bottom: 20px;
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
@@ -76,8 +76,8 @@
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  border: 1px solid #000000; /* Borde cambiado a negro */
-  color: #000000; /* Texto cambiado a negro para que sea visible */
+  border: 1px solid #000000;
+  color: #000000;
   border-radius: 4px;
   font-size: 0.9rem;
   outline: none;
@@ -86,12 +86,12 @@
 
 .input:focus {
   border-color: #4e8df5;
-  box-shadow: 0 0 0 1px #4e8df5; /* Le añado un pequeño resplandor azul al hacer foco, igual que en el login */
+  box-shadow: 0 0 0 1px #4e8df5;
 }
 
 .errorText {
-  position: absolute; /* Saca el texto del flujo normal (ya no empuja nada) */
-  bottom: 0; /* Lo pega abajo del todo del formGroup, en el padding que reservamos */
+  position: absolute;
+  bottom: 0;
   left: 0;
   color: #e74c3c;
   font-size: 0.75rem;
@@ -112,14 +112,8 @@
   max-width: 300px;
 }
 
-.submitButton:hover {
-  background-color: #1a1a24;
-}
-
-.submitButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
+.submitButton:hover { background-color: #1a1a24; }
+.submitButton:disabled { opacity: 0.7; cursor: not-allowed; }
 
 .footerSection {
   text-align: center;
@@ -146,25 +140,19 @@
   display: inline-block;
 }
 
-.loginButton:hover {
-  background-color: rgba(78, 141, 245, 0.1);
-}
+.loginButton:hover { background-color: rgba(78, 141, 245, 0.1); }
 
-
-/* --- ESTILOS PARA EL MODAL DE ÉXITO --- */
-
+/* --- MODAL DE ÉXITO --- */
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(3px); /* Le da un toque premium difuminando el fondo */
+  backdrop-filter: blur(3px);
 }
 
 .modalContent {
@@ -181,8 +169,7 @@
 .successIcon {
   background-color: #2ecc71;
   color: white;
-  width: 60px;
-  height: 60px;
+  width: 60px; height: 60px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -214,6 +201,41 @@
 }
 
 @keyframes popIn {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0%   { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .mainContent {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .formCard {
+    border-radius: 16px;
+    margin: 12px 0 24px;
+  }
+
+  .cardHeader {
+    padding: 22px 22px 18px;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .cardBody {
+    padding: 20px 22px 24px;
+  }
+
+  /* Contraseña y confirmar: una debajo de la otra */
+  .gridRow {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .submitButton {
+    max-width: 100%;
+  }
 }

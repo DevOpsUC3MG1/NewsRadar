@@ -33,6 +33,7 @@
   background-color: #ffffff;
   border-radius: 15px;
   padding: 24px;
+  padding-bottom: 56px;
   display: flex;
   flex-direction: column;
   position: relative;
