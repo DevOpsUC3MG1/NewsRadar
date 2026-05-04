@@ -27,6 +27,8 @@ class Alert(Base):
     descriptors = Column(JSON, default=[])
     categories = Column(JSON, default=[])
     cron_expression = Column(String(120))
+    information_sources_ids = Column(JSON, default=[])
+    rss_channels_ids = Column(JSON, default=[])
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="alerts")
 
