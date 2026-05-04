@@ -56,6 +56,33 @@ export const getWordcloudCategory = (categoria, token, days = 30, limit = 20) =>
   }).then((res) => res.data);
 
 // ─── Función compuesta: fuentes + canales + categorías ───────────────────────
+// ─── Función compuesta: todas las notificaciones del usuario ─────────────────
+// Devuelve un array plano con cada notificación enriquecida con el nombre de su alerta:
+// [{ id, alertId, alertName, timestamp, news: [{ title, link, source_name, category, published }] }]
+export const getAllNotificationsForUser = async (userId, token) => {
+  const alertsRes = await getUserAlerts(userId, token);
+  const alerts = alertsRes.data;
+
+  const perAlert = await Promise.all(
+    alerts.map((alert) =>
+      getAlertNotifications(userId, alert.id, token)
+        .then((res) =>
+          res.data.map((notif) => ({
+            ...notif,
+            alertId:   alert.id,
+            alertName: alert.name,
+          }))
+        )
+        .catch(() => [])
+    )
+  );
+
+  // Más recientes primero
+  return perAlert
+    .flat()
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+};
+
 export const getAllSourcesWithChannels = async (token) => {
   const [sourcesRes, catsRes] = await Promise.all([
     getInformationSources(token),

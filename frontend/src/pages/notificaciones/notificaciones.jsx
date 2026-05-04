@@ -1,70 +1,76 @@
 // frontend/src/pages/notificaciones/notificaciones.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import {
   MailOpen, ChevronUp, ChevronDown, Minus,
   Trash2, MailCheck, Mail, ExternalLink, RefreshCw, BellRing, Loader2,
 } from 'lucide-react';
 import styles from './notificaciones.module.css';
+import { AuthContext } from '../../context/AuthContext';
+import authService from '../../services/authService';
+import { getAllNotificationsForUser } from '../../services/newsService';
 
-// ─── Usuario mock (sustituir por contexto/auth real) ─────────────────────────
-const USERNAME = 'Usuario';
+// ─── Helpers de fecha ─────────────────────────────────────────────────────────
+const formatDate = (raw) => {
+  if (!raw) return '—';
+  try {
+    return new Date(raw).toLocaleString('es-ES', {
+      day:    '2-digit',
+      month:  '2-digit',
+      year:   'numeric',
+      hour:   '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return String(raw);
+  }
+};
 
-// ─── Datos mock ───────────────────────────────────────────────────────────────
-const MOCK_DATA = [
-  {
-    id: 1,
-    alertName: 'Tecnología e IA',
-    date: '15/05/2025 09:30',
-    isRead: false,
+// ─── LocalStorage helpers ─────────────────────────────────────────────────────
+const LS_READ_KEY    = (uid) => `nr_notif_read_${uid}`;
+const LS_DELETED_KEY = (uid) => `nr_notif_deleted_${uid}`;
+
+const loadReadMap = (uid) => {
+  try { return JSON.parse(localStorage.getItem(LS_READ_KEY(uid)) ?? '{}'); }
+  catch { return {}; }
+};
+
+const saveReadMap = (uid, map) => {
+  localStorage.setItem(LS_READ_KEY(uid), JSON.stringify(map));
+};
+
+const loadDeletedSet = (uid) => {
+  try { return new Set(JSON.parse(localStorage.getItem(LS_DELETED_KEY(uid)) ?? '[]')); }
+  catch { return new Set(); }
+};
+
+const saveDeletedSet = (uid, set) => {
+  localStorage.setItem(LS_DELETED_KEY(uid), JSON.stringify([...set]));
+};
+
+// ─── Mapeo backend → UI ───────────────────────────────────────────────────────
+const mapNotification = (raw, readMap, deletedSet) => {
+  if (deletedSet.has(raw.id)) return null;
+
+  const news = (raw.news ?? []).map((item, idx) => ({
+    id:         `${raw.id}-${idx}`,
+    rssChannel: item.source_name ?? '—',
+    category:   item.category   ?? '—',
+    title:      item.title      ?? '(Sin título)',
+    subtitle:   '',
+    date:       formatDate(item.published),
+    url:        item.link       ?? '#',
+  }));
+
+  return {
+    id:         raw.id,
+    alertId:    raw.alertId,
+    alertName:  raw.alertName,
+    date:       formatDate(raw.timestamp),
+    isRead:     readMap[raw.id] ?? false,
     isExpanded: false,
-    news: [
-      {
-        id: 'n1',
-        rssChannel: 'TechCrunch',
-        category: 'Inteligencia Artificial',
-        title: 'GPT-5 revoluciona el sector de la IA generativa',
-        subtitle: 'OpenAI lanza su nuevo modelo con capacidades multimodales avanzadas que prometen transformar la industria tecnológica por completo.',
-        date: '15/05/2025 08:15',
-        url: 'https://techcrunch.com',
-      },
-      {
-        id: 'n2',
-        rssChannel: 'The Verge',
-        category: 'Tecnología',
-        title: 'Apple presenta sus nuevas gafas de realidad mixta Vision Pro 2',
-        subtitle: 'La segunda generación llega con mejoras significativas en autonomía, resolución y un nuevo procesador M3 Ultra.',
-        date: '15/05/2025 07:42',
-        url: 'https://theverge.com',
-      },
-    ],
-  },
-  {
-    id: 2,
-    alertName: 'Economía Europea',
-    date: '14/05/2025 18:00',
-    isRead: false,
-    isExpanded: false,
-    news: [],
-  },
-  {
-    id: 3,
-    alertName: 'Política Internacional',
-    date: '13/05/2025 12:15',
-    isRead: true,
-    isExpanded: false,
-    news: [
-      {
-        id: 'n3',
-        rssChannel: 'El País',
-        category: 'Internacional',
-        title: 'Cumbre del G7 alcanza acuerdo histórico sobre política climática',
-        subtitle: 'Los líderes de las siete economías más importantes acuerdan nuevos objetivos de reducción de emisiones para 2030.',
-        date: '13/05/2025 11:00',
-        url: 'https://elpais.com',
-      },
-    ],
-  },
-];
+    news,
+  };
+};
 
 // ─── Modal de confirmación ────────────────────────────────────────────────────
 const ConfirmModal = ({ title, text, confirmLabel, onConfirm, onCancel }) => (
@@ -91,7 +97,7 @@ const NewsCard = ({ item }) => (
         <h4 className={styles.newsTitle}>{item.title}</h4>
         <span className={styles.newsDate}>{item.date}</span>
       </div>
-      <p className={styles.newsSubtitle}>{item.subtitle}</p>
+      {item.subtitle && <p className={styles.newsSubtitle}>{item.subtitle}</p>}
     </div>
     <a
       href={item.url}
@@ -103,14 +109,6 @@ const NewsCard = ({ item }) => (
     >
       <ExternalLink size={15} />
     </a>
-  </div>
-);
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-const SkeletonCard = () => (
-  <div className={styles.skeletonCard}>
-    <div className={styles.skeletonLine} style={{ width: '50%', height: 15, marginBottom: 12 }} />
-    <div className={styles.skeletonLine} style={{ width: '78%', height: 12 }} />
   </div>
 );
 
@@ -128,6 +126,8 @@ const EmptyState = ({ onRefresh }) => (
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 const Notifications = () => {
+  const { user } = useContext(AuthContext);
+
   const [notifications, setNotifications]   = useState([]);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState(false);
@@ -135,26 +135,41 @@ const Notifications = () => {
   const [showClearModal, setShowClearModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-  // ── Carga de datos ──────────────────────────────────────────────────────────
-  const fetchNotifications = async () => {
+  // ── Carga de datos desde el backend ────────────────────────────────────────
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) return;
     setLoading(true);
     setError(false);
     try {
-      await new Promise(r => setTimeout(r, 1200));
-      setNotifications(MOCK_DATA.map(n => ({ ...n, news: [...n.news] })));
+      const token      = authService.getToken();
+      const readMap    = loadReadMap(user.id);
+      const deletedSet = loadDeletedSet(user.id);
+
+      const raw = await getAllNotificationsForUser(user.id, token);
+
+      const mapped = raw
+        .map(n => mapNotification(n, readMap, deletedSet))
+        .filter(Boolean);
+
+      setNotifications(mapped);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  // ── Persistir cambios de lectura en localStorage ────────────────────────────
+  const persistReadMap = useCallback((updatedNotifications) => {
+    if (!user?.id) return;
+    const map = {};
+    updatedNotifications.forEach(n => { map[n.id] = n.isRead; });
+    saveReadMap(user.id, map);
+  }, [user?.id]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-
-  // Click en la página (fuera de cualquier tarjeta) → quita el foco activo
-  // y repliega las noticias de la tarjeta que estaba abierta
   const handlePageClick = () => {
     if (activeId !== null) {
       setNotifications(prev => prev.map(n =>
@@ -164,75 +179,92 @@ const Notifications = () => {
     setActiveId(null);
   };
 
-  // Click en la tarjeta: marca como leída, activa el foco y togglea expand si tiene noticias
   const handleCardClick = (id, hasNews) => {
     setActiveId(id);
-    setNotifications(prev => prev.map(n => {
-      if (n.id !== id) return n;
-      return {
-        ...n,
-        isRead: true,
-        // El contenedor solo expande si estaba colapsado; nunca colapsa.
-        // Así, hacer click dentro de las noticias solo reactiva el foco.
-        isExpanded: hasNews && !n.isExpanded ? true : n.isExpanded,
-      };
-    }));
+    setNotifications(prev => {
+      const next = prev.map(n => {
+        if (n.id !== id) return n;
+        return {
+          ...n,
+          isRead:     true,
+          isExpanded: hasNews && !n.isExpanded ? true : n.isExpanded,
+        };
+      });
+      persistReadMap(next);
+      return next;
+    });
   };
 
-  // Botón expandir/contraer
   const handleToggleExpand = (e, id) => {
     e.stopPropagation();
-    setNotifications(prev => prev.map(n => {
-      // Repliega la notificación que estaba activa (si es distinta a la que se pulsa)
-      if (n.id === activeId && n.id !== id) return { ...n, isExpanded: false };
-      // Togglea la que se pulsa
-      if (n.id === id) return { ...n, isExpanded: !n.isExpanded, isRead: true };
-      return n;
-    }));
+    setNotifications(prev => {
+      const next = prev.map(n => {
+        if (n.id === activeId && n.id !== id) return { ...n, isExpanded: false };
+        if (n.id === id) return { ...n, isExpanded: !n.isExpanded, isRead: true };
+        return n;
+      });
+      persistReadMap(next);
+      return next;
+    });
     setActiveId(id);
   };
 
-  // Botón marcar leída / no leída
   const handleToggleRead = (e, id) => {
     e.stopPropagation();
-    setNotifications(prev => prev.map(n =>
-      n.id === id ? { ...n, isRead: !n.isRead } : n
-    ));
+    setNotifications(prev => {
+      const next = prev.map(n => n.id === id ? { ...n, isRead: !n.isRead } : n);
+      persistReadMap(next);
+      return next;
+    });
   };
 
-  // Botón eliminar
   const handleOpenDeleteModal = (e, id) => {
     e.stopPropagation();
     setDeleteTargetId(id);
   };
 
   const handleConfirmDelete = () => {
+    if (!user?.id) return;
+    const deletedSet = loadDeletedSet(user.id);
+    deletedSet.add(deleteTargetId);
+    saveDeletedSet(user.id, deletedSet);
+
     setNotifications(prev => prev.filter(n => n.id !== deleteTargetId));
     if (activeId === deleteTargetId) setActiveId(null);
     setDeleteTargetId(null);
   };
 
-  // Marcar todas como leídas
-  const markAllAsRead = () =>
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const markAllAsRead = () => {
+    setNotifications(prev => {
+      const next = prev.map(n => ({ ...n, isRead: true }));
+      persistReadMap(next);
+      return next;
+    });
+  };
 
-  // Limpiar buzón
   const handleClearAll = () => {
+    if (!user?.id) return;
+    const deletedSet = loadDeletedSet(user.id);
+    notifications.forEach(n => deletedSet.add(n.id));
+    saveDeletedSet(user.id, deletedSet);
+
     setNotifications([]);
     setActiveId(null);
     setShowClearModal(false);
   };
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
+  const userName = user?.first_name ?? 'Usuario';
+
   const getAlertMessage = (count) => {
-    if (count === 0) return `¡Hola ${USERNAME}! Tu alerta no tiene noticias desde la última revisión.`;
-    if (count === 1) return `¡Hola ${USERNAME}! Tu alerta tiene 1 noticia nueva desde la última revisión.`;
-    return `¡Hola ${USERNAME}! Tu alerta tiene ${count} noticias nuevas desde la última revisión.`;
+    if (count === 0) return `¡Hola ${userName}! Tu alerta no tiene noticias desde la última revisión.`;
+    if (count === 1) return `¡Hola ${userName}! Tu alerta tiene 1 noticia nueva desde la última revisión.`;
+    return `¡Hola ${userName}! Tu alerta tiene ${count} noticias nuevas desde la última revisión.`;
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  // ── Loading overlay (igual que dashboard) ──────────────────────────────────
+  // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className={styles.pageWrapper}>
@@ -262,7 +294,6 @@ const Notifications = () => {
   return (
     <div className={styles.pageWrapper} onClick={handlePageClick}>
 
-      {/* Modal: limpiar buzón */}
       {showClearModal && (
         <ConfirmModal
           title="Limpiar buzón"
@@ -273,7 +304,6 @@ const Notifications = () => {
         />
       )}
 
-      {/* Modal: eliminar notificación individual */}
       {deleteTargetId !== null && (
         <ConfirmModal
           title="Eliminar notificación"
@@ -313,10 +343,10 @@ const Notifications = () => {
         <div className={styles.listContainer}>
           {notifications.length === 0 ? (
             <EmptyState onRefresh={fetchNotifications} />
-          ) : (            notifications.map(notif => {
-              const hasNews = notif.news.length > 0;
+          ) : (
+            notifications.map(notif => {
+              const hasNews  = notif.news.length > 0;
               const isActive = activeId === notif.id;
-              // Una notificación leída que NO es la activa se muestra oscurecida
               const isDimmed = notif.isRead && !isActive;
 
               return (
@@ -330,7 +360,6 @@ const Notifications = () => {
                   ].join(' ')}
                   onClick={e => { e.stopPropagation(); handleCardClick(notif.id, hasNews); }}
                 >
-                  {/* ── Fila superior: título + fecha + botones ── */}
                   <div className={styles.alertHeader}>
                     <div className={styles.alertTitleGroup}>
                       <h2 className={styles.alertTitle}>
@@ -341,21 +370,15 @@ const Notifications = () => {
                       <span className={styles.alertDate}>{notif.date}</span>
                     </div>
 
-                    {/* Botones de acción — stopPropagation para no disparar el click de la tarjeta */}
                     <div className={styles.alertActions} onClick={e => e.stopPropagation()}>
-                      {/* Marcar leída / no leída */}
                       <button
                         className={styles.iconBtn}
                         onClick={e => handleToggleRead(e, notif.id)}
                         title={notif.isRead ? 'Marcar como no leída' : 'Marcar como leída'}
                       >
-                        {notif.isRead
-                          ? <Mail size={16} />
-                          : <MailCheck size={16} />
-                        }
+                        {notif.isRead ? <Mail size={16} /> : <MailCheck size={16} />}
                       </button>
 
-                      {/* Eliminar */}
                       <button
                         className={`${styles.iconBtn} ${styles.iconBtnDelete}`}
                         onClick={e => handleOpenDeleteModal(e, notif.id)}
@@ -364,17 +387,13 @@ const Notifications = () => {
                         <Trash2 size={16} />
                       </button>
 
-                      {/* Expandir / contraer — o guión si no hay noticias */}
                       {hasNews ? (
                         <button
                           className={styles.iconBtn}
                           onClick={e => handleToggleExpand(e, notif.id)}
                           title={notif.isExpanded ? 'Contraer' : 'Expandir'}
                         >
-                          {notif.isExpanded
-                            ? <ChevronUp size={16} />
-                            : <ChevronDown size={16} />
-                          }
+                          {notif.isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       ) : (
                         <span className={styles.iconBtnDisabled} title="Sin noticias nuevas">
@@ -384,12 +403,10 @@ const Notifications = () => {
                     </div>
                   </div>
 
-                  {/* ── Mensaje ── */}
                   <p className={styles.alertMessage}>
                     {getAlertMessage(notif.news.length)}
                   </p>
 
-                  {/* ── Lista de noticias — siempre montada para animar entrada y salida ── */}
                   {hasNews && (
                     <div className={[
                       styles.newsList,
