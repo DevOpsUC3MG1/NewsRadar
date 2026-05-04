@@ -1,3 +1,5 @@
+// frontend/src/pages/resumen/nubes.jsx
+
 import React, { useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -27,11 +29,11 @@ const WordCloud = ({ terminos, loading, minFontRem = 0.7, maxFontRem = 2.0, show
     return (
       <div className={styles.cloudEmpty}>
         <p>{t('clouds.noData')}</p>
-        
+
         {showCreateAlert && (
           <Link to="/alerts" className={styles.createAlertBtn}>
             <Bell size={16} />
-            {t('clouds.createAlert', 'Crear nueva alerta')}
+            {t('clouds.createAlert')}
           </Link>
         )}
       </div>
@@ -73,8 +75,8 @@ const CategoriaCloud = ({ categoria }) => {
     let cancelled = false;
     setLoading(true);
     setError(false);
-    
-    // categoria viene como string (ej. 'culture', 'economy'), que es lo que espera el backend
+
+    // categoria viene como string (ej. 'Tecnologia', 'Deportes'), que es lo que espera el backend
     fetchNubeCategoria(categoria)
       .then((data) => {
         if (!cancelled) { setTerminos(data); setLoading(false); }
@@ -89,17 +91,17 @@ const CategoriaCloud = ({ categoria }) => {
     <div className={styles.catCard}>
       <h3 className={styles.catTitle}>
         <span className={styles.accentBar} />
-        {/* Traducimos el nombre de la categoría, usando el propio nombre dinámico como fallback */}
-        {t(`clouds.categories.${categoria}`, { defaultValue: categoria }).toUpperCase()}
+        {/* USAMOS EL DICCIONARIO GLOBAL DE CATEGORÍAS */}
+        {t(`categorias.${categoria}`, { defaultValue: categoria }).toUpperCase()}
       </h3>
       {error
         ? <p className={styles.cloudEmpty} style={{ fontSize: '0.8rem' }}>{t('clouds.errorCategory')}</p>
-        : <WordCloud 
-            terminos={terminos} 
-            loading={loading} 
-            minFontRem={0.65} 
-            maxFontRem={1.5} 
-            showCreateAlert={true} 
+        : <WordCloud
+            terminos={terminos}
+            loading={loading}
+            minFontRem={0.65}
+            maxFontRem={1.5}
+            showCreateAlert={true}
           />
       }
     </div>
@@ -109,7 +111,6 @@ const CategoriaCloud = ({ categoria }) => {
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 const Nubes = () => {
   const { t } = useTranslation();
-  // 1. Añadimos 'categorias' y 'newsLoading' a la desestructuración del AuthContext
   const { fetchNubeGlobal, categorias, newsLoading } = useContext(AuthContext);
 
   const [globalTerminos, setGlobalTerminos] = useState([]);
@@ -151,23 +152,21 @@ const Nubes = () => {
       {/* ── NUBES POR CATEGORÍA ── */}
       <section className={styles.catsSection}>
         <h2 className={styles.sectionTitle}>{t('clouds.categoriesTitle')}</h2>
-        
-        {/* 2. Añadimos manejo del estado de carga general de las categorías */}
+
         {newsLoading ? (
           <div className={styles.cloudEmpty}>
-            <p>{t('clouds.loadingCategories', 'Cargando categorías...')}</p>
+            <p>{t('clouds.loadingCategories')}</p>
           </div>
         ) : (
           <div className={styles.catsGrid}>
-            {/* 3. Mapeamos las categorías dinámicas del backend */}
             {categorias && categorias.length > 0 ? (
               categorias.map((cat) => (
                 // Asumiendo que tus objetos de categoría del backend tienen propiedades id y name
-                <CategoriaCloud key={cat.id} categoria={cat.name} />
+                <CategoriaCloud key={cat.id || cat.name || cat} categoria={cat.name || cat} />
               ))
             ) : (
               <div className={styles.cloudEmpty}>
-                <p>{t('clouds.noCategories', 'No se encontraron categorías disponibles.')}</p>
+                <p>{t('clouds.noCategories')}</p>
               </div>
             )}
           </div>

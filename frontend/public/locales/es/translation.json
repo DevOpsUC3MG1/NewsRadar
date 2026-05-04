@@ -217,18 +217,11 @@
     "globalTitle": "NUBE GLOBAL DE DESCRIPTORES",
     "categoriesTitle": "CATEGORÍAS",
     "noData": "Sin datos disponibles",
-    "categories": {
-      "culture": "Cultura",
-      "consumption": "Consumo",
-      "sports": "Deportes",
-      "economy": "Economía",
-      "entertainment": "Entretenimiento",
-      "government": "Gobierno",
-      "international": "Internacional",
-      "national": "Nacional",
-      "politics": "Política",
-      "technology": "Tecnología"
-    }
+    "createAlert": "Crear nueva alerta",
+    "errorCategory": "Error al cargar la nube de esta categoría.",
+    "errorGlobal": "Error al cargar la nube global.",
+    "loadingCategories": "Cargando categorías...",
+    "noCategories": "No se encontraron categorías disponibles."
   },
   "alerts": {
     "title": "ALERTAS",
@@ -348,6 +341,54 @@
     "footer": {
       "sources": "Mostrando {{filtered}} de {{total}} fuentes – {{channels}} canales RSS totales",
       "channels": "Mostrando {{filtered}} de {{total}} canales – {{sources}} fuentes totales"
+    }
+  },
+  "notifications": {
+    "loading": "Cargando notificaciones…",
+    "error": {
+      "title": "Error al cargar notificaciones",
+      "retry": "Reintentar"
+    },
+    "header": {
+      "title": "NOTIFICACIONES",
+      "markAllRead": "Marcar todas como leídas",
+      "clearAll": "Limpiar buzón"
+    },
+    "empty": {
+      "text": "No hay notificaciones disponibles.",
+      "refresh": "Actualizar"
+    },
+    "modals": {
+      "cancel": "Cancelar",
+      "clearAll": {
+        "title": "Limpiar buzón",
+        "text": "¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.",
+        "confirm": "Eliminar todo"
+      },
+      "deleteOne": {
+        "title": "Eliminar notificación",
+        "text": "¿Estás seguro de que quieres eliminar esta notificación? No podrás recuperarla después.",
+        "confirm": "Eliminar"
+      }
+    },
+    "alert": {
+      "updatePrefix": "ACTUALIZACIÓN DE ALERTA:",
+      "markUnread": "Marcar como no leída",
+      "markRead": "Marcar como leída",
+      "delete": "Eliminar notificación",
+      "collapse": "Contraer",
+      "expand": "Expandir",
+      "noNews": "Sin noticias nuevas",
+      "message": {
+        "empty": "¡Hola {{name}}! Tu alerta no tiene noticias desde la última revisión.",
+        "single": "¡Hola {{name}}! Tu alerta tiene 1 noticia nueva desde la última revisión.",
+        "multiple": "¡Hola {{name}}! Tu alerta tiene {{count}} noticias nuevas desde la última revisión."
+      }
+    },
+    "news": {
+      "category": "CATEGORÍA",
+      "noTitle": "(Sin título)",
+      "openNews": "Abrir noticia"
     }
   }
 }
