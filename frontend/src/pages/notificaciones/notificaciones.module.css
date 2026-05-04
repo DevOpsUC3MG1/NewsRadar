@@ -1,5 +1,8 @@
 /* frontend/src/pages/notificaciones/notificaciones.module.css */
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════ */
 .pageWrapper {
   background-color: #05050A;
   min-height: calc(100vh - 64px);
@@ -11,12 +14,14 @@
 
 .centerContainer {
   width: 100%;
-  max-width: 850px;
+  max-width: 880px;
   display: flex;
   flex-direction: column;
 }
 
-/* ─── CABECERA ───────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   CABECERA
+   ═══════════════════════════════════════════════════════════════════════════ */
 .header {
   display: flex;
   justify-content: space-between;
@@ -48,310 +53,514 @@
   cursor: pointer;
   font-weight: 600;
   transition: opacity 0.2s;
+  font-family: inherit;
 }
-
 .textButton:hover {
-  opacity: 0.8;
+  opacity: 0.75;
   text-decoration: underline;
 }
 
 .clearButton {
   background: none;
-  border: 1px solid #333;
-  color: #e74c3c;
+  border: 1px solid #3a1a1a;
+  color: #E02020;
   font-size: 0.8rem;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s;
+  font-family: inherit;
 }
-
 .clearButton:hover {
-  background-color: #e74c3c;
-  color: white;
-  border-color: #e74c3c;
+  background-color: #E02020;
+  color: #ffffff;
+  border-color: #E02020;
 }
 
-/* ─── LISTA ──────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   LISTA
+   ═══════════════════════════════════════════════════════════════════════════ */
 .listContainer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   padding-bottom: 40px;
 }
 
-/* ─── TARJETA BASE ───────────────────────────────────────────────────────── */
-.notificationCard {
-  border-radius: 12px;
-  padding: 18px 20px;
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  position: relative;
-  transition: transform 0.18s, box-shadow 0.18s;
-  cursor: pointer;
-}
-
-.notificationCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.18);
-}
-
-.unread {
-  background-color: #ffffff;
-  border-left: 4px solid #4e8df5;
-}
-
-.read {
-  background-color: #e8e8ed;
-  border-left: 4px solid transparent;
-  cursor: default;
-}
-
-.read:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-.readText {
-  color: #999 !important;
-}
-
-.unreadDot {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 9px;
-  height: 9px;
-  background-color: #e74c3c;
-  border-radius: 50%;
-}
-
-/* ─── ICONO ──────────────────────────────────────────────────────────────── */
-.iconContainer {
-  width: 48px;
-  height: 48px;
+/* ═══════════════════════════════════════════════════════════════════════════
+   TARJETA DE ALERTA
+   ═══════════════════════════════════════════════════════════════════════════ */
+.alertCard {
+  background-color: #111118;
   border-radius: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
+  padding: 18px 20px;
+  position: relative;
+  cursor: pointer;
+  /* Entrada rápida, salida suave */
+  transition:
+    opacity      0.25s ease,
+    box-shadow   0.45s ease,
+    transform    0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* El borde izquierdo siempre ocupa espacio para evitar saltos de layout */
+  border-left: 4px solid transparent;
+  /* Quitamos el borde del propio container para que no interfiera */
+  box-sizing: border-box;
 }
 
-/* ─── CONTENIDO ──────────────────────────────────────────────────────────── */
-.notificationContent {
-  flex-grow: 1;
-  min-width: 0;
+/* ─── No leída: línea roja a la izquierda ─────────────────────────────────── */
+.alertUnread {
+  border-left: 4px solid #E02020;
+  opacity: 1;
 }
 
-.contentHeader {
+/* ─── Leída: sin línea ────────────────────────────────────────────────────── */
+.alertRead {
+  border-left: 4px solid transparent;
+  opacity: 1;
+}
+
+/* ─── Leída + sin foco activo: oscurecer ─────────────────────────────────── */
+.alertDimmed {
+  opacity: 0.42;
+}
+
+/* ─── Hover: ligero lift + escala ────────────────────────────────────────── */
+/* En tarjetas oscurecidas solo un lift mínimo para insinuar interactividad  */
+.alertCard {
+  will-change: transform, box-shadow, opacity;
+}
+.alertCard:not(.alertDimmed):hover {
+  transform: translateY(-6px) scale(1.018);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+}
+.alertDimmed:hover {
+  transform: translateY(-3px) scale(1.006);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Activa / seleccionada ──────────────────────────────────────────────── */
+.alertActive {
+  background-color: #17172a !important;
+  box-shadow:
+    0 0 0 1.5px rgba(78, 141, 245, 0.35),
+    0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+/* Cuando está activa el hover no la mueve más de lo que ya está */
+.alertActive:hover {
+  transform: translateY(-4px) scale(1.008);
+}
+
+/* ─── Cabecera interna de la tarjeta ─────────────────────────────────────── */
+.alertHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 5px;
-  gap: 8px;
+  gap: 16px;
+  margin-bottom: 8px;
 }
 
-.notifTitle {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #05050A;
-  margin: 0;
+.alertTitleGroup {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
-.notifDate {
-  font-size: 0.78rem;
-  color: #999;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.notifMessage {
+.alertTitle {
   font-size: 0.92rem;
-  color: #555;
+  font-weight: 700;
+  color: #ccccdd;
+  margin: 0;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Icono pequeño junto al título */
+.alertTitleIcon {
+  color: #9999bb;
+  flex-shrink: 0;
+  position: relative;
+  top: 0px;
+}
+
+.alertTitleQuoted {
+  /* Mismo estilo que alertTitle, por si se necesita diferenciar en el futuro */
+  font-weight: 700;
+  color: #ccccdd;
+}
+
+.alertDate {
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: #7a7a8a;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ─── Botones de acción ───────────────────────────────────────────────────── */
+.alertActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid #2a2a38;
+  color: #8888aa;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.iconBtn:hover {
+  background-color: #1e1e2e;
+  color: #ffffff;
+  border-color: #4a4a60;
+}
+
+.iconBtnDelete {
+  color: #7a3a3a;
+  border-color: #2a1a1a;
+}
+.iconBtnDelete:hover {
+  background-color: #2a0d0d;
+  color: #E02020;
+  border-color: #E02020;
+}
+
+/* Icono de "sin noticias" (no interactivo) */
+.iconBtnDisabled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #1e1e2a;
+  color: #3a3a52;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+/* ─── Mensaje de la alerta ────────────────────────────────────────────────── */
+.alertMessage {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #ffffff;
   margin: 0;
   line-height: 1.5;
 }
 
-/* ─── BOTÓN MOSTRAR MÁS ──────────────────────────────────────────────────── */
-.loadMoreContainer {
+/* ═══════════════════════════════════════════════════════════════════════════
+   LISTA DE NOTICIAS (dentro de la tarjeta de alerta)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Estado base: colapsado — siempre montado en el DOM para poder animar salida */
+.newsList {
   display: flex;
-  justify-content: center;
-  margin-top: 10px;
+  flex-direction: column;
+  gap: 8px;
+  /* Altura y visibilidad */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-top: 0;
+  /* Transición suave entrada y salida */
+  transition:
+    max-height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity    0.30s ease,
+    margin-top 0.30s ease;
 }
 
-.loadMoreButton {
-  background-color: transparent;
-  color: #ffffff;
-  border: 1px solid #333;
-  padding: 11px 30px;
-  border-radius: 30px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Estado expandido */
+.newsListExpanded {
+  max-height: 2000px;   /* suficientemente grande para cualquier cantidad de noticias */
+  opacity: 1;
+  margin-top: 14px;
 }
 
-.loadMoreButton:hover {
+/* ─── Tarjeta de noticia ──────────────────────────────────────────────────── */
+.newsCard {
   background-color: #ffffff;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: default;
+}
+
+.newsCardBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Canal RSS + categoría */
+.newsSource {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #4E8DF5;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fila: titular + fecha */
+.newsTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.newsTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
   color: #05050A;
-  border-color: #ffffff;
+  margin: 0;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
 }
 
-/* ─── SKELETONS ──────────────────────────────────────────────────────────── */
-.skeleton {
-  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 4px;
-}
-
-.skeletonIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+.newsDate {
+  font-size: 0.73rem;
+  font-weight: 300;
+  color: #5A5A5E;
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
-.skeletonTitle {
-  height: 18px;
-  width: 38%;
-  margin-bottom: 10px;
+/* Subtítulo / descripción */
+.newsSubtitle {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: #2a2a38;
+  margin: 0;
+  line-height: 1.45;
 }
 
-.skeletonText {
-  height: 14px;
-  width: 75%;
+/* Botón de acceso a la noticia */
+.newsLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7a7a8a;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  text-decoration: none;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+.newsLink:hover {
+  background-color: #f0f0f8;
+  color: #4E8DF5;
 }
 
-@keyframes loading {
+/* ═══════════════════════════════════════════════════════════════════════════
+   SKELETONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.skeletonCard {
+  background-color: #111118;
+  border-radius: 10px;
+  padding: 22px 20px;
+  border-left: 4px solid #1e1e2a;
+}
+
+.skeletonLine {
+  background: linear-gradient(90deg, #1a1a28 25%, #22223a 50%, #1a1a28 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  display: block;
+}
+
+@keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* ─── ESTADO VACÍO ───────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESTADO VACÍO
+   ═══════════════════════════════════════════════════════════════════════════ */
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 80px 20px;
-  color: #888;
-  background-color: #111116;
-  border: 1px dashed #333;
-  border-radius: 15px;
+  color: #555566;
+  background-color: #0e0e18;
+  border: 1px dashed #252535;
+  border-radius: 14px;
   margin-top: 20px;
 }
-
 .emptyIcon {
-  opacity: 0.3;
+  opacity: 0.25;
   margin-bottom: 18px;
-  color: #ffffff;
+  color: #aaaacc;
+}
+.emptyState p {
+  font-size: 1rem;
+  margin-bottom: 22px;
+  color: #666688;
 }
 
-.emptyState p {
-  font-size: 1.05rem;
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOADING OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+.loadingOverlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: calc(100vh - 180px);
+  color: #8888aa;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.spinner {
+  color: #4e8df5;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ERROR
+   ═══════════════════════════════════════════════════════════════════════════ */
+.errorContainer {
+  color: #ccccdd;
+  text-align: center;
+  margin-top: 60px;
+}
+.errorContainer h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
   margin-bottom: 20px;
 }
 
-/* ─── ERROR ──────────────────────────────────────────────────────────────── */
-.errorContainer {
-  color: white;
-  text-align: center;
-  margin-top: 50px;
-}
-
+/* ─── Botón genérico de acción ────────────────────────────────────────────── */
 .actionButton {
-  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
   background-color: #4e8df5;
-  color: white;
+  color: #ffffff;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: opacity 0.2s;
 }
+.actionButton:hover { opacity: 0.85; }
 
-/* ─── MODAL DE CONFIRMACIÓN ──────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE CONFIRMACIÓN
+   ═══════════════════════════════════════════════════════════════════════════ */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 500;
   padding: 20px;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(4px);
   animation: fadeInOverlay 0.15s ease;
 }
-
 @keyframes fadeInOverlay {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
 .modalBox {
-  background: #ffffff;
+  background: #1a1a28;
+  border: 1px solid #2a2a42;
   border-radius: 16px;
   padding: 32px 28px 24px;
-  max-width: 360px;
+  max-width: 370px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   gap: 12px;
   animation: popIn 0.2s ease;
 }
-
 @keyframes popIn {
-  from { transform: scale(0.93); opacity: 0; }
+  from { transform: scale(0.94); opacity: 0; }
   to   { transform: scale(1);    opacity: 1; }
 }
 
 .modalTitle {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #05050A;
+  color: #ccccdd;
   margin: 0;
 }
-
 .modalText {
   font-size: 0.88rem;
-  color: #666;
+  color: #8888aa;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.55;
 }
-
 .modalActions {
   display: flex;
   gap: 10px;
   margin-top: 8px;
 }
-
 .modalCancel {
   flex: 1;
   padding: 10px;
   border-radius: 8px;
-  border: 1.5px solid #d0d0dc;
-  background: #ffffff;
-  color: #444;
+  border: 1px solid #2a2a42;
+  background: transparent;
+  color: #aaaacc;
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-
-.modalCancel:hover { background: #f4f4f8; }
+.modalCancel:hover { background: #22223a; color: #ffffff; }
 
 .modalConfirm {
   flex: 1;
   padding: 10px;
   border-radius: 8px;
   border: none;
-  background: #e74c3c;
+  background: #E02020;
   color: #ffffff;
   font-size: 0.88rem;
   font-weight: 600;
@@ -359,56 +568,43 @@
   font-family: inherit;
   transition: opacity 0.15s;
 }
-
-.modalConfirm:hover { opacity: 0.88; }
-
+.modalConfirm:hover { opacity: 0.85; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════ */
-
 @media (max-width: 900px) {
-  .pageWrapper {
-    padding: 20px 16px;
-  }
-
-  .notificationCard {
-    padding: 14px 16px;
-    gap: 12px;
-  }
-
-  .contentHeader {
-    flex-wrap: wrap;
-  }
-
-  .notifTitle {
-    font-size: 0.92rem;
-  }
-
-  .notifDate {
-    font-size: 0.72rem;
-  }
-
-  .notifMessage {
-    font-size: 0.85rem;
-  }
-
-  .iconContainer {
-    width: 40px;
-    height: 40px;
-  }
+  .pageWrapper { padding: 20px 16px; }
+  .alertCard   { padding: 14px 16px; }
+  .alertTitle  { font-size: 0.85rem; }
+  .alertMessage{ font-size: 0.85rem; }
+  .newsTitle   { font-size: 0.85rem; }
+  .newsSubtitle{ font-size: 0.78rem; }
 }
 
-/* Solo en móvil: título arriba, botones debajo alineados a la izquierda */
 @media (max-width: 600px) {
   .header {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-
   .headerActions {
     justify-content: flex-start;
-    gap: 16px;
+    gap: 14px;
+  }
+  .alertTitleGroup {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .newsTitleRow {
+    flex-direction: column;
+    gap: 3px;
+  }
+  .alertHeader {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .alertActions {
+    align-self: flex-end;
   }
 }
