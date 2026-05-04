@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api/v1';
 
-// ─── Helpers básicos (sin cambios) ───────────────────────────────────────────
+// ─── Helpers básicos ──────────────────────────────────────────────────────────
 export const getCategories = (token) =>
   axios.get(`${API_URL}/categories`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -29,28 +29,43 @@ export const getAlertNotifications = (userId, alertId, token) =>
     headers: { Authorization: `Bearer ${token}` },
   });
 
-// ─── Función compuesta: fuentes + canales + categorías en una sola llamada ───
-//
-// Devuelve:
-// {
-//   fuentes:    [{ id, nombre, url, categorias: ['Politica', ...] }],
-//   canales:    [{ id, fuenteId, nombre, categoria: 'Politica' }],
-//   categorias: [{ id, name, source }],
-// }
+// ─── Nubes de palabras ────────────────────────────────────────────────────────
+
+// Nube global: términos más frecuentes de las noticias del usuario
+// Devuelve: [{ term: string, count: number }]
+export const getWordcloudGlobal = (token, days = 30, limit = 20) =>
+  axios.get(`${API_URL}/resumen/clouds/global`, {
+    params: { days, limit },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Accept-Language': navigator.language || 'es',
+    },
+  }).then((res) => res.data);
+
+// Nube por categoría
+// categoria: 'culture' | 'consumption' | 'sports' | 'economy' | 'entertainment'
+//            'government' | 'international' | 'national' | 'politics' | 'technology'
+// Devuelve: [{ term: string, count: number }]
+export const getWordcloudCategory = (categoria, token, days = 30, limit = 20) =>
+  axios.get(`${API_URL}/resumen/clouds/${categoria}`, {
+    params: { days, limit },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Accept-Language': navigator.language || 'es',
+    },
+  }).then((res) => res.data);
+
+// ─── Función compuesta: fuentes + canales + categorías ───────────────────────
 export const getAllSourcesWithChannels = async (token) => {
-  // 1. Lanzar fuentes y categorías en paralelo
   const [sourcesRes, catsRes] = await Promise.all([
     getInformationSources(token),
     getCategories(token),
   ]);
 
-  const rawSources = sourcesRes.data;          // [{ id, name, url }]
-  const rawCats    = catsRes.data;             // [{ id, name, source }]
-
-  // Mapa id → nombre de categoría para resolver category_id → string
+  const rawSources = sourcesRes.data;
+  const rawCats    = catsRes.data;
   const catMap = Object.fromEntries(rawCats.map((c) => [c.id, c.name]));
 
-  // 2. Para cada fuente obtener sus canales en paralelo
   const channelsPerSource = await Promise.all(
     rawSources.map((src) =>
       getRSSChannels(src.id, token)
@@ -59,41 +74,30 @@ export const getAllSourcesWithChannels = async (token) => {
     )
   );
 
-  // 3. Construir array plano de canales con nombre legible
   let canalId = 0;
   const canales = channelsPerSource.flatMap(({ sourceId, sourceName, channels }) =>
     channels.map((ch) => {
-      // Derivar sección del canal a partir de la URL (último segmento útil)
-      const urlPath = ch.url.toString().replace(/\/$/, '');
+      const urlPath  = ch.url.toString().replace(/\/$/, '');
       const segments = urlPath.split('/').filter(Boolean);
       const lastSeg  = segments[segments.length - 1]
         .replace(/\.(xml|html|aspx)$/i, '')
         .replace(/[-_]/g, ' ')
         .replace(/\b\w/g, (l) => l.toUpperCase());
-
       const seccion = lastSeg && lastSeg.toLowerCase() !== 'rss' ? lastSeg : 'General';
-
       return {
-        id:       ch.id ?? ++canalId,
-        fuenteId: sourceId,
-        nombre:   `${sourceName} – ${seccion}`,
-        categoria: catMap[ch.category_id] ?? String(ch.category_id),
-        // Guardamos el id original del backend por si se necesita para otras llamadas
+        id:         ch.id ?? ++canalId,
+        fuenteId:   sourceId,
+        nombre:     `${sourceName} – ${seccion}`,
+        categoria:  catMap[ch.category_id] ?? String(ch.category_id),
         _backendId: ch.id,
       };
     })
   );
 
-  // 4. Derivar categorías únicas por fuente (para el filtro lateral de fuentes.jsx)
   const fuentes = rawSources.map((src) => {
     const srcChannels = channelsPerSource.find((c) => c.sourceId === src.id)?.channels ?? [];
     const cats = [...new Set(srcChannels.map((ch) => catMap[ch.category_id]).filter(Boolean))].sort();
-    return {
-      id:         src.id,
-      nombre:     src.name,
-      url:        src.url,
-      categorias: cats,
-    };
+    return { id: src.id, nombre: src.name, url: src.url, categorias: cats };
   });
 
   return { fuentes, canales, categorias: rawCats };
