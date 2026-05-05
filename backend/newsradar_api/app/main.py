@@ -1456,7 +1456,10 @@ async def create_information_source(
     _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> InformationSource:
-    source = InformationSourceModel(**payload.model_dump())
+    data = payload.model_dump()
+    data["url"] = str(data["url"])  # ✅ FIX
+
+    source = InformationSourceModel(**data)
     db.add(source)
     await db.commit()
     await db.refresh(source)
@@ -1497,6 +1500,7 @@ async def update_information_source(
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
     
     data = payload.model_dump(exclude_unset=True)
+    data["url"] = str(data["url"])
     for key, value in data.items():
         setattr(source, key, value)
     
@@ -1576,9 +1580,12 @@ async def create_source_channel(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
 
+    data = payload.model_dump()
+    data["url"] = str(data["url"])  # ✅ FIX
+
     channel = RSSChannelModel(
         information_source_id=source_id,
-        **payload.model_dump(),
+        **data,
     )
     db.add(channel)
     await db.commit()
@@ -1652,6 +1659,7 @@ async def update_source_channel(
         raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
 
     data = payload.model_dump(exclude_unset=True)
+    data["url"] = str(data["url"]) if "url" in data else None
     if "category_id" in data:
         result = await db.execute(select(CategoryModel).where(CategoryModel.id == data["category_id"]))
         if not result.scalar_one_or_none():

@@ -9,7 +9,7 @@ RNF-06: Trazabilidad de prompts IA
 """
 
 from __future__ import annotations
-
+import time 
 import asyncio
 import json
 import logging
@@ -43,10 +43,12 @@ _openai_client = None
 if OPENAI_API_KEY:
     try:
         from openai import OpenAI  # type: ignore
-
-        _openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        _openai_client = OpenAI(
+            api_key=OPENAI_API_KEY,
+            base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")  # Agrega esto
+        )
     except Exception as e:
-        logger.warning("OpenAI client no disponible (%s). Se ignorara.", str(e))
+        logger.warning("OpenAI/OpenRouter client no disponible (%s). Se ignorara.", str(e))
 
 
 def _now_utc() -> datetime:
@@ -63,54 +65,52 @@ def _effective_provider() -> str:
     return "none"
 
 
+
+
 def _gemini_generate_text(*, prompt: str, temperature: float, max_output_tokens: int) -> Optional[str]:
-    """
-    Llama a Gemini via Generative Language API (Gemini Developer API).
-    Implementado con stdlib (urllib) para evitar dependencias extra.
-    """
     if not GEMINI_API_KEY:
         return None
 
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-    )
-    payload: Dict[str, Any] = {
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+    payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": temperature, "maxOutputTokens": max_output_tokens},
     }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            raw = resp.read().decode("utf-8")
-        data = json.loads(raw)
-    except urllib.error.HTTPError as e:
+    # IMPLEMENTACIÓN DE REINTENTO TÉCNICO (Máximo 3 intentos para errores 503/429)
+    for intento in range(3):
         try:
-            body = e.read().decode("utf-8")
-        except Exception:
-            body = "<no-body>"
-        logger.error("Gemini HTTPError %s: %s", e.code, body)
-        return None
-    except Exception as e:
-        logger.error("Error llamando a Gemini: %s", str(e))
-        return None
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                raw = resp.read().decode("utf-8")
+                data = json.loads(raw)
+                # Si llegamos aquí, la respuesta fue exitosa
+                candidates = data.get("candidates") or []
+                content = candidates[0].get("content") if candidates else None
+                parts = (content or {}).get("parts") or []
+                return (parts[0].get("text") or "").strip() or None
 
-    try:
-        candidates = data.get("candidates") or []
-        content = candidates[0].get("content") if candidates else None
-        parts = (content or {}).get("parts") or []
-        text = parts[0].get("text") if parts else None
-        return (text or "").strip() or None
-    except Exception:
-        logger.error("Respuesta Gemini inesperada: %s", data)
-        return None
+        except urllib.error.HTTPError as e:
+            # Si es 503 (Saturación) o 429 (Límite de cuota), esperamos y reintentamos
+            if e.code in (503, 429):
+                espera = (intento + 1) * 2  # Espera 2s, luego 4s...
+                logger.warning(f"Gemini saturado (Error {e.code}). Reintentando en {espera}s...")
+                time.sleep(espera)
+                continue 
+            
+            logger.error("Error HTTP no recuperable %s", e.code)
+            break # Errores como 400 o 404 no se arreglan reintentando
+            
+        except Exception as e:
+            logger.error("Error de conexión IA: %s", str(e))
+            break
+            
+    return None
 
 
 def _openai_generate_text(*, system: str, user: str, temperature: float, max_tokens: int) -> Optional[str]:
