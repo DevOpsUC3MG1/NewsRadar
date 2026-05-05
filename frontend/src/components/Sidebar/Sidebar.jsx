@@ -1,8 +1,10 @@
+// frontend/src/components/Sidebar/Sidebar.jsx
+
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PieChart, Bell, Rss, User, LogOut } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
-import { useTranslation } from 'react-i18next'; // <-- 1. Importamos el hook
+import { useTranslation } from 'react-i18next'; // <-- 1. I"mportamos el hook
 
 import styles from './Sidebar.module.css';
 

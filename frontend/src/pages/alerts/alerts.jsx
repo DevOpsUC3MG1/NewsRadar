@@ -16,20 +16,16 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const Alerts = () => {
   const { t } = useTranslation();
   const { user, fuentes, canales, categorias } = useContext(AuthContext);
-
   const [alerts, setAlerts] = useState([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAlert, setEditingAlert] = useState(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [channelSearch, setChannelSearch] = useState("");
-
   const [isGeneratingIA, setIsGeneratingIA] = useState(false);
   const [suggestedDescriptors, setSuggestedDescriptors] = useState([]);
-
   const [form, setForm] = useState({
     nombre: '', keyword: '', periodicidad: '',
     descriptores: [], categorias: [],
@@ -63,18 +59,20 @@ const Alerts = () => {
       const res = await axios.get(`${API_BASE}/api/v1/users/${user.id}/alerts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       const formattedAlerts = res.data.map(a => {
         const keyword = a.descriptors && a.descriptors.length > 0 ? a.descriptors[0] : "";
         const descriptoresRestantes = a.descriptors && a.descriptors.length > 1 ? a.descriptors.slice(1) : [];
-
         return {
           id: a.id,
           nombre: a.name,
           keyword: keyword,
           periodicidad: a.cron_expression,
           descriptores: descriptoresRestantes,
-          categorias: (a.categories || []).map(c => c.label),
+          // BUG 3 FIX: normalizar al campo `name` (igual que safeCategorias) para que
+          // los checkboxes se pre-marquen correctamente y resolveChannelIds funcione.
+          // Antes: .map(c => c.label)  →  nombre localizado que puede no coincidir
+          //         con rawCats.name, rompiendo la inferencia de canales.
+          categorias: (a.categories || []).map(c => c.name ?? c.label).filter(Boolean),
           information_sources_ids: (a.information_sources_ids || []).map(String),
           rss_channels_ids: (a.rss_channels_ids || []).map(String)
         };
@@ -91,13 +89,58 @@ const Alerts = () => {
     fetchAlerts();
   }, [user]);
 
+  // ── Validación de cron robusta ─────────────────────────────────────────────
   const isValidCron = (cron) => {
-    const cronRegex = /^(\*|([0-5]?\d)(-[0-5]?\d)?(,[0-5]?\d)*)(\s+(\*|([0-5]?\d)(-[0-5]?\d)?(,[0-5]?\d)*)){4}$/;
-    return cronRegex.test(cron.trim());
+    const trimmed = cron.trim();
+    const field = (numPat) =>
+      `(?:\\*(?:/${numPat})?|${numPat}(?:-${numPat}(?:/${numPat})?)?(?:,${numPat}(?:-${numPat}(?:/${numPat})?)?)*)`;
+
+    const minute  = field('[0-5]?[0-9]');
+    const hour    = field('(?:[01]?[0-9]|2[0-3])');
+    const dom     = field('(?:0?[1-9]|[12][0-9]|3[01])');
+    const month   = field('(?:0?[1-9]|1[0-2])');
+    const dow     = field('[0-6]');
+
+    const pattern = new RegExp(
+      `^${minute}\\s+${hour}\\s+${dom}\\s+${month}\\s+${dow}$`
+    );
+    return pattern.test(trimmed);
+  };
+
+  // ── Inferencia automática de canales RSS ───────────────────────────────────
+  const resolveChannelIds = (formData) => {
+    if (formData.rss_channels_ids.length > 0) {
+      return formData.rss_channels_ids;
+    }
+
+    const selectedSourceIds  = new Set(formData.information_sources_ids.map(String));
+    // form.categorias ahora contiene nombres (`c.name`) igual que ch.categoria → match correcto.
+    const selectedCategories = new Set(formData.categorias);
+
+    const inferred = safeCanales
+      .filter(ch =>
+        selectedSourceIds.has(String(ch.fuenteId)) ||
+        selectedCategories.has(ch.categoria)
+      )
+      .map(ch => String(ch.id));
+
+    return [...new Set(inferred)];
   };
 
   const handleSave = async () => {
-    if (!form.nombre || !form.keyword.trim() || !form.periodicidad || form.categorias.length === 0) {
+    if (!form.nombre.trim()) {
+      setErrorMsg(t('alerts.errors.missingFields'));
+      return;
+    }
+    if (!form.keyword.trim()) {
+      setErrorMsg(t('alerts.errors.missingFields'));
+      return;
+    }
+    if (!form.periodicidad.trim()) {
+      setErrorMsg(t('alerts.errors.missingFields'));
+      return;
+    }
+    if (form.categorias.length === 0 && form.information_sources_ids.length === 0) {
       setErrorMsg(t('alerts.errors.missingFields'));
       return;
     }
@@ -109,20 +152,37 @@ const Alerts = () => {
     setErrorMsg("");
     const token = authService.getToken();
 
-    const finalDescriptors = [...new Set([form.keyword.trim(), ...form.descriptores])].filter(Boolean);
+    // Descriptores: la keyword del usuario siempre va primero,
+    // seguida de los descriptores IA que el usuario haya seleccionado (opcionales).
+    const finalDescriptors = [
+      form.keyword.trim(),
+      ...form.descriptores.filter(d => d !== form.keyword.trim()),
+    ].filter(Boolean);
 
-    const finalCategories = form.categorias.map(cat => ({
-      code: cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_'),
-      label: cat
-    }));
+    // BUG 1 FIX: incluir `id` del backend en cada categoría.
+    // Antes sólo se enviaban {code, label}, por lo que rss_worker._get_alert_channels
+    // hacía c.get("id") → None → devolvía [] → sin canales → sin notificaciones en MongoDB.
+    const finalCategories = form.categorias.map(cat => {
+      // Buscar el objeto de categoría completo en el contexto para recuperar su id.
+      const catObj = (categorias || []).find(c =>
+        (typeof c === 'object' && c !== null ? (c.name ?? c.label) : c) === cat
+      );
+      return {
+        id:    catObj?.id ?? null,
+        code:  cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_'),
+        label: cat,
+      };
+    });
+
+    const finalChannelIds = resolveChannelIds(form);
 
     const payload = {
       name: form.nombre,
       descriptors: finalDescriptors,
       categories: finalCategories,
       information_sources_ids: form.information_sources_ids.map(String),
-      rss_channels_ids: form.rss_channels_ids.map(String),
-      cron_expression: form.periodicidad
+      rss_channels_ids: finalChannelIds,
+      cron_expression: form.periodicidad.trim()
     };
 
     try {
@@ -165,17 +225,14 @@ const Alerts = () => {
       setErrorMsg(t('alerts.errors.missingKeywordIA'));
       return;
     }
-
     setIsGeneratingIA(true);
     setErrorMsg("");
-
     try {
       const token = authService.getToken();
       const res = await axios.post(`${API_BASE}/api/v1/alerts/suggest-synonyms`,
         { keywords: [form.keyword] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       const newSynonyms = res.data.suggested_synonyms || [];
       if (newSynonyms.length === 0) {
         setErrorMsg(t('alerts.errors.noIAData'));
@@ -317,14 +374,11 @@ const Alerts = () => {
                             <div style={{ fontSize: '0.85rem', color: '#555', lineHeight: '1.6' }}>
                               <div><strong>{t('alerts.table.keyword')}:</strong> <span style={{ fontWeight: '600', color: '#0E0E1D' }}>{alert.keyword}</span></div>
                               {alert.descriptores?.length > 0 && <div><strong>{t('alerts.table.descriptors')}:</strong> {alert.descriptores.join(", ")}</div>}
-
-                              {/* RENDERIZADO DE CATEGORÍAS TRADUCIDAS EN TABLA */}
                               {alert.categorias?.length > 0 && (
                                 <div>
                                   <strong>{t('alerts.table.categories')}:</strong> {alert.categorias.map(c => t(`categorias.${c}`, { defaultValue: c })).join(", ")}
                                 </div>
                               )}
-
                               {alert.information_sources_ids?.length > 0 && <div><strong>{t('alerts.table.sources')}:</strong> {getSourceNames(alert.information_sources_ids)}</div>}
                               {alert.rss_channels_ids?.length > 0 && <div><strong>{t('alerts.table.channels')}:</strong> {getChannelNames(alert.rss_channels_ids)}</div>}
                             </div>
@@ -358,7 +412,6 @@ const Alerts = () => {
               <h2>{editingAlert ? t('alerts.modal.editTitle') : t('alerts.modal.createTitle')}</h2>
               <button onClick={handleCloseAttempt} className={styles.closeIcon}><X /></button>
             </div>
-
             <div className={styles.formBody}>
               {errorMsg && <div className={styles.errorBanner}>{errorMsg}</div>}
 
@@ -424,7 +477,7 @@ const Alerts = () => {
                         </div>
                         <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '8px' }}>
                           <strong>{t('alerts.tooltip.structure')}:</strong><br/>
-                          <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px', display: 'inline-block', marginBottom: '8px' }}>min hora día mes sem</code><br/>
+                          <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px', display: 'inline-block', marginBottom: '8px' }}>{t('alerts.tooltip.min')} {t('alerts.tooltip.hour')} {t('alerts.tooltip.day')} {t('alerts.tooltip.month')} {t('alerts.tooltip.week')}</code><br/>
                           <strong>{t('alerts.tooltip.examples')}:</strong><br/>
                           <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px' }}>* * * * *</code> {t('alerts.tooltip.exMin')}<br/>
                           <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px' }}>0 9 * * 1-5</code> {t('alerts.tooltip.exWork')}
@@ -436,6 +489,7 @@ const Alerts = () => {
                 </div>
               </div>
 
+              {/* ── Descriptores IA ── */}
               <div className={styles.sectionContainer}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '10px' }}>
                   <label style={{ margin: 0 }}>{t('alerts.form.descriptorsLabel')}</label>
@@ -449,19 +503,18 @@ const Alerts = () => {
                       {desc}
                     </button>
                   ))}
-
                   {suggestedDescriptors.map((desc, i) => (
                     <button type="button" key={`sug-${i}`} className={form.descriptores.includes(desc) ? styles.tagSelected : styles.tagUnselected} onClick={() => handleToggleDescriptor(desc)}>
                       {desc}
                     </button>
                   ))}
-
                   {suggestedDescriptors.length === 0 && form.descriptores.length === 0 && (
                     <p className={styles.emptyStateText} style={{ margin: 0, fontStyle: 'italic', fontSize: '0.85rem' }}>{t('alerts.form.iaHint')}</p>
                   )}
                 </div>
               </div>
 
+              {/* ── Categorías ── */}
               <div className={styles.sectionContainer}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <label style={{ margin: 0 }}>{t('alerts.form.catLabel')}</label>
@@ -474,14 +527,13 @@ const Alerts = () => {
                   {safeCategorias.map(cat => (
                     <label key={cat} className={styles.customCheckboxContainer}>
                       <input type="checkbox" checked={form.categorias.includes(cat)} onChange={() => handleToggleCategory(cat)} className={styles.hiddenCheckbox} />
-
-                      {/* RENDERIZADO DE CATEGORÍAS TRADUCIDAS EN CHECKBOXES */}
                       <span className={styles.checkmark}></span> {t(`categorias.${cat}`, { defaultValue: cat })}
                     </label>
                   ))}
                 </div>
               </div>
 
+              {/* ── Fuentes ── */}
               <div className={styles.sectionContainer}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <label style={{ margin: 0 }}>{t('alerts.form.srcLabel')}</label>
@@ -509,10 +561,16 @@ const Alerts = () => {
                 )}
               </div>
 
+              {/* ── Canales RSS (opcional) ── */}
               <div className={styles.sectionContainer}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label style={{ margin: 0 }}>{t('alerts.form.chanLabel')}</label>
+                    <label style={{ margin: 0 }}>
+                      {t('alerts.form.chanLabel')}
+                      <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#888', fontWeight: 'normal' }}>
+                        ({t('alerts.form.chanOptional')})
+                      </span>
+                    </label>
                     {Object.keys(availableChannelsBySource).length > 0 && (
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button type="button" style={btnPillStyle('all')} onClick={() => setForm({...form, rss_channels_ids: allAvailableChannelIds})}>{t('alerts.form.selectAll')}</button>
@@ -542,8 +600,6 @@ const Alerts = () => {
                           {channels.map(ch => (
                             <label key={ch.id} className={styles.customCheckboxContainer}>
                               <input type="checkbox" checked={form.rss_channels_ids.includes(String(ch.id))} onChange={() => handleToggleChannel(ch.id)} className={styles.hiddenCheckbox} />
-
-                              {/* RENDERIZADO DE CATEGORÍAS TRADUCIDAS EN LOS BADGES DE CANALES */}
                               <span className={styles.checkmark}></span> {ch.nombre} <span className={styles.channelCategoryBadge}>{t(`categorias.${ch.categoria}`, { defaultValue: ch.categoria })}</span>
                             </label>
                           ))}

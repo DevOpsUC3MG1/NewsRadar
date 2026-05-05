@@ -1,7 +1,11 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
-import { getAllSourcesWithChannels } from '../services/newsService';
+import {
+  getAllSourcesWithChannels,
+  getWordcloudGlobal,
+  getWordcloudCategory,
+} from '../services/newsService';
 
 export const AuthContext = createContext();
 
@@ -32,6 +36,20 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setNewsLoading(false);
     }
+  }, []);
+
+  // ── Nube global ───────────────────────────────────────────────────────────
+  // Llama al backend y devuelve [{ term, count }]
+  const fetchNubeGlobal = useCallback(async (days = 30, limit = 20) => {
+    const token = authService.getToken();
+    return getWordcloudGlobal(token, days, limit);
+  }, []);
+
+  // ── Nube por categoría ────────────────────────────────────────────────────
+  // categoria: 'culture' | 'politics' | ... (claves del backend)
+  const fetchNubeCategoria = useCallback(async (categoria, days = 30, limit = 20) => {
+    const token = authService.getToken();
+    return getWordcloudCategory(categoria, token, days, limit);
   }, []);
 
   // ── Al arrancar la app, restaurar sesión si hay token guardado ────────────
@@ -102,6 +120,8 @@ export const AuthProvider = ({ children }) => {
         newsLoading,
         newsError,
         refreshNewsData,
+        fetchNubeGlobal,
+        fetchNubeCategoria,
       }}
     >
       {children}

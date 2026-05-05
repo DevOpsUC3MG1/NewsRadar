@@ -1,183 +1,480 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Search, Newspaper, Bell, MailOpen } from 'lucide-react';
+// frontend/src/pages/notificaciones/notificaciones.jsx
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  MailOpen, ChevronUp, ChevronDown, Minus,
+  Trash2, MailCheck, Mail, ExternalLink, RefreshCw, BellRing, Loader2,
+} from 'lucide-react';
 import styles from './notificaciones.module.css';
+import { AuthContext } from '../../context/AuthContext';
+import authService from '../../services/authService';
+
+// IMPORTAMOS LAS FUNCIONES QUE SÍ EXISTEN EN TU NEWSSERVICE
+import { getUserAlerts, getAlertNotifications } from '../../services/newsService';
+
+// ─── Helpers de fecha (Con ajuste para UTC y zona horaria) ───────────────────
+const formatDate = (raw, locale = 'es-ES') => {
+  if (!raw) return '—';
+  try {
+    let dateString = String(raw);
+
+    // Si el backend envía "YYYY-MM-DD HH:mm:ss" y no indica que es UTC,
+    // le añadimos la "Z" para que JavaScript aplique tu zona horaria local.
+    if (!dateString.endsWith('Z') && !dateString.match(/[+-]\d{2}:?\d{2}$/)) {
+      dateString = dateString.replace(' ', 'T') + 'Z';
+    }
+
+    return new Date(dateString).toLocaleString(locale, {
+      day:    '2-digit',
+      month:  '2-digit',
+      year:   'numeric',
+      hour:   '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return String(raw);
+  }
+};
+
+// ─── LocalStorage helpers ─────────────────────────────────────────────────────
+const LS_READ_KEY    = (uid) => `nr_notif_read_${uid}`;
+const LS_DELETED_KEY = (uid) => `nr_notif_deleted_${uid}`;
+
+const loadReadMap = (uid) => {
+  try { return JSON.parse(localStorage.getItem(LS_READ_KEY(uid)) ?? '{}'); }
+  catch { return {}; }
+};
+
+const saveReadMap = (uid, map) => {
+  localStorage.setItem(LS_READ_KEY(uid), JSON.stringify(map));
+};
+
+const loadDeletedSet = (uid) => {
+  try { return new Set(JSON.parse(localStorage.getItem(LS_DELETED_KEY(uid)) ?? '[]')); }
+  catch { return new Set(); }
+};
+
+const saveDeletedSet = (uid, set) => {
+  localStorage.setItem(LS_DELETED_KEY(uid), JSON.stringify([...set]));
+};
+
+// ─── Mapeo backend → UI ───────────────────────────────────────────────────────
+const mapNotification = (raw, readMap, deletedSet, locale) => {
+  if (deletedSet.has(raw.id)) return null;
+
+  const news = (raw.news ?? []).map((item, idx) => ({
+    id:         `${raw.id}-${idx}`,
+    rssChannel: item.source_name ?? '—',
+    category:   item.category   ?? '—',
+    title:      item.title      ?? null,
+    subtitle:   '',
+    date:       formatDate(item.published, locale),
+    url:        item.link       ?? '#',
+  }));
+
+  return {
+    id:         raw.id,
+    alertId:    raw.alertId,
+    alertName:  raw.alertName,
+    date:       formatDate(raw.timestamp, locale),
+    isRead:     readMap[raw.id] ?? false,
+    isExpanded: false,
+    news,
+  };
+};
 
 // ─── Modal de confirmación ────────────────────────────────────────────────────
-const ConfirmModal = ({ onConfirm, onCancel }) => (
+const ConfirmModal = ({ title, text, confirmLabel, cancelLabel, onConfirm, onCancel }) => (
   <div className={styles.modalOverlay} onClick={onCancel}>
-    <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
-      <h3 className={styles.modalTitle}>Limpiar buzón</h3>
-      <p className={styles.modalText}>
-        ¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.
-      </p>
+    <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
+      <h3 className={styles.modalTitle}>{title}</h3>
+      <p className={styles.modalText}>{text}</p>
       <div className={styles.modalActions}>
-        <button className={styles.modalCancel} onClick={onCancel}>Cancelar</button>
-        <button className={styles.modalConfirm} onClick={onConfirm}>Eliminar todo</button>
+        <button className={styles.modalCancel} onClick={onCancel}>{cancelLabel}</button>
+        <button className={styles.modalConfirm} onClick={onConfirm}>{confirmLabel}</button>
       </div>
     </div>
   </div>
 );
 
-const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(false);
-  const [visibleCount, setVisibleCount]   = useState(4);
-  const [showModal, setShowModal]         = useState(false);
+// ─── Tarjeta de noticia individual ───────────────────────────────────────────
+const NewsCard = ({ item }) => {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.newsCard}>
+      <div className={styles.newsCardBody}>
+        <span className={styles.newsSource}>
+          {item.rssChannel} - {t('notifications.news.category')}: {t(`categorias.${item.category}`, { defaultValue: item.category })}
+        </span>
+        <div className={styles.newsTitleRow}>
+          <h4 className={styles.newsTitle}>{item.title || t('notifications.news.noTitle')}</h4>
+          <span className={styles.newsDate}>{item.date}</span>
+        </div>
+        {item.subtitle && <p className={styles.newsSubtitle}>{item.subtitle}</p>}
+      </div>
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.newsLink}
+        title={t('notifications.news.openNews')}
+        onClick={e => e.stopPropagation()}
+      >
+        <ExternalLink size={15} />
+      </a>
+    </div>
+  );
+};
 
-  const fetchNotifications = async () => {
+// ─── Estado vacío ─────────────────────────────────────────────────────────────
+const EmptyState = ({ onRefresh }) => {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.emptyState}>
+      <MailOpen size={52} strokeWidth={1.2} className={styles.emptyIcon} />
+      <p>{t('notifications.empty.text')}</p>
+      <button className={styles.actionButton} onClick={onRefresh}>
+        <RefreshCw size={14} style={{ marginRight: 6 }} />
+        {t('notifications.empty.refresh')}
+      </button>
+    </div>
+  );
+};
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+const Notifications = () => {
+  const { t, i18n } = useTranslation();
+  const { user } = useContext(AuthContext);
+
+  const [notifications, setNotifications]   = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [error, setError]                   = useState(false);
+  const [activeId, setActiveId]             = useState(null);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+
+  // ── Carga de datos desde el backend (ACTUALIZADA) ──────────────────────────
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) return;
     setLoading(true);
     setError(false);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const mockData = [
-        { id: 1, type: 'maintenance', title: 'Mantenimiento del Servidor',    message: 'Habrá un corte de servicio programado esta noche de 02:00 a 04:00 AM para mejoras en la base de datos.', date: 'Hace 2 horas', isRead: false },
-        { id: 2, type: 'new_source',  title: 'Nueva fuente disponible',       message: 'Se ha añadido "El Periódico" a la lista de fuentes disponibles.',                                          date: 'Hace 5 horas', isRead: false },
-        { id: 3, type: 'new_rss',     title: 'Nuevas publicaciones RSS',      message: 'Tu alerta "Tecnología e IA" ha encontrado 14 nuevos artículos.',                                           date: 'Hace 8 horas', isRead: false },
-        { id: 4, type: 'new_rss',     title: 'Nuevas publicaciones RSS',      message: 'Tu alerta "Economía Europea" ha encontrado 3 nuevos artículos.',                                           date: 'Ayer',         isRead: true  },
-        { id: 5, type: 'new_source',  title: 'Nueva fuente disponible',       message: 'Se ha añadido "Revista Científica" a la lista de fuentes.',                                               date: 'Hace 2 días',  isRead: true  },
-        { id: 6, type: 'maintenance', title: 'Actualización completada',      message: 'El sistema ha sido actualizado a la versión 2.1 con éxito.',                                              date: 'Hace 3 días',  isRead: true  },
-      ];
-      setNotifications(mockData);
+      const token      = authService.getToken();
+      const readMap    = loadReadMap(user.id);
+      const deletedSet = loadDeletedSet(user.id);
+
+      // 1. Obtenemos todas las alertas del usuario
+      const alertsResponse = await getUserAlerts(user.id, token);
+      const userAlerts = alertsResponse.data;
+
+      // 2. Por cada alerta, pedimos sus notificaciones al backend
+      const notificationsPromises = userAlerts.map(async (alert) => {
+        try {
+          const notifRes = await getAlertNotifications(user.id, alert.id, token);
+          // Inyectamos el ID y Nombre de la alerta en cada notificación
+          return notifRes.data.map(n => ({
+            ...n,
+            alertId: alert.id,
+            alertName: alert.name
+          }));
+        } catch (err) {
+          console.warn(`No hay notificaciones para la alerta ${alert.id}`);
+          return [];
+        }
+      });
+
+      // Esperamos a que terminen todas las peticiones
+      const nestedNotifs = await Promise.all(notificationsPromises);
+
+      // Juntamos todos los arrays, los ordenamos por fecha (más recientes primero)
+      const rawNotifications = nestedNotifs
+        .flat()
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Mapeamos a los datos de la UI
+      const mapped = rawNotifications
+        .map(n => mapNotification(n, readMap, deletedSet, i18n.language))
+        .filter(Boolean);
+
+      setNotifications(mapped);
     } catch (err) {
+      console.error("Error al obtener notificaciones:", err);
       setError(true);
     } finally {
       setLoading(false);
     }
+  }, [user?.id, i18n.language]);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  // ── Persistir cambios de lectura en localStorage ────────────────────────────
+  const persistReadMap = useCallback((updatedNotifications) => {
+    if (!user?.id) return;
+    const map = {};
+    updatedNotifications.forEach(n => { map[n.id] = n.isRead; });
+    saveReadMap(user.id, map);
+  }, [user?.id]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  const handlePageClick = () => {
+    if (activeId !== null) {
+      setNotifications(prev => prev.map(n =>
+        n.id === activeId ? { ...n, isExpanded: false } : n
+      ));
+    }
+    setActiveId(null);
   };
 
-  useEffect(() => { fetchNotifications(); }, []);
+  const handleCardClick = (id, hasNews) => {
+    setActiveId(id);
+    setNotifications(prev => {
+      const next = prev.map(n => {
+        if (n.id !== id) return n;
+        return {
+          ...n,
+          isRead:     true,
+          isExpanded: hasNews && !n.isExpanded ? true : n.isExpanded,
+        };
+      });
+      persistReadMap(next);
+      return next;
+    });
+  };
 
-  const markAsRead = (id) =>
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  const handleToggleExpand = (e, id) => {
+    e.stopPropagation();
+    setNotifications(prev => {
+      const next = prev.map(n => {
+        if (n.id === activeId && n.id !== id) return { ...n, isExpanded: false };
+        if (n.id === id) return { ...n, isExpanded: !n.isExpanded, isRead: true };
+        return n;
+      });
+      persistReadMap(next);
+      return next;
+    });
+    setActiveId(id);
+  };
 
-  const markAllAsRead = () =>
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const handleToggleRead = (e, id) => {
+    e.stopPropagation();
+    setNotifications(prev => {
+      const next = prev.map(n => n.id === id ? { ...n, isRead: !n.isRead } : n);
+      persistReadMap(next);
+      return next;
+    });
+  };
 
-  const handleClearConfirmed = () => {
+  const handleOpenDeleteModal = (e, id) => {
+    e.stopPropagation();
+    setDeleteTargetId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!user?.id) return;
+    const deletedSet = loadDeletedSet(user.id);
+    deletedSet.add(deleteTargetId);
+    saveDeletedSet(user.id, deletedSet);
+
+    setNotifications(prev => prev.filter(n => n.id !== deleteTargetId));
+    if (activeId === deleteTargetId) setActiveId(null);
+    setDeleteTargetId(null);
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => {
+      const next = prev.map(n => ({ ...n, isRead: true }));
+      persistReadMap(next);
+      return next;
+    });
+  };
+
+  const handleClearAll = () => {
+    if (!user?.id) return;
+    const deletedSet = loadDeletedSet(user.id);
+    notifications.forEach(n => deletedSet.add(n.id));
+    saveDeletedSet(user.id, deletedSet);
+
     setNotifications([]);
-    setShowModal(false);
+    setActiveId(null);
+    setShowClearModal(false);
   };
 
-  const visibleNotifications = notifications.slice(0, visibleCount);
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  const userName = user?.first_name ?? 'Usuario';
+
+  const getAlertMessage = (count) => {
+    if (count === 0) return t('notifications.alert.message.empty', { name: userName });
+    if (count === 1) return t('notifications.alert.message.single', { name: userName });
+    return t('notifications.alert.message.multiple', { name: userName, count });
+  };
+
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const getIconData = (type, isRead) => {
-    const opacity = isRead ? 0.45 : 1;
-    switch (type) {
-      case 'maintenance':
-        return { Icon: Settings,  color: `rgba(255,184,0,${opacity})`,   bg: isRead ? 'rgba(255,184,0,0.06)' : 'rgba(255,184,0,0.12)' };
-      case 'new_source':
-        return { Icon: Search,    color: `rgba(78,141,245,${opacity})`,  bg: isRead ? 'rgba(78,141,245,0.06)' : 'rgba(78,141,245,0.12)' };
-      case 'new_rss':
-        return { Icon: Newspaper, color: `rgba(46,204,113,${opacity})`,  bg: isRead ? 'rgba(46,204,113,0.06)' : 'rgba(46,204,113,0.12)' };
-      default:
-        return { Icon: Bell,      color: `rgba(150,150,150,${opacity})`, bg: 'rgba(150,150,150,0.1)' };
-    }
-  };
-
-  const SkeletonNotification = () => (
-    <div className={styles.notificationCard}>
-      <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
-      <div className={styles.notificationContent}>
-        <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
-        <div className={`${styles.skeleton} ${styles.skeletonText}`} />
-      </div>
-    </div>
-  );
-
-  if (error) {
+  // ── Loading ─────────────────────────────────────────────────────────────────
+  if (loading) {
     return (
       <div className={styles.pageWrapper}>
-        <div className={styles.errorContainer}>
-          <h2>Error al cargar notificaciones</h2>
-          <button className={styles.actionButton} onClick={fetchNotifications}>Reintentar</button>
+        <div className={styles.loadingOverlay}>
+          <Loader2 className={styles.spinner} size={48} />
+          <p>{t('notifications.loading')}</p>
         </div>
       </div>
     );
   }
 
+  // ── Error ───────────────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div className={styles.pageWrapper}>
+        <div className={styles.errorContainer}>
+          <h2>{t('notifications.error.title')}</h2>
+          <button className={styles.actionButton} onClick={fetchNotifications}>
+            {t('notifications.error.retry')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className={styles.pageWrapper}>
-      {/* Modal de confirmación */}
-      {showModal && (
+    <div className={styles.pageWrapper} onClick={handlePageClick}>
+
+      {showClearModal && (
         <ConfirmModal
-          onConfirm={handleClearConfirmed}
-          onCancel={() => setShowModal(false)}
+          title={t('notifications.modals.clearAll.title')}
+          text={t('notifications.modals.clearAll.text')}
+          confirmLabel={t('notifications.modals.clearAll.confirm')}
+          cancelLabel={t('notifications.modals.cancel')}
+          onConfirm={handleClearAll}
+          onCancel={() => setShowClearModal(false)}
+        />
+      )}
+
+      {deleteTargetId !== null && (
+        <ConfirmModal
+          title={t('notifications.modals.deleteOne.title')}
+          text={t('notifications.modals.deleteOne.text')}
+          confirmLabel={t('notifications.modals.deleteOne.confirm')}
+          cancelLabel={t('notifications.modals.cancel')}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteTargetId(null)}
         />
       )}
 
       <div className={styles.centerContainer}>
 
-        {/* CABECERA */}
+        {/* ── CABECERA ── */}
         <div className={styles.header}>
-          <h1 className={styles.title}>NOTIFICACIONES</h1>
+          <h1 className={styles.title}>{t('notifications.header.title')}</h1>
           <div className={styles.headerActions}>
             {unreadCount > 0 && (
-              <button className={styles.textButton} onClick={markAllAsRead}>
-                Marcar todas como leídas
+              <button
+                className={styles.textButton}
+                onClick={e => { e.stopPropagation(); markAllAsRead(); }}
+              >
+                {t('notifications.header.markAllRead')}
               </button>
             )}
+            <button
+              className={styles.refreshButton}
+              onClick={e => { e.stopPropagation(); fetchNotifications(); }}
+              title="Recargar notificaciones"
+            >
+              <RefreshCw size={14} />
+            </button>
             {notifications.length > 0 && (
-              <button className={styles.clearButton} onClick={() => setShowModal(true)}>
-                Limpiar buzón
+              <button
+                className={styles.clearButton}
+                onClick={e => { e.stopPropagation(); setShowClearModal(true); }}
+              >
+                {t('notifications.header.clearAll')}
               </button>
             )}
           </div>
         </div>
 
-        {/* LISTA */}
+        {/* ── LISTA ── */}
         <div className={styles.listContainer}>
-          {loading ? (
-            [1, 2, 3, 4].map(i => <SkeletonNotification key={i} />)
-          ) : notifications.length === 0 ? (
-            <div className={styles.emptyState}>
-              <MailOpen size={52} strokeWidth={1.2} className={styles.emptyIcon} />
-              <p>No hay notificaciones disponibles.</p>
-              <button className={styles.actionButton} onClick={fetchNotifications}>Actualizar</button>
-            </div>
+          {notifications.length === 0 ? (
+            <EmptyState onRefresh={fetchNotifications} />
           ) : (
-            <>
-              {visibleNotifications.map(notif => {
-                const { Icon, color, bg } = getIconData(notif.type, notif.isRead);
-                return (
-                  <div
-                    key={notif.id}
-                    className={`${styles.notificationCard} ${notif.isRead ? styles.read : styles.unread}`}
-                    onClick={() => !notif.isRead && markAsRead(notif.id)}
-                  >
-                    {!notif.isRead && <div className={styles.unreadDot} />}
+            notifications.map(notif => {
+              const hasNews  = notif.news.length > 0;
+              const isActive = activeId === notif.id;
+              const isDimmed = notif.isRead && !isActive;
 
-                    <div className={styles.iconContainer} style={{ backgroundColor: bg }}>
-                      <Icon size={22} color={color} strokeWidth={1.8} />
+              return (
+                <div
+                  key={notif.id}
+                  className={[
+                    styles.alertCard,
+                    notif.isRead ? styles.alertRead : styles.alertUnread,
+                    isDimmed  ? styles.alertDimmed : '',
+                    isActive  ? styles.alertActive : '',
+                  ].join(' ')}
+                  onClick={e => { e.stopPropagation(); handleCardClick(notif.id, hasNews); }}
+                >
+                  <div className={styles.alertHeader}>
+                    <div className={styles.alertTitleGroup}>
+                      <h2 className={styles.alertTitle}>
+                        <BellRing size={13} className={styles.alertTitleIcon} />
+                        {t('notifications.alert.updatePrefix')}&nbsp;
+                        <span className={styles.alertTitleQuoted}>"{notif.alertName}"</span>
+                      </h2>
+                      <span className={styles.alertDate}>{notif.date}</span>
                     </div>
 
-                    <div className={styles.notificationContent}>
-                      <div className={styles.contentHeader}>
-                        <h3 className={`${styles.notifTitle} ${notif.isRead ? styles.readText : ''}`}>
-                          {notif.title}
-                        </h3>
-                        <span className={styles.notifDate}>{notif.date}</span>
-                      </div>
-                      <p className={`${styles.notifMessage} ${notif.isRead ? styles.readText : ''}`}>
-                        {notif.message}
-                      </p>
+                    <div className={styles.alertActions} onClick={e => e.stopPropagation()}>
+                      <button
+                        className={styles.iconBtn}
+                        onClick={e => handleToggleRead(e, notif.id)}
+                        title={notif.isRead ? t('notifications.alert.markUnread') : t('notifications.alert.markRead')}
+                      >
+                        {notif.isRead ? <Mail size={16} /> : <MailCheck size={16} />}
+                      </button>
+
+                      <button
+                        className={`${styles.iconBtn} ${styles.iconBtnDelete}`}
+                        onClick={e => handleOpenDeleteModal(e, notif.id)}
+                        title={t('notifications.alert.delete')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+
+                      {hasNews ? (
+                        <button
+                          className={styles.iconBtn}
+                          onClick={e => handleToggleExpand(e, notif.id)}
+                          title={notif.isExpanded ? t('notifications.alert.collapse') : t('notifications.alert.expand')}
+                        >
+                          {notif.isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      ) : (
+                        <span className={styles.iconBtnDisabled} title={t('notifications.alert.noNews')}>
+                          <Minus size={16} />
+                        </span>
+                      )}
                     </div>
                   </div>
-                );
-              })}
 
-              {visibleCount < notifications.length && (
-                <div className={styles.loadMoreContainer}>
-                  <button
-                    className={styles.loadMoreButton}
-                    onClick={() => setVisibleCount(notifications.length)}
-                  >
-                    Mostrar más
-                  </button>
+                  <p className={styles.alertMessage}>
+                    {getAlertMessage(notif.news.length)}
+                  </p>
+
+                  {hasNews && (
+                    <div className={[
+                      styles.newsList,
+                      notif.isExpanded ? styles.newsListExpanded : '',
+                    ].join(' ')}>
+                      {notif.news.map(item => (
+                        <NewsCard key={item.id} item={item} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </>
+              );
+            })
           )}
         </div>
       </div>

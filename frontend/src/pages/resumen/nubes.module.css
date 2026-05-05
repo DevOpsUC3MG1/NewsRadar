@@ -164,3 +164,33 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --- BOTÓN DE CREAR ALERTA EN NUBES VACÍAS --- */
+.cloudEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  /* ... asegúrate de mantener tus estilos anteriores para cloudEmpty ... */
+}
+
+.createAlertBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #1f2122; /* Ajusta al tono oscuro de tu app */
+  color: #4e8df5;
+  border: 1px solid #4e8df5;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.createAlertBtn:hover {
+  background-color: #4e8df5;
+  color: #ffffff;
+}
