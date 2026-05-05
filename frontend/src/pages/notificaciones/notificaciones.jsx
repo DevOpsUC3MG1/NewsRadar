@@ -338,6 +338,13 @@ const Notifications = () => {
                 {t('notifications.header.markAllRead')}
               </button>
             )}
+            <button
+              className={styles.refreshButton}
+              onClick={e => { e.stopPropagation(); fetchNotifications(); }}
+              title="Recargar notificaciones"
+            >
+              <RefreshCw size={14} />
+            </button>
             {notifications.length > 0 && (
               <button
                 className={styles.clearButton}
