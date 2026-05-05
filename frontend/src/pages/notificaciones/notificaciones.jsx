@@ -10,11 +10,24 @@ import { AuthContext } from '../../context/AuthContext';
 import authService from '../../services/authService';
 import { getAllNotificationsForUser } from '../../services/newsService';
 
-// ─── Helpers de fecha (Ahora dependiente del idioma) ──────────────────────────
+// ─── Helpers de fecha (Ajustado para UTC) ─────────────────────────────────
 const formatDate = (raw, locale = 'es-ES') => {
   if (!raw) return '—';
   try {
-    return new Date(raw).toLocaleString(locale, {
+    let dateString = String(raw);
+
+    // Si el backend envía "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DDTHH:mm:ss"
+    // y no termina en "Z" ni tiene un offset de zona horaria (+00:00)
+    if (!dateString.endsWith('Z') && !dateString.match(/[+-]\d{2}:?\d{2}$/)) {
+      // Reemplazamos un posible espacio por 'T' (formato típico de SQL)
+      // y añadimos la 'Z' al final para indicar explícitamente que es UTC.
+      dateString = dateString.replace(' ', 'T') + 'Z';
+    }
+
+    const date = new Date(dateString);
+
+    // toLocaleString convierte automáticamente el objeto Date a la hora local del usuario
+    return date.toLocaleString(locale, {
       day:    '2-digit',
       month:  '2-digit',
       year:   'numeric',

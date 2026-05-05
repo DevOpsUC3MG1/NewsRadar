@@ -271,7 +271,8 @@
       "chanLabel": "3. CANALES RSS ESPECÍFICOS",
       "searchChannel": "Buscar canal...",
       "chanHintSrc": "👆 Selecciona al menos una fuente para ver sus canales.",
-      "chanHintEmpty": "No se encontraron canales con esos filtros."
+      "chanHintEmpty": "No se encontraron canales con esos filtros.",
+      "chanOptional": "opcional — si no seleccionas ninguno, se usarán todos"
     },
     "tooltip": {
       "title": "Formato CRON (5 valores)",
