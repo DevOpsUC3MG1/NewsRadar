@@ -1,6 +1,6 @@
 // frontend/src/pages/notificaciones/notificaciones.jsx
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { useTranslation } from 'react-i18next'; // <-- Importamos i18next
+import { useTranslation } from 'react-i18next';
 import {
   MailOpen, ChevronUp, ChevronDown, Minus,
   Trash2, MailCheck, Mail, ExternalLink, RefreshCw, BellRing, Loader2,
@@ -8,26 +8,23 @@ import {
 import styles from './notificaciones.module.css';
 import { AuthContext } from '../../context/AuthContext';
 import authService from '../../services/authService';
-import { getAllNotificationsForUser } from '../../services/newsService';
 
-// ─── Helpers de fecha (Ajustado para UTC) ─────────────────────────────────
+// IMPORTAMOS LAS FUNCIONES QUE SÍ EXISTEN EN TU NEWSSERVICE
+import { getUserAlerts, getAlertNotifications } from '../../services/newsService';
+
+// ─── Helpers de fecha (Con ajuste para UTC y zona horaria) ───────────────────
 const formatDate = (raw, locale = 'es-ES') => {
   if (!raw) return '—';
   try {
     let dateString = String(raw);
 
-    // Si el backend envía "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DDTHH:mm:ss"
-    // y no termina en "Z" ni tiene un offset de zona horaria (+00:00)
+    // Si el backend envía "YYYY-MM-DD HH:mm:ss" y no indica que es UTC,
+    // le añadimos la "Z" para que JavaScript aplique tu zona horaria local.
     if (!dateString.endsWith('Z') && !dateString.match(/[+-]\d{2}:?\d{2}$/)) {
-      // Reemplazamos un posible espacio por 'T' (formato típico de SQL)
-      // y añadimos la 'Z' al final para indicar explícitamente que es UTC.
       dateString = dateString.replace(' ', 'T') + 'Z';
     }
 
-    const date = new Date(dateString);
-
-    // toLocaleString convierte automáticamente el objeto Date a la hora local del usuario
-    return date.toLocaleString(locale, {
+    return new Date(dateString).toLocaleString(locale, {
       day:    '2-digit',
       month:  '2-digit',
       year:   'numeric',
@@ -69,7 +66,7 @@ const mapNotification = (raw, readMap, deletedSet, locale) => {
     id:         `${raw.id}-${idx}`,
     rssChannel: item.source_name ?? '—',
     category:   item.category   ?? '—',
-    title:      item.title      ?? null, // Se maneja en el componente para traducirlo
+    title:      item.title      ?? null,
     subtitle:   '',
     date:       formatDate(item.published, locale),
     url:        item.link       ?? '#',
@@ -156,7 +153,7 @@ const Notifications = () => {
   const [showClearModal, setShowClearModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-  // ── Carga de datos desde el backend ────────────────────────────────────────
+  // ── Carga de datos desde el backend (ACTUALIZADA) ──────────────────────────
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
@@ -166,14 +163,42 @@ const Notifications = () => {
       const readMap    = loadReadMap(user.id);
       const deletedSet = loadDeletedSet(user.id);
 
-      const raw = await getAllNotificationsForUser(user.id, token);
+      // 1. Obtenemos todas las alertas del usuario
+      const alertsResponse = await getUserAlerts(user.id, token);
+      const userAlerts = alertsResponse.data;
 
-      const mapped = raw
-        .map(n => mapNotification(n, readMap, deletedSet, i18n.language)) // Pasamos el idioma para las fechas
+      // 2. Por cada alerta, pedimos sus notificaciones al backend
+      const notificationsPromises = userAlerts.map(async (alert) => {
+        try {
+          const notifRes = await getAlertNotifications(user.id, alert.id, token);
+          // Inyectamos el ID y Nombre de la alerta en cada notificación
+          return notifRes.data.map(n => ({
+            ...n,
+            alertId: alert.id,
+            alertName: alert.name
+          }));
+        } catch (err) {
+          console.warn(`No hay notificaciones para la alerta ${alert.id}`);
+          return [];
+        }
+      });
+
+      // Esperamos a que terminen todas las peticiones
+      const nestedNotifs = await Promise.all(notificationsPromises);
+
+      // Juntamos todos los arrays, los ordenamos por fecha (más recientes primero)
+      const rawNotifications = nestedNotifs
+        .flat()
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Mapeamos a los datos de la UI
+      const mapped = rawNotifications
+        .map(n => mapNotification(n, readMap, deletedSet, i18n.language))
         .filter(Boolean);
 
       setNotifications(mapped);
-    } catch {
+    } catch (err) {
+      console.error("Error al obtener notificaciones:", err);
       setError(true);
     } finally {
       setLoading(false);

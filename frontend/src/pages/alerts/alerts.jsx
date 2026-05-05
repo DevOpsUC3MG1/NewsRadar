@@ -68,7 +68,11 @@ const Alerts = () => {
           keyword: keyword,
           periodicidad: a.cron_expression,
           descriptores: descriptoresRestantes,
-          categorias: (a.categories || []).map(c => c.label),
+          // BUG 3 FIX: normalizar al campo `name` (igual que safeCategorias) para que
+          // los checkboxes se pre-marquen correctamente y resolveChannelIds funcione.
+          // Antes: .map(c => c.label)  →  nombre localizado que puede no coincidir
+          //         con rawCats.name, rompiendo la inferencia de canales.
+          categorias: (a.categories || []).map(c => c.name ?? c.label).filter(Boolean),
           information_sources_ids: (a.information_sources_ids || []).map(String),
           rss_channels_ids: (a.rss_channels_ids || []).map(String)
         };
@@ -86,21 +90,16 @@ const Alerts = () => {
   }, [user]);
 
   // ── Validación de cron robusta ─────────────────────────────────────────────
-  // Cubre: *, números simples, rangos (1-5), listas (1,5,10),
-  // pasos (*/15, 0/5, 1-5/2) y combinaciones de los anteriores.
-  // Espera exactamente 5 campos separados por uno o más espacios.
   const isValidCron = (cron) => {
     const trimmed = cron.trim();
-    // Un "elemento" es: * | número | rango | lista, con paso opcional (/..)
-    const num = (min, max) => `(?:[${min}-${max}]|[1-9][0-9]?)`;
     const field = (numPat) =>
       `(?:\\*(?:/${numPat})?|${numPat}(?:-${numPat}(?:/${numPat})?)?(?:,${numPat}(?:-${numPat}(?:/${numPat})?)?)*)`;
 
-    const minute  = field('[0-5]?[0-9]');          // 0-59
-    const hour    = field('(?:[01]?[0-9]|2[0-3])'); // 0-23
-    const dom     = field('(?:0?[1-9]|[12][0-9]|3[01])'); // 1-31
-    const month   = field('(?:0?[1-9]|1[0-2])');   // 1-12
-    const dow     = field('[0-6]');                 // 0-6
+    const minute  = field('[0-5]?[0-9]');
+    const hour    = field('(?:[01]?[0-9]|2[0-3])');
+    const dom     = field('(?:0?[1-9]|[12][0-9]|3[01])');
+    const month   = field('(?:0?[1-9]|1[0-2])');
+    const dow     = field('[0-6]');
 
     const pattern = new RegExp(
       `^${minute}\\s+${hour}\\s+${dom}\\s+${month}\\s+${dow}$`
@@ -109,15 +108,13 @@ const Alerts = () => {
   };
 
   // ── Inferencia automática de canales RSS ───────────────────────────────────
-  // Si el usuario no seleccionó canales concretos, se envían todos los canales
-  // que pertenezcan a las fuentes seleccionadas O a las categorías seleccionadas.
   const resolveChannelIds = (formData) => {
     if (formData.rss_channels_ids.length > 0) {
-      // El usuario eligió canales explícitamente → respetar su selección
       return formData.rss_channels_ids;
     }
 
-    const selectedSourceIds = new Set(formData.information_sources_ids.map(String));
+    const selectedSourceIds  = new Set(formData.information_sources_ids.map(String));
+    // form.categorias ahora contiene nombres (`c.name`) igual que ch.categoria → match correcto.
     const selectedCategories = new Set(formData.categorias);
 
     const inferred = safeCanales
@@ -131,7 +128,6 @@ const Alerts = () => {
   };
 
   const handleSave = async () => {
-    // Obligatorio: nombre, keyword y al menos una fuente O una categoría
     if (!form.nombre.trim()) {
       setErrorMsg(t('alerts.errors.missingFields'));
       return;
@@ -163,12 +159,21 @@ const Alerts = () => {
       ...form.descriptores.filter(d => d !== form.keyword.trim()),
     ].filter(Boolean);
 
-    const finalCategories = form.categorias.map(cat => ({
-      code: cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_'),
-      label: cat
-    }));
+    // BUG 1 FIX: incluir `id` del backend en cada categoría.
+    // Antes sólo se enviaban {code, label}, por lo que rss_worker._get_alert_channels
+    // hacía c.get("id") → None → devolvía [] → sin canales → sin notificaciones en MongoDB.
+    const finalCategories = form.categorias.map(cat => {
+      // Buscar el objeto de categoría completo en el contexto para recuperar su id.
+      const catObj = (categorias || []).find(c =>
+        (typeof c === 'object' && c !== null ? (c.name ?? c.label) : c) === cat
+      );
+      return {
+        id:    catObj?.id ?? null,
+        code:  cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_'),
+        label: cat,
+      };
+    });
 
-    // Si no hay canales seleccionados, inferir automáticamente
     const finalChannelIds = resolveChannelIds(form);
 
     const payload = {
@@ -562,7 +567,6 @@ const Alerts = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <label style={{ margin: 0 }}>
                       {t('alerts.form.chanLabel')}
-                      {/* Aviso de que los canales son opcionales */}
                       <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#888', fontWeight: 'normal' }}>
                         ({t('alerts.form.chanOptional')})
                       </span>
