@@ -15,6 +15,14 @@ API REST para monitorización de noticias basada en alertas RSS, construida con 
 docker-compose -f docker-compose.dev.yml up --build
 ```
 
+Antes de levantar el stack, crea el archivo `.env` en la raíz del proyecto a partir de [`.env.example`](/home/xinbo/Documents/uc3m/curso_4/cuatrimestre_2/doss/NewsRadar/.env.example) y completa las variables de IA que vayas a usar. Para Groq:
+
+```bash
+IA_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=llama-3.1-8b-instant
+```
+
 Esto inicia:
 - **API** en `http://localhost:8000`
 - **MongoDB** en `localhost:27017`
