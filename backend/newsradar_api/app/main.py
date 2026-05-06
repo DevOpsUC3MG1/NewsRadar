@@ -195,6 +195,7 @@ class UserInDB(User):
 
 
 class AlertCategoryItem(BaseModel):
+    id: Optional[int] = None
     code: str = Field(..., min_length=1, max_length=60)
     label: str = Field(..., min_length=1, max_length=120)
 
