@@ -14,8 +14,10 @@ import asyncio
 import json
 import logging
 import os
+import re
 import urllib.error
 import urllib.request
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
@@ -60,6 +62,48 @@ def _effective_provider() -> str:
     if OPENAI_API_KEY:
         return "openai"
     return "none"
+
+
+_WORD_RE = re.compile(r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9_-]{2,}")
+_STOPWORDS = {
+    "es": {
+        "ante", "bajo", "cada", "como", "con", "contra", "cual", "cuando", "de", "del", "desde", "donde",
+        "durante", "el", "ella", "ellas", "ellos", "en", "entre", "era", "esta", "este", "estos", "estas",
+        "fue", "han", "hasta", "hay", "hoy", "la", "las", "le", "les", "lo", "los", "mas", "muy", "noticia",
+        "noticias", "para", "pero", "por", "que", "quien", "se", "segun", "ser", "sin", "sobre", "son", "sus",
+        "tras", "una", "uno", "unos", "unas", "video",
+    },
+    "en": {
+        "about", "after", "also", "and", "are", "been", "but", "for", "from", "have", "into", "its", "more",
+        "news", "not", "that", "the", "their", "them", "there", "these", "they", "this", "those", "today",
+        "under", "video", "was", "were", "what", "when", "with", "would", "your",
+    },
+}
+
+
+def _fallback_wordcloud_terms(*, texts: List[str], lang: str, limit: int) -> List[Dict[str, Any]]:
+    language = "es" if (lang or "").lower().startswith("es") else "en"
+    stopwords = _STOPWORDS[language]
+    counts: Counter[str] = Counter()
+
+    for text in texts[:200]:
+        seen_in_text = set()
+        for raw in _WORD_RE.findall(text or ""):
+            word = raw.strip("-_").lower()
+            if len(word) < 3 or word.isdigit() or word in stopwords:
+                continue
+            seen_in_text.add(word)
+        counts.update(seen_in_text)
+
+    if not counts:
+        return []
+
+    most_common = counts.most_common(limit)
+    max_count = most_common[0][1]
+    return [
+        {"term": term.upper(), "count": max(1, min(100, round((freq / max_count) * 100)))}
+        for term, freq in most_common
+    ]
 
 
 
@@ -322,7 +366,8 @@ async def generate_wordcloud_terms(*, texts: List[str], lang: str, limit: int = 
     """
     provider = _effective_provider()
     if provider == "none":
-        return []
+        logger.warning("IA no configurada para wordcloud; usando fallback determinista.")
+        return _fallback_wordcloud_terms(texts=texts, lang=lang, limit=limit)
 
     # Recortamos entrada para evitar prompts enormes
     limit = max(5, min(int(limit), 50))
@@ -386,10 +431,10 @@ Noticias:
         data = json.loads(raw)
     except Exception:
         logger.error("Wordcloud: respuesta no es JSON: %s", raw[:200])
-        return []
+        return _fallback_wordcloud_terms(texts=texts, lang=lang, limit=limit)
 
     if not isinstance(data, list):
-        return []
+        return _fallback_wordcloud_terms(texts=texts, lang=lang, limit=limit)
 
     out: List[Dict[str, Any]] = []
     for item in data:
@@ -419,7 +464,7 @@ Noticias:
         if len(dedup) >= limit:
             break
 
-    return dedup
+    return dedup or _fallback_wordcloud_terms(texts=texts, lang=lang, limit=limit)
 
 
 # ---------------------------------------------------------------------------
