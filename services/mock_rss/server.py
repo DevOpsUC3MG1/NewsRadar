@@ -1,135 +1,112 @@
 """
-Servidor RSS mock para pruebas del demonio NewsRadar.
-
-Cada petición genera un feed RSS con noticias cuyo pubDate es "ahora",
-así el demonio siempre las considera nuevas.
-
-Endpoints:
-  GET /politica.xml   → 3 noticias categoría Politica (con "Ibex", "Sánchez", "Congreso")
-  GET /economia.xml   → 3 noticias categoría Economia
-  GET /deportes.xml   → 3 noticias categoría Deportes
-  GET /test.xml       → 1 noticia genérica de test que matchea cualquier descriptor
-                       (siempre incluye "TEST" y "noticia" en el título)
+Servidor RSS mock avanzado para NewsRadar.
+Genera combinaciones aleatorias de noticias para probar la clasificación IPTC.
 """
+import random
+import uuid
 from datetime import datetime, timezone
 from email.utils import format_datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import uuid
 
+# Diccionario de componentes para generar noticias dinámicas
+TEMPLATES = {
+    "Politics": {
+        "subjects": ["El Congreso", "Pedro Sánchez", "La oposición", "El Ministerio", "Bruselas"],
+        "actions": ["debate sobre", "aprueba el nuevo plan de", "critica la gestión de", "anuncia medidas para"],
+        "objects": ["la ley de vivienda", "los presupuestos", "la reforma laboral", "el estado de alarma"]
+    },
+    "Business": {
+        "subjects": ["El Ibex 35", "El BCE", "Santander", "La inflación", "El sector energético"],
+        "actions": ["sube un 2% por", "se desploma tras", "mantiene los tipos ante", "lidera el crecimiento en"],
+        "objects": ["la crisis de suministros", "los resultados trimestrales", "la banca europea", "el precio del gas"]
+    },
+    "Sports": {
+        "subjects": ["El Real Madrid", "Carlos Alcaraz", "La selección", "El Barça", "Rafa Nadal"],
+        "actions": ["gana con solvencia en", "avanza a la final de", "sufre una derrota en", "ficha a una estrella para"],
+        "objects": ["la Champions", "Roland Garros", "el derbi", "el próximo mundial"]
+    },
+    "Technology": {
+        "subjects": ["Apple", "La IA generativa", "Google", "El nuevo chip", "La ciberseguridad"],
+        "actions": ["revoluciona el mercado de", "presenta mejoras en", "advierte sobre riesgos en", "lanza su versión de"],
+        "objects": ["la computación cuántica", "los smartphones", "la privacidad de datos", "el Metaverso"]
+    }
+}
 
-def rss(channel_title: str, items: list[dict]) -> str:
+def generate_news(category: str, count: int = 5):
+    """Genera una lista de noticias aleatorias basadas en plantillas."""
+    news = []
+    data = TEMPLATES.get(category, TEMPLATES["Politics"])
+    for i in range(count):
+        title = f"{random.choice(data['subjects'])} {random.choice(data['actions'])} {random.choice(data['objects'])}"
+        news.append({
+            "title": title,
+            "description": f"Detalle importante sobre cómo {title.lower()}. Cobertura especial NewsRadar.",
+            "link": f"http://mock_rss/{category.lower()}/{uuid.uuid4().hex[:8]}",
+            "guid": str(uuid.uuid4())
+        })
+    return news
+
+def rss_template(channel_title: str, items: list) -> str:
     now = datetime.now(timezone.utc)
-    items_xml = "\n".join(
-        f"""    <item>
+    items_xml = ""
+    for it in items:
+        items_xml += f"""
+    <item>
       <title>{it['title']}</title>
       <description>{it['description']}</description>
       <link>{it['link']}</link>
       <guid isPermaLink="false">{it['guid']}</guid>
       <pubDate>{format_datetime(now)}</pubDate>
     </item>"""
-        for it in items
-    )
+    
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
     <title>{channel_title}</title>
     <link>http://mock_rss</link>
-    <description>Feed mock para pruebas</description>
+    <description>Feed dinámico para NewsRadar</description>
     <lastBuildDate>{format_datetime(now)}</lastBuildDate>
-{items_xml}
+    {items_xml}
   </channel>
-</rss>
-"""
+</rss>"""
 
-
-FEEDS = {
-    "/politica.xml": (
-        "Mock Política",
-        [
-            {"title": "El Ibex 35 cierra con subidas tras la sesión del Congreso",
-             "description": "Sánchez comparece ante los medios para explicar los nuevos presupuestos.",
-             "link": "http://mock_rss/politica/1"},
-            {"title": "Pedro Sánchez se reúne con líderes europeos en Bruselas",
-             "description": "Cumbre de jefes de estado para debatir el futuro de la UE.",
-             "link": "http://mock_rss/politica/2"},
-            {"title": "Debate en el Congreso sobre los presupuestos generales",
-             "description": "La oposición critica las cifras presentadas por el gobierno.",
-             "link": "http://mock_rss/politica/3"},
-        ],
-    ),
-    "/economia.xml": (
-        "Mock Economía",
-        [
-            {"title": "El Ibex 35 sube un 2% impulsado por la banca",
-             "description": "Las acciones de Santander y BBVA lideran las subidas en la bolsa española.",
-             "link": "http://mock_rss/economia/1"},
-            {"title": "El BCE mantiene los tipos de interés en su última reunión",
-             "description": "Christine Lagarde anuncia que vigilan de cerca la inflación.",
-             "link": "http://mock_rss/economia/2"},
-            {"title": "La inflación se modera al 2.5% en abril",
-             "description": "Datos del INE confirman la tendencia bajista del IPC.",
-             "link": "http://mock_rss/economia/3"},
-        ],
-    ),
-    "/deportes.xml": (
-        "Mock Deportes",
-        [
-            {"title": "Real Madrid gana la Liga tras vencer al Barcelona",
-             "description": "Vinicius marca el gol decisivo en el Bernabéu.",
-             "link": "http://mock_rss/deportes/1"},
-            {"title": "Carlos Alcaraz avanza a la final de Roland Garros",
-             "description": "El murciano supera a Djokovic en cinco sets.",
-             "link": "http://mock_rss/deportes/2"},
-            {"title": "El Atlético de Madrid ficha a una nueva estrella",
-             "description": "El club rojiblanco refuerza su plantilla para la próxima temporada.",
-             "link": "http://mock_rss/deportes/3"},
-        ],
-    ),
-    "/test.xml": (
-        "Mock Test",
-        [
-            {"title": "TEST: Esta es una noticia de prueba para NewsRadar",
-             "description": "Esta noticia siempre matchea cualquier alerta con descriptor 'TEST' o 'prueba'. Ibex Sánchez Madrid Real BCE inflación.",
-             "link": "http://mock_rss/test/1"},
-        ],
-    ),
-}
-
-
-class Handler(BaseHTTPRequestHandler):
+class AdvancedHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/" or self.path == "/health":
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.end_headers()
-            paths = "\n".join(FEEDS.keys())
-            self.wfile.write(f"Mock RSS server. Endpoints:\n{paths}\n".encode())
-            return
+        # Mapeo de rutas a categorías IPTC
+        routes = {
+            "/politica.xml": "Politics",
+            "/economia.xml": "Business",
+            "/deportes.xml": "Sports",
+            "/tecnologia.xml": "Technology"
+        }
 
-        if self.path not in FEEDS:
+        if self.path in routes:
+            category = routes[self.path]
+            items = generate_news(category)
+            body = rss_template(f"Noticias de {category}", items).encode("utf-8")
+            self._send_rss(body)
+        elif self.path == "/test.xml":
+            # Caso especial para matchear todo
+            items = [{
+                "title": "TEST: Ibex Sánchez Madrid Alcaraz IA",
+                "description": "Noticia de prueba con múltiples palabras clave para test de alertas.",
+                "link": "http://mock_rss/test/unique",
+                "guid": str(uuid.uuid4())
+            }]
+            body = rss_template("Mock Test Global", items).encode("utf-8")
+            self._send_rss(body)
+        else:
             self.send_response(404)
             self.end_headers()
-            self.wfile.write(b"Not found")
-            return
 
-        title, items_template = FEEDS[self.path]
-        # GUID único en cada petición → el demonio las trata como nuevas
-        items = [{**it, "guid": str(uuid.uuid4())} for it in items_template]
-        body = rss(title, items).encode("utf-8")
-
+    def _send_rss(self, body):
         self.send_response(200)
         self.send_header("Content-Type", "application/rss+xml; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
-    def log_message(self, format, *args):
-        # logs más limpios
-        print(f"[mock_rss] {self.address_string()} - {format % args}")
-
-
 if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", 8080), Handler)
-    print("Mock RSS server escuchando en :8080")
-    print("Endpoints:", ", ".join(FEEDS.keys()))
+    server = HTTPServer(("0.0.0.0", 8080), AdvancedHandler)
+    print("Servidor Mock Pro iniciado en puerto 8080...")
     server.serve_forever()

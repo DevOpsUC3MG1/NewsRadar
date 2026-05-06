@@ -9,7 +9,7 @@ RNF-06: Trazabilidad de prompts IA
 """
 
 from __future__ import annotations
-
+import time 
 import asyncio
 import json
 import logging
@@ -28,25 +28,22 @@ logger = logging.getLogger(__name__)
 # Asegura carga de .env también cuando este módulo se importa antes que main.py
 load_dotenv()
 
-# IA_PROVIDER: "gemini" | "openai" (si está vacío se autodetecta)
+# IA_PROVIDER: "gemini" | "groq" | "openai" (si está vacío se autodetecta)
 IA_PROVIDER = (os.getenv("IA_PROVIDER") or "").strip().lower()
 
 # Google AI Studio / Gemini Developer API (Generative Language API)
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
+# Groq (OpenAI-compatible)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+
 # OpenAI (legacy / opcional)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-
-_openai_client = None
-if OPENAI_API_KEY:
-    try:
-        from openai import OpenAI  # type: ignore
-
-        _openai_client = OpenAI(api_key=OPENAI_API_KEY)
-    except Exception as e:
-        logger.warning("OpenAI client no disponible (%s). Se ignorara.", str(e))
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 
 
 def _now_utc() -> datetime:
@@ -54,78 +51,108 @@ def _now_utc() -> datetime:
 
 
 def _effective_provider() -> str:
-    if IA_PROVIDER in ("gemini", "openai"):
+    if IA_PROVIDER in ("gemini", "groq", "openai"):
         return IA_PROVIDER
     if GEMINI_API_KEY:
         return "gemini"
-    if _openai_client:
+    if GROQ_API_KEY:
+        return "groq"
+    if OPENAI_API_KEY:
         return "openai"
     return "none"
 
 
+
+
 def _gemini_generate_text(*, prompt: str, temperature: float, max_output_tokens: int) -> Optional[str]:
-    """
-    Llama a Gemini via Generative Language API (Gemini Developer API).
-    Implementado con stdlib (urllib) para evitar dependencias extra.
-    """
     if not GEMINI_API_KEY:
         return None
 
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-    )
-    payload: Dict[str, Any] = {
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+    payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": temperature, "maxOutputTokens": max_output_tokens},
     }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    # IMPLEMENTACIÓN DE REINTENTO TÉCNICO (Máximo 3 intentos para errores 503/429)
+    for intento in range(3):
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                raw = resp.read().decode("utf-8")
+                data = json.loads(raw)
+                # Si llegamos aquí, la respuesta fue exitosa
+                candidates = data.get("candidates") or []
+                content = candidates[0].get("content") if candidates else None
+                parts = (content or {}).get("parts") or []
+                return (parts[0].get("text") or "").strip() or None
 
+        except urllib.error.HTTPError as e:
+            # Si es 503 (Saturación) o 429 (Límite de cuota), esperamos y reintentamos
+            if e.code in (503, 429):
+                espera = (intento + 1) * 2  # Espera 2s, luego 4s...
+                logger.warning(f"Gemini saturado (Error {e.code}). Reintentando en {espera}s...")
+                time.sleep(espera)
+                continue 
+            
+            logger.error("Error HTTP no recuperable %s", e.code)
+            break # Errores como 400 o 404 no se arreglan reintentando
+            
+        except Exception as e:
+            logger.error("Error de conexión IA: %s", str(e))
+            break
+            
+    return None
+
+
+def _openai_compatible_generate_text(
+    *,
+    api_key: Optional[str],
+    base_url: str,
+    model: str,
+    provider_name: str,
+    system: str,
+    user: str,
+    temperature: float,
+    max_tokens: int,
+) -> Optional[str]:
+    if not api_key:
+        return None
     try:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        req = urllib.request.Request(
+            f"{base_url.rstrip('/')}/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
         with urllib.request.urlopen(req, timeout=30) as resp:
             raw = resp.read().decode("utf-8")
-        data = json.loads(raw)
-    except urllib.error.HTTPError as e:
-        try:
-            body = e.read().decode("utf-8")
-        except Exception:
-            body = "<no-body>"
-        logger.error("Gemini HTTPError %s: %s", e.code, body)
-        return None
+            data = json.loads(raw)
+            choices = data.get("choices") or []
+            message = choices[0].get("message") if choices else None
+            content = (message or {}).get("content")
+            if isinstance(content, str):
+                return content.strip() or None
+            return None
     except Exception as e:
-        logger.error("Error llamando a Gemini: %s", str(e))
-        return None
-
-    try:
-        candidates = data.get("candidates") or []
-        content = candidates[0].get("content") if candidates else None
-        parts = (content or {}).get("parts") or []
-        text = parts[0].get("text") if parts else None
-        return (text or "").strip() or None
-    except Exception:
-        logger.error("Respuesta Gemini inesperada: %s", data)
-        return None
-
-
-def _openai_generate_text(*, system: str, user: str, temperature: float, max_tokens: int) -> Optional[str]:
-    if not _openai_client:
-        return None
-    try:
-        response = _openai_client.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        logger.error("Error llamando a OpenAI: %s", str(e))
+        logger.error("Error llamando a %s: %s", provider_name, str(e))
         return None
 
 
@@ -140,7 +167,7 @@ def generate_synonyms(keywords: List[str], max_synonyms: int = 5) -> List[str]:
     """
     provider = _effective_provider()
     if provider == "none":
-        logger.warning("IA no configurada (GOOGLE_API_KEY/GEMINI_API_KEY u OPENAI_API_KEY).")
+        logger.warning("IA no configurada (GOOGLE_API_KEY/GEMINI_API_KEY, GROQ_API_KEY u OPENAI_API_KEY).")
         return []
 
     base = [k.strip() for k in (keywords or []) if isinstance(k, str) and k.strip()]
@@ -168,8 +195,26 @@ Ejemplo de respuesta: "economía digital, transformación digital, negocio elect
     def _call_model(user_prompt: str) -> str:
         if provider == "gemini":
             return _gemini_generate_text(prompt=user_prompt, temperature=0.7, max_output_tokens=180) or ""
+        if provider == "groq":
+            return (
+                _openai_compatible_generate_text(
+                    api_key=GROQ_API_KEY,
+                    base_url=GROQ_BASE_URL,
+                    model=GROQ_MODEL,
+                    provider_name="Groq",
+                    system="Eres un asistente experto en generación de palabras clave para búsqueda de noticias.",
+                    user=user_prompt,
+                    temperature=0.7,
+                    max_tokens=180,
+                )
+                or ""
+            )
         return (
-            _openai_generate_text(
+            _openai_compatible_generate_text(
+                api_key=OPENAI_API_KEY,
+                base_url=OPENAI_BASE_URL,
+                model=OPENAI_MODEL,
+                provider_name="OpenAI",
                 system="Eres un asistente experto en generación de palabras clave para búsqueda de noticias.",
                 user=user_prompt,
                 temperature=0.7,
@@ -235,9 +280,27 @@ Responde SOLO con el nombre de la categoría, sin explicación.
 
     if provider == "gemini":
         category = _gemini_generate_text(prompt=prompt, temperature=0.3, max_output_tokens=50) or "General"
+    elif provider == "groq":
+        category = (
+            _openai_compatible_generate_text(
+                api_key=GROQ_API_KEY,
+                base_url=GROQ_BASE_URL,
+                model=GROQ_MODEL,
+                provider_name="Groq",
+                system="Eres un clasificador experto de noticias en categorías IPTC nivel 1.",
+                user=prompt,
+                temperature=0.3,
+                max_tokens=50,
+            )
+            or "General"
+        )
     else:
         category = (
-            _openai_generate_text(
+            _openai_compatible_generate_text(
+                api_key=OPENAI_API_KEY,
+                base_url=OPENAI_BASE_URL,
+                model=OPENAI_MODEL,
+                provider_name="OpenAI",
                 system="Eres un clasificador experto de noticias en categorías IPTC nivel 1.",
                 user=prompt,
                 temperature=0.3,
@@ -290,9 +353,27 @@ Noticias:
 
     if provider == "gemini":
         raw = _gemini_generate_text(prompt=prompt, temperature=0.3, max_output_tokens=800) or "[]"
+    elif provider == "groq":
+        raw = (
+            _openai_compatible_generate_text(
+                api_key=GROQ_API_KEY,
+                base_url=GROQ_BASE_URL,
+                model=GROQ_MODEL,
+                provider_name="Groq",
+                system="Eres un asistente que extrae keywords para visualizaciones tipo wordcloud.",
+                user=prompt,
+                temperature=0.3,
+                max_tokens=800,
+            )
+            or "[]"
+        )
     else:
         raw = (
-            _openai_generate_text(
+            _openai_compatible_generate_text(
+                api_key=OPENAI_API_KEY,
+                base_url=OPENAI_BASE_URL,
+                model=OPENAI_MODEL,
+                provider_name="OpenAI",
                 system="Eres un asistente que extrae keywords para visualizaciones tipo wordcloud.",
                 user=prompt,
                 temperature=0.3,

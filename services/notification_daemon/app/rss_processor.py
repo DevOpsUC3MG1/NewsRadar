@@ -8,7 +8,7 @@ Descarga RSS, parsea entradas y filtra por:
 Solo se consideran noticias publicadas DESDE la última ejecución de la alerta.
 """
 from __future__ import annotations
-
+from zoneinfo import ZoneInfo
 import asyncio
 import logging
 import re
@@ -38,6 +38,20 @@ class NewsItem:
 
 def _parse_date(entry: dict) -> datetime | None:
     """Intenta extraer la fecha de publicación del entry, devolviéndola en UTC."""
+    # fallback a parseo manual
+    for key in ("published", "updated"):
+        raw = entry.get(key)
+        if raw:
+            try:
+                dt = parsedate_to_datetime(raw)
+                print(f"Parsed date '{raw}' -> {dt} (tzinfo={dt.tzinfo})")
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=ZoneInfo("Europe/Madrid"))
+                    print(f"Assuming timezone Europe/Madrid -> {dt} (tzinfo={dt.tzinfo})")
+                return dt.astimezone(timezone.utc)
+            except (TypeError, ValueError):
+                pass
+
     # feedparser ya rellena published_parsed/updated_parsed si puede
     for key in ("published_parsed", "updated_parsed"):
         struct = entry.get(key)
@@ -46,17 +60,7 @@ def _parse_date(entry: dict) -> datetime | None:
                 return datetime(*struct[:6], tzinfo=timezone.utc)
             except (TypeError, ValueError):
                 pass
-    # fallback a parseo manual
-    for key in ("published", "updated"):
-        raw = entry.get(key)
-        if raw:
-            try:
-                dt = parsedate_to_datetime(raw)
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                return dt.astimezone(timezone.utc)
-            except (TypeError, ValueError):
-                pass
+    
     return None
 
 
