@@ -124,6 +124,11 @@ GOOGLE_API_KEY=AIza...         # Tu API key de Google AI Studio (recomendado)
 GEMINI_MODEL=gemini-1.5-flash  # Modelo a usar (por defecto)
 IA_PROVIDER=gemini             # Opcional (autodetecta si hay GOOGLE_API_KEY)
 
+# Groq (OpenAI-compatible):
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=llama-3.1-8b-instant
+# IA_PROVIDER=groq
+
 # Legacy / opcional:
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-3.5-turbo
