@@ -3,6 +3,9 @@
 ## Estado
 Aceptado
 
+## Fecha
+2026-04-06
+
 ## Contexto
 El proyecto requiere despliegues "One-Click" en entornos limpios y validación de calidad (>70% cobertura). Además, se necesita agilidad en desarrollo para que los cambios en el código se reflejen sin reconstruir imágenes constantemente.
 
