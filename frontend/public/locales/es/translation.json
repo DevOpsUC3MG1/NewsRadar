@@ -221,7 +221,8 @@
     "errorCategory": "Error al cargar la nube de esta categoría.",
     "errorGlobal": "Error al cargar la nube global.",
     "loadingCategories": "Cargando categorías...",
-    "noCategories": "No se encontraron categorías disponibles."
+    "noCategories": "No se encontraron categorías disponibles.",
+    "refreshBtn": "Actualizar nubes"
   },
   "alerts": {
     "title": "ALERTAS",
