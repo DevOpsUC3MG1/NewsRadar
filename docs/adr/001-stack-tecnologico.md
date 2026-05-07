@@ -98,8 +98,8 @@ Se adopta el siguiente stack:
 - Un único comando (docker compose up) levanta todos los servicios.
 - La generación automática de Swagger facilita la verificación funcional del
   Anexo I.
-- El uso de Python en backend permite integrar fácilmente las librerías de
-  IA (openai, feedparser, motor).
+- El uso de Python en backend permite integrar fácilmente librerías de
+  procesamiento y datos (feedparser, motor).
 
 **Negativas / riesgos:**
 - El equipo debe gestionar dos bases de datos en producción y en rollback.

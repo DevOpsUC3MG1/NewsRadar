@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from newsradar_api.app.services.ia_service import generate_synonyms, generate_wordcloud_terms
+from newsradar_api.app.services.keyword_service import generate_synonyms, generate_wordcloud_terms
 from newsradar_api.app.services.rss_worker import RSSWorker
 
 
@@ -32,9 +32,7 @@ class _FakeSession:
         return _FakeExecuteResult(rows)
 
 
-def test_generate_wordcloud_terms_uses_fallback_without_provider(monkeypatch):
-    monkeypatch.setattr("newsradar_api.app.services.ia_service._effective_provider", lambda: "none")
-
+def test_generate_wordcloud_terms_uses_deterministic_fallback():
     result = asyncio.run(
         generate_wordcloud_terms(
             texts=[
@@ -51,9 +49,7 @@ def test_generate_wordcloud_terms_uses_fallback_without_provider(monkeypatch):
     assert any(item["term"] in {"INTELIGENCIA", "ARTIFICIAL", "TECNOLOGIA", "SALUD"} for item in result)
 
 
-def test_generate_synonyms_uses_manual_dictionary_without_provider(monkeypatch):
-    monkeypatch.setattr("newsradar_api.app.services.ia_service._effective_provider", lambda: "none")
-
+def test_generate_synonyms_uses_manual_dictionary():
     result = generate_synonyms(["inteligencia artificial"], max_synonyms=5)
 
     assert result

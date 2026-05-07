@@ -25,7 +25,7 @@ from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
-from .services.ia_service import generate_synonyms, classify_iptc_level1, upsert_synonyms
+from .services.keyword_service import generate_synonyms, upsert_synonyms
 from .services.rss_worker import RSSWorker
 from .services.analytics_service import build_dashboard, build_wordcloud
 
