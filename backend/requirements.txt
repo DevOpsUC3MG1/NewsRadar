@@ -22,3 +22,4 @@ pytest-cov
 httpx
 apscheduler==3.10.4
 feedparser
+responses

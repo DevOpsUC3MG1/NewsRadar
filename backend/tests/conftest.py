@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+
 # --- FIXTURES DE USUARIOS (RF-09) ---
 
 @pytest.fixture
@@ -29,6 +30,7 @@ def fixture_user_gestor():
         "is_active": True
     }
 
+
 # --- FIXTURES DE ALERTAS (RF-01, RF-02) ---
 
 @pytest.fixture
@@ -39,11 +41,12 @@ def fixture_alerta_base():
         "name": "Crisis Energética",
         "keyword": "luz",
         "description": "Monitorización de precios de energía",
-        "category": "Economía", # Categoría de primer nivel IPTC
+        "category": "Economía",
         "keywords_ia": ["electricidad", "gas", "factura", "renovables"],
         "user_id": 2,
         "created_at": datetime.now().isoformat()
     }
+
 
 # --- FIXTURES DE NOTICIAS/FUENTES (RF-05, RF-07) ---
 
@@ -60,7 +63,8 @@ def fixture_noticia_rss():
         "published_at": datetime.now().isoformat()
     }
 
-# --- FIXTURES DE CLIENTE API (Necesario para el Sprint 1) ---
+
+# --- FIXTURES DE CLIENTE API ---
 
 @pytest.fixture
 def mock_headers_auth(fixture_user_gestor):
@@ -69,43 +73,34 @@ def mock_headers_auth(fixture_user_gestor):
         "Authorization": "Bearer token_ficticio_gestor",
         "Content-Type": "application/json"
     }
+
 @pytest.fixture(scope="session")
 def db_engine():
-    """
-    Configuración de la conexión a DB para todos los tests.
-    Avisar al M1 cuando elija el ORM (SQLAlchemy/Tortoise) para completar.
-    """
-    # Por ahora solo simulamos la preparación
+    """Configuración de la conexión a DB para todos los tests."""
     yield "engine_ready"
     print("\nCerrando conexión de test...")
-
-    from fastapi.testclient import TestClient
-# Asegúrate de que puedes importar tu 'app' desde main
-# from main import app 
 
 @pytest.fixture
 def client():
     """Fixture para simular peticiones a la API"""
-    # Si aún no tienes la app real, puedes comentar la línea de arriba y usar:
-    from fastapi import FastAPI
-    app = FastAPI() 
+    from newsradar_api.app.main import app
     with TestClient(app) as c:
         yield c
 
 @pytest.fixture
 def load_valid_users():
     """Lee el archivo JSON de usuarios válidos y lo devuelve como diccionario"""
-    # Construimos la ruta absoluta al archivo JSON
     base_dir = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(base_dir, "fixtures", "users_valid.json")
-    
+
     with open(json_path, "r", encoding="utf-8") as file:
         return json.load(file)
+
 @pytest.fixture
 def mock_rss_xml():
     """Lee el archivo XML falso para simular una respuesta de un feed RSS"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     xml_path = os.path.join(base_dir, "fixtures", "feed_falso.xml")
-    
+
     with open(xml_path, "r", encoding="utf-8") as file:
         return file.read()

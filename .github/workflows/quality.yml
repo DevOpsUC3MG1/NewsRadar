@@ -14,7 +14,7 @@ jobs:
       - run: pip install flake8 pytest pytest-cov
 
       - name: Lint
-        run: flake8 .
+        run: flake8 . --exclude=backend/migrations
 
       - name: Coverage
         run: pytest --cov=.
