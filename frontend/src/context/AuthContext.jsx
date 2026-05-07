@@ -5,6 +5,12 @@ import {
   getAllSourcesWithChannels,
   getWordcloudGlobal,
   getWordcloudCategory,
+  createInformationSource,
+  updateInformationSource,
+  deleteInformationSource,
+  createRSSChannel,
+  updateRSSChannel,
+  deleteRSSChannel,
 } from '../services/newsService';
 
 export const AuthContext = createContext();
@@ -51,6 +57,49 @@ export const AuthProvider = ({ children }) => {
     const token = authService.getToken();
     return getWordcloudCategory(categoria, token, days, limit);
   }, []);
+
+  // ── CRUD: Fuentes ─────────────────────────────────────────────────────────
+  // Tras cada mutación recargamos para que toda la UI vea los datos frescos.
+  const createFuente = useCallback(async ({ name, url }) => {
+    const token = authService.getToken();
+    const res = await createInformationSource({ name, url }, token);
+    await loadNewsData(token);
+    return res.data;
+  }, [loadNewsData]);
+
+  const updateFuente = useCallback(async (sourceId, payload) => {
+    const token = authService.getToken();
+    const res = await updateInformationSource(sourceId, payload, token);
+    await loadNewsData(token);
+    return res.data;
+  }, [loadNewsData]);
+
+  const deleteFuente = useCallback(async (sourceId) => {
+    const token = authService.getToken();
+    await deleteInformationSource(sourceId, token);
+    await loadNewsData(token);
+  }, [loadNewsData]);
+
+  // ── CRUD: Canales RSS ─────────────────────────────────────────────────────
+  const createCanal = useCallback(async (sourceId, { url, category_id }) => {
+    const token = authService.getToken();
+    const res = await createRSSChannel(sourceId, { url, category_id }, token);
+    await loadNewsData(token);
+    return res.data;
+  }, [loadNewsData]);
+
+  const updateCanal = useCallback(async (sourceId, channelId, payload) => {
+    const token = authService.getToken();
+    const res = await updateRSSChannel(sourceId, channelId, payload, token);
+    await loadNewsData(token);
+    return res.data;
+  }, [loadNewsData]);
+
+  const deleteCanal = useCallback(async (sourceId, channelId) => {
+    const token = authService.getToken();
+    await deleteRSSChannel(sourceId, channelId, token);
+    await loadNewsData(token);
+  }, [loadNewsData]);
 
   // ── Al arrancar la app, restaurar sesión si hay token guardado ────────────
   useEffect(() => {
@@ -122,6 +171,14 @@ export const AuthProvider = ({ children }) => {
         refreshNewsData,
         fetchNubeGlobal,
         fetchNubeCategoria,
+        // CRUD Fuentes
+        createFuente,
+        updateFuente,
+        deleteFuente,
+        // CRUD Canales
+        createCanal,
+        updateCanal,
+        deleteCanal,
       }}
     >
       {children}
