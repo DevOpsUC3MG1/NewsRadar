@@ -19,7 +19,7 @@ from sqlalchemy import select
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..models import Alert as AlertModel, RSSChannel as RSSChannelModel, Category as CategoryModel
-from .ia_service import classify_iptc_level1, expand_keywords
+from .keyword_service import classify_iptc_level1, expand_keywords
 
 logger = logging.getLogger(__name__)
 

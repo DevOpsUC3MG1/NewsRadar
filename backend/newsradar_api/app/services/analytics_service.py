@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Alert as AlertModel, InformationSource as InformationSourceModel, RSSChannel as RSSChannelModel
-from .ia_service import generate_wordcloud_terms
+from .keyword_service import generate_wordcloud_terms
 
 logger = logging.getLogger(__name__)
 

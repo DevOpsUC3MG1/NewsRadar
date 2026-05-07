@@ -21,5 +21,4 @@ pytest
 pytest-cov
 httpx
 apscheduler==3.10.4
-openai
 feedparser
