@@ -15,10 +15,12 @@ import json
 import logging
 import os
 import re
+import unicodedata
 import urllib.error
 import urllib.request
 from collections import Counter
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 
@@ -46,6 +48,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+MANUAL_SYNONYMS_FILE = os.getenv(
+    "MANUAL_SYNONYMS_FILE",
+    str(Path(__file__).resolve().parents[4] / "data" / "manual_synonyms.json"),
+)
+_MANUAL_SYNONYMS_CACHE: Optional[Dict[str, List[str]]] = None
 
 
 def _now_utc() -> datetime:
@@ -62,6 +69,84 @@ def _effective_provider() -> str:
     if OPENAI_API_KEY:
         return "openai"
     return "none"
+
+
+def _normalize_keyword(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_like = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    lowered = ascii_like.lower()
+    lowered = re.sub(r"[^a-z0-9]+", " ", lowered)
+    return " ".join(lowered.split())
+
+
+def _load_manual_synonyms() -> Dict[str, List[str]]:
+    global _MANUAL_SYNONYMS_CACHE
+    if _MANUAL_SYNONYMS_CACHE is not None:
+        return _MANUAL_SYNONYMS_CACHE
+
+    try:
+        with open(MANUAL_SYNONYMS_FILE, "r", encoding="utf-8") as fh:
+            raw = json.load(fh)
+    except FileNotFoundError:
+        logger.info("No se encontro diccionario manual de sinonimos en %s", MANUAL_SYNONYMS_FILE)
+        _MANUAL_SYNONYMS_CACHE = {}
+        return _MANUAL_SYNONYMS_CACHE
+    except Exception as exc:
+        logger.warning("No se pudo cargar el diccionario manual de sinonimos: %s", exc)
+        _MANUAL_SYNONYMS_CACHE = {}
+        return _MANUAL_SYNONYMS_CACHE
+
+    if not isinstance(raw, dict):
+        logger.warning("El diccionario manual de sinonimos debe ser un objeto JSON.")
+        _MANUAL_SYNONYMS_CACHE = {}
+        return _MANUAL_SYNONYMS_CACHE
+
+    normalized_map: Dict[str, List[str]] = {}
+    for key, values in raw.items():
+        if not isinstance(key, str) or not isinstance(values, list):
+            continue
+        normalized_key = _normalize_keyword(key)
+        if not normalized_key:
+            continue
+        clean_values = [item.strip() for item in values if isinstance(item, str) and item.strip()]
+        if clean_values:
+            normalized_map[normalized_key] = clean_values
+
+    _MANUAL_SYNONYMS_CACHE = normalized_map
+    return _MANUAL_SYNONYMS_CACHE
+
+
+def _manual_synonyms_for_keywords(keywords: List[str], max_synonyms: int) -> List[str]:
+    dictionary = _load_manual_synonyms()
+    if not dictionary:
+        return []
+
+    results: List[str] = []
+    seen = set()
+
+    for keyword in keywords:
+        normalized_keyword = _normalize_keyword(keyword)
+        if not normalized_keyword:
+            continue
+
+        candidates: List[str] = []
+        exact = dictionary.get(normalized_keyword) or []
+        if exact:
+            candidates.extend(exact)
+        else:
+            for token in normalized_keyword.split():
+                candidates.extend(dictionary.get(token) or [])
+
+        for candidate in candidates:
+            normalized_candidate = _normalize_keyword(candidate)
+            if not normalized_candidate or normalized_candidate == normalized_keyword or normalized_candidate in seen:
+                continue
+            seen.add(normalized_candidate)
+            results.append(candidate.strip())
+            if len(results) >= max_synonyms:
+                return results
+
+    return results
 
 
 _WORD_RE = re.compile(r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9_-]{2,}")
@@ -204,19 +289,31 @@ def _openai_compatible_generate_text(
 # Prompts (RNF-06)
 # ---------------------------------------------------------------------------
 
-def generate_synonyms(keywords: List[str], max_synonyms: int = 5) -> List[str]:
+def _suggest_synonyms_with_source(keywords: List[str], max_synonyms: int = 5) -> tuple[List[str], str]:
     """
     PROMPT_ID: IA-001-SYNONYMS
     Descripción: Generación de sinónimos para descriptores de alertas
     """
-    provider = _effective_provider()
-    if provider == "none":
-        logger.warning("IA no configurada (GOOGLE_API_KEY/GEMINI_API_KEY, GROQ_API_KEY u OPENAI_API_KEY).")
-        return []
-
     base = [k.strip() for k in (keywords or []) if isinstance(k, str) and k.strip()]
     if not base:
-        return []
+        return [], "none"
+
+    max_synonyms = max(1, int(max_synonyms))
+    manual_synonyms = _manual_synonyms_for_keywords(base, max_synonyms)
+    if len(manual_synonyms) >= max_synonyms:
+        logger.info("Sinónimos manuales para %s: %s", ", ".join(base), manual_synonyms)
+        return manual_synonyms[:max_synonyms], "manual"
+
+    provider = _effective_provider()
+    if provider == "none":
+        if manual_synonyms:
+            logger.info("Sinónimos manuales para %s: %s", ", ".join(base), manual_synonyms)
+        else:
+            logger.warning(
+                "Sin proveedor IA configurado y sin coincidencias en el diccionario manual (%s).",
+                MANUAL_SYNONYMS_FILE,
+            )
+        return manual_synonyms[:max_synonyms], "manual" if manual_synonyms else "none"
 
     keywords_str = ", ".join(base)
     prompt = f"""
@@ -268,7 +365,7 @@ Ejemplo de respuesta: "economía digital, transformación digital, negocio elect
         )
 
     text = _call_model(prompt)
-    synonyms = [s.strip() for s in text.split(",") if s.strip()]
+    synonyms = manual_synonyms + [s.strip() for s in text.split(",") if s.strip()]
 
     # Reintento dirigido: si salen pocas opciones pero el cliente admite >=4,
     # intentamos forzar mayor cobertura sin perder relevancia.
@@ -280,12 +377,28 @@ Ejemplo de respuesta: "economía digital, transformación digital, negocio elect
             "Si no hay 4 sinónimos estrictos, incluye términos relacionados de alta relevancia."
         )
         retry_text = _call_model(retry_prompt)
-        retry_synonyms = [s.strip() for s in retry_text.split(",") if s.strip()]
+        retry_synonyms = manual_synonyms + [s.strip() for s in retry_text.split(",") if s.strip()]
         if len(retry_synonyms) > len(synonyms):
             synonyms = retry_synonyms
 
-    logger.info("Sinónimos generados para %s: %s", keywords_str, synonyms)
-    return synonyms[:max_synonyms]
+    clean: List[str] = []
+    seen = set()
+    base_normalized = {_normalize_keyword(item) for item in base}
+    for synonym in synonyms:
+        normalized = _normalize_keyword(synonym)
+        if not normalized or normalized in base_normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        clean.append(synonym.strip())
+
+    source = provider if clean else ("manual" if manual_synonyms else provider)
+    logger.info("Sinónimos generados para %s: %s", keywords_str, clean)
+    return clean[:max_synonyms], source
+
+
+def generate_synonyms(keywords: List[str], max_synonyms: int = 5) -> List[str]:
+    synonyms, _ = _suggest_synonyms_with_source(keywords, max_synonyms)
+    return synonyms
 
 
 def classify_iptc_level1(text: str) -> str:
@@ -550,11 +663,11 @@ async def expand_keywords(
             out.append(kw)
 
         cached = await get_cached_synonyms(mongo_db, keyword=kw, max_age_days=max_age_days)
-        if not cached and provider != "none":
-            generated = await asyncio.to_thread(generate_synonyms, [kw], max_synonyms_per_keyword)
+        if not cached:
+            generated, source = await asyncio.to_thread(_suggest_synonyms_with_source, [kw], max_synonyms_per_keyword)
             cached = generated or []
             if cached:
-                await upsert_synonyms(mongo_db, keyword=kw, synonyms=cached, provider=provider)
+                await upsert_synonyms(mongo_db, keyword=kw, synonyms=cached, provider=source or provider)
 
         for syn in cached[:max_synonyms_per_keyword]:
             low = syn.lower()

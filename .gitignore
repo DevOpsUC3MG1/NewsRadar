@@ -1,6 +1,6 @@
 .venv
 *.env
-
+.idea/
 .qodo
 
 __pycache__/
