@@ -14,5 +14,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest pytest-cov fastapi starlette httpx requests responses python-dotenv sqlalchemy asyncpg motor pymongo openai feedparser apscheduler pydantic[email] uvicorn python-multipart email-validator
     - name: Run tests with coverage
+      env:
+        ENV: testing
+        DATABASE_URL: postgresql+asyncpg://test_user:test_pass@localhost:5432/newsradar_test
       run: |
         python -m pytest --cov=backend --cov-report=term backend/tests/
