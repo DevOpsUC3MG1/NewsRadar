@@ -1,0 +1,490 @@
+{
+  "inteligencia artificial": [
+    "IA",
+    "IA generativa",
+    "aprendizaje automatico",
+    "machine learning",
+    "modelos generativos"
+  ],
+  "machine learning": [
+    "aprendizaje automatico",
+    "IA",
+    "modelos predictivos",
+    "algoritmos de aprendizaje"
+  ],
+  "big data": [
+    "datos masivos",
+    "analitica de datos",
+    "ciencia de datos",
+    "procesamiento de datos"
+  ],
+  "cloud computing": [
+    "computacion en la nube",
+    "servicios cloud",
+    "infraestructura en la nube",
+    "plataformas cloud"
+  ],
+  "ciberataque": [
+    "ataque informatico",
+    "ataque cibernetico",
+    "intrusion digital",
+    "incidente de seguridad"
+  ],
+  "ibex": [
+    "IBEX 35",
+    "mercado bursatil espanol",
+    "bolsa espanola",
+    "indice bursatil"
+  ],
+  "bolsa": [
+    "mercado bursatil",
+    "mercados financieros",
+    "renta variable",
+    "parque bursatil"
+  ],
+  "acciones": [
+    "titulos bursatiles",
+    "renta variable",
+    "valores cotizados",
+    "mercado de acciones"
+  ],
+  "inversion": [
+    "inversiones",
+    "mercados financieros",
+    "capital",
+    "activos financieros"
+  ],
+  "inflacion": [
+    "subida de precios",
+    "IPC",
+    "coste de vida",
+    "presion inflacionaria"
+  ],
+  "tipos de interes": [
+    "tasas de interes",
+    "coste del dinero",
+    "politica monetaria",
+    "subida de tipos"
+  ],
+  "banco central": [
+    "autoridad monetaria",
+    "regulador monetario",
+    "politica monetaria",
+    "emisor central"
+  ],
+  "bitcoin": [
+    "BTC",
+    "criptomoneda",
+    "cripto",
+    "blockchain",
+    "activos digitales"
+  ],
+  "ethereum": [
+    "ETH",
+    "criptomoneda",
+    "blockchain",
+    "ecosistema cripto"
+  ],
+  "criptomonedas": [
+    "criptoactivos",
+    "monedas digitales",
+    "activos digitales",
+    "tokenes"
+  ],
+  "blockchain": [
+    "cadena de bloques",
+    "tecnologia blockchain",
+    "red descentralizada",
+    "registro distribuido"
+  ],
+  "ciberseguridad": [
+    "seguridad informatica",
+    "seguridad digital",
+    "proteccion de datos",
+    "amenazas ciberneticas"
+  ],
+  "privacidad": [
+    "proteccion de datos",
+    "datos personales",
+    "confidencialidad",
+    "seguridad de la informacion"
+  ],
+  "proteccion de datos": [
+    "privacidad",
+    "datos personales",
+    "cumplimiento digital",
+    "seguridad de datos"
+  ],
+  "salud publica": [
+    "sanidad publica",
+    "sistema sanitario",
+    "politica sanitaria",
+    "atencion medica publica"
+  ],
+  "salud": [
+    "sanidad",
+    "atencion sanitaria",
+    "sector salud",
+    "medicina"
+  ],
+  "hospital": [
+    "centro sanitario",
+    "servicio de salud",
+    "atencion hospitalaria",
+    "clinica"
+  ],
+  "vacuna": [
+    "inmunizacion",
+    "campana de vacunacion",
+    "dosis",
+    "vacunacion"
+  ],
+  "pandemia": [
+    "crisis sanitaria",
+    "emergencia sanitaria",
+    "brote global",
+    "contagio masivo"
+  ],
+  "medicina": [
+    "atencion medica",
+    "ciencias de la salud",
+    "practica clinica",
+    "sector sanitario"
+  ],
+  "tecnologia": [
+    "innovacion",
+    "sector tecnologico",
+    "tecnologia digital",
+    "desarrollo tecnologico"
+  ],
+  "startup": [
+    "empresa emergente",
+    "emprendimiento",
+    "compania emergente",
+    "negocio innovador"
+  ],
+  "software": [
+    "programas",
+    "aplicaciones",
+    "desarrollo de software",
+    "soluciones digitales"
+  ],
+  "hardware": [
+    "equipos informaticos",
+    "componentes",
+    "dispositivos",
+    "infraestructura tecnologica"
+  ],
+  "semiconductores": [
+    "chips",
+    "microchips",
+    "industria de chips",
+    "componentes electronicos"
+  ],
+  "movil": [
+    "smartphone",
+    "telefono inteligente",
+    "dispositivo movil",
+    "terminal movil"
+  ],
+  "energia": [
+    "sector energetico",
+    "mercado energetico",
+    "recursos energeticos",
+    "suministro energetico"
+  ],
+  "petroleo": [
+    "crudo",
+    "barril de petroleo",
+    "mercado del crudo",
+    "industria petrolera"
+  ],
+  "gas natural": [
+    "mercado del gas",
+    "suministro de gas",
+    "sector gasista",
+    "energia gasista"
+  ],
+  "renovables": [
+    "energias renovables",
+    "energia limpia",
+    "transicion energetica",
+    "generacion verde"
+  ],
+  "solar": [
+    "energia solar",
+    "fotovoltaica",
+    "paneles solares",
+    "sector solar"
+  ],
+  "eolica": [
+    "energia eolica",
+    "parques eolicos",
+    "generacion eolica",
+    "sector eolico"
+  ],
+  "cambio climatico": [
+    "crisis climatica",
+    "calentamiento global",
+    "emisiones",
+    "impacto climatico"
+  ],
+  "sostenibilidad": [
+    "desarrollo sostenible",
+    "impacto ambiental",
+    "criterios ESG",
+    "responsabilidad ambiental"
+  ],
+  "esg": [
+    "sostenibilidad",
+    "gobernanza",
+    "impacto social",
+    "criterios ambientales"
+  ],
+  "politica": [
+    "escena politica",
+    "actividad institucional",
+    "debate politico",
+    "actualidad politica"
+  ],
+  "gobierno": [
+    "ejecutivo",
+    "administracion",
+    "gabinete",
+    "poder ejecutivo"
+  ],
+  "parlamento": [
+    "camara legislativa",
+    "congreso",
+    "senado",
+    "poder legislativo"
+  ],
+  "elecciones": [
+    "comicios",
+    "jornada electoral",
+    "votacion",
+    "proceso electoral"
+  ],
+  "presupuesto": [
+    "cuentas publicas",
+    "gasto publico",
+    "plan presupuestario",
+    "partidas presupuestarias"
+  ],
+  "impuestos": [
+    "tributos",
+    "carga fiscal",
+    "recaudacion",
+    "fiscalidad"
+  ],
+  "geopolitica": [
+    "escenario internacional",
+    "tension internacional",
+    "equilibrio global",
+    "relaciones estrategicas"
+  ],
+  "guerra": [
+    "conflicto armado",
+    "enfrentamiento belico",
+    "ofensiva militar",
+    "escalada militar"
+  ],
+  "defensa": [
+    "seguridad nacional",
+    "fuerzas armadas",
+    "industria militar",
+    "ambito defensivo"
+  ],
+  "economia": [
+    "actividad economica",
+    "panorama economico",
+    "mercado",
+    "coyuntura economica"
+  ],
+  "recesion": [
+    "desaceleracion economica",
+    "caida economica",
+    "contraccion",
+    "enfriamiento economico"
+  ],
+  "empleo": [
+    "mercado laboral",
+    "trabajo",
+    "ocupacion",
+    "contratacion"
+  ],
+  "paro": [
+    "desempleo",
+    "tasa de paro",
+    "mercado laboral",
+    "falta de empleo"
+  ],
+  "vivienda": [
+    "mercado inmobiliario",
+    "sector inmobiliario",
+    "hogar",
+    "residencial"
+  ],
+  "alquiler": [
+    "arrendamiento",
+    "renta de vivienda",
+    "mercado del alquiler",
+    "precio del alquiler"
+  ],
+  "turismo": [
+    "sector turistico",
+    "viajes",
+    "actividad turistica",
+    "industria turistica"
+  ],
+  "aerolineas": [
+    "companias aereas",
+    "transporte aereo",
+    "sector aereo",
+    "vuelos comerciales"
+  ],
+  "automocion": [
+    "industria del automovil",
+    "sector automotriz",
+    "fabricantes de coches",
+    "movilidad"
+  ],
+  "coche electrico": [
+    "vehiculo electrico",
+    "movilidad electrica",
+    "automovil electrico",
+    "EV"
+  ],
+  "logistica": [
+    "cadena de suministro",
+    "transporte de mercancias",
+    "operaciones logisticas",
+    "distribucion"
+  ],
+  "deportes": [
+    "actualidad deportiva",
+    "competicion",
+    "deporte profesional",
+    "mundo del deporte"
+  ],
+  "futbol": [
+    "balompie",
+    "liga de futbol",
+    "competicion futbolistica",
+    "clubes de futbol"
+  ],
+  "champions": [
+    "liga de campeones",
+    "champions league",
+    "competicion europea",
+    "torneo continental"
+  ],
+  "real madrid": [
+    "club blanco",
+    "equipo madridista",
+    "madrid",
+    "conjunto blanco"
+  ],
+  "barcelona": [
+    "barca",
+    "fc barcelona",
+    "equipo blaugrana",
+    "club cule"
+  ],
+  "tenis": [
+    "circuito ATP",
+    "circuito WTA",
+    "raqueta",
+    "torneo de tenis"
+  ],
+  "formula 1": [
+    "F1",
+    "gran premio",
+    "automovilismo",
+    "categoria reina"
+  ],
+  "baloncesto": [
+    "basket",
+    "liga de baloncesto",
+    "competicion de basket",
+    "canasta"
+  ],
+  "cultura": [
+    "actualidad cultural",
+    "sector cultural",
+    "panorama cultural",
+    "vida cultural"
+  ],
+  "cine": [
+    "industria cinematografica",
+    "peliculas",
+    "sector audiovisual",
+    "estrenos"
+  ],
+  "series": [
+    "ficcion televisiva",
+    "producciones seriadas",
+    "plataformas de streaming",
+    "television"
+  ],
+  "musica": [
+    "industria musical",
+    "escena musical",
+    "artistas",
+    "lanzamientos musicales"
+  ],
+  "streaming": [
+    "plataformas de streaming",
+    "contenido en linea",
+    "emision digital",
+    "video bajo demanda"
+  ],
+  "educacion": [
+    "sistema educativo",
+    "ensenanza",
+    "sector educativo",
+    "formacion"
+  ],
+  "universidad": [
+    "educacion superior",
+    "campus",
+    "centro universitario",
+    "ambito academico"
+  ],
+  "investigacion": [
+    "I+D",
+    "ciencia",
+    "innovacion",
+    "desarrollo cientifico"
+  ],
+  "justicia": [
+    "sistema judicial",
+    "tribunales",
+    "poder judicial",
+    "ambito juridico"
+  ],
+  "tribunal": [
+    "juzgado",
+    "organo judicial",
+    "sede judicial",
+    "instancia judicial"
+  ],
+  "corrupcion": [
+    "trama corrupta",
+    "caso de corrupcion",
+    "irregularidades",
+    "malversacion"
+  ],
+  "consumo": [
+    "gasto de los hogares",
+    "demanda interna",
+    "compras",
+    "mercado de consumo"
+  ],
+  "retail": [
+    "comercio minorista",
+    "ventas al por menor",
+    "distribucion comercial",
+    "sector retail"
+  ]
+}

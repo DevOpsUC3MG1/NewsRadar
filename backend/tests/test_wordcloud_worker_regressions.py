@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from newsradar_api.app.services.ia_service import generate_wordcloud_terms
+from newsradar_api.app.services.ia_service import generate_synonyms, generate_wordcloud_terms
 from newsradar_api.app.services.rss_worker import RSSWorker
 
 
@@ -49,6 +49,16 @@ def test_generate_wordcloud_terms_uses_fallback_without_provider(monkeypatch):
     assert result
     assert all("term" in item and "count" in item for item in result)
     assert any(item["term"] in {"INTELIGENCIA", "ARTIFICIAL", "TECNOLOGIA", "SALUD"} for item in result)
+
+
+def test_generate_synonyms_uses_manual_dictionary_without_provider(monkeypatch):
+    monkeypatch.setattr("newsradar_api.app.services.ia_service._effective_provider", lambda: "none")
+
+    result = generate_synonyms(["inteligencia artificial"], max_synonyms=5)
+
+    assert result
+    assert "IA" in result
+    assert "aprendizaje automatico" in result
 
 
 def test_get_alert_channels_accepts_code_label_categories():
