@@ -885,10 +885,10 @@ async def suggest_synonyms(
 ) -> SuggestSynonymsResponse:
     """
     Sugiere sinónimos y palabras relacionadas para palabras clave.
-    
-    Utiliza IA (OpenAI gpt-3.5-turbo) para generar sinónimos que amplíen
-    la cobertura de búsqueda de noticias.
-    
+
+    Usa un diccionario manual y, si está configurado, puede completar
+    resultados con un proveedor IA.
+
     RF-02: Sugerencia automática de sinónimos durante la creación de alertas
     """
     suggested = generate_synonyms(payload.keywords, payload.max_synonyms)
