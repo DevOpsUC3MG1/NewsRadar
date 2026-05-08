@@ -33,10 +33,12 @@ const ui = {
   },
   iconBtnDanger: { color: '#E02020' },
   rowActions:    { display: 'flex', gap: 6, marginLeft: 12 },
+  // Wrappers para centrar las tabs en la cabecera (flex:1 a izquierda y derecha)
+  headerSide:        { flex: '1 1 0', display: 'flex', alignItems: 'center' },
+  headerSideEnd:     { flex: '1 1 0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' },
   addBtn: {
     background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 6,
     padding: '8px 14px', fontWeight: 600, cursor: 'pointer', fontSize: 14,
-    marginLeft: 'auto',
   },
   overlay: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)',
@@ -80,6 +82,21 @@ const ui = {
   },
   modalError: { color: '#E02020', fontSize: 13 },
   fieldGroup: { display: 'flex', flexDirection: 'column' },
+  // ── Caja de aviso de alertas afectadas (cascada) ─────────────────────────
+  warnBox: {
+    background: '#FFF8E1', border: '1px solid #F5C518', borderRadius: 8,
+    padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6,
+  },
+  warnTitle: { fontSize: 13, fontWeight: 700, color: '#7a5b00' },
+  warnList:  { margin: 0, paddingLeft: 18, fontSize: 13, color: '#5a4500' },
+  warnTagDelete: {
+    fontSize: 11, fontWeight: 700, color: '#fff', background: '#E02020',
+    borderRadius: 4, padding: '1px 6px', marginLeft: 6,
+  },
+  warnTagUpdate: {
+    fontSize: 11, fontWeight: 700, color: '#fff', background: '#1a73e8',
+    borderRadius: 4, padding: '1px 6px', marginLeft: 6,
+  },
 };
 
 // ─── CHECKBOX ─────────────────────────────────────────────────────────────────
@@ -397,8 +414,11 @@ const ChannelFormModal = ({ open, mode, initial, fuentes, categorias, onClose, o
   );
 };
 
-// ─── MODAL: CONFIRMAR BORRADO ─────────────────────────────────────────────────
-const ConfirmDeleteModal = ({ open, message, onClose, onConfirm }) => {
+// ─── MODAL: CONFIRMAR BORRADO (con aviso de alertas afectadas) ───────────────
+const ConfirmDeleteModal = ({
+  open, message, alertsLoading, affectedAlerts,
+  onClose, onConfirm,
+}) => {
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
@@ -418,6 +438,8 @@ const ConfirmDeleteModal = ({ open, message, onClose, onConfirm }) => {
     }
   };
 
+  const hasAffected = !alertsLoading && (affectedAlerts || []).length > 0;
+
   return (
     <Modal
       open={open}
@@ -425,12 +447,51 @@ const ConfirmDeleteModal = ({ open, message, onClose, onConfirm }) => {
       onClose={onClose}
     >
       <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.5 }}>{message}</p>
+
+      {alertsLoading && (
+        <p style={{ margin: 0, fontSize: 13, color: '#666', fontStyle: 'italic' }}>
+          {t('sources.modal.alerts_loading', { defaultValue: 'Comprobando alertas afectadas…' })}
+        </p>
+      )}
+
+      {hasAffected && (
+        <div style={ui.warnBox}>
+          <span style={ui.warnTitle}>
+            {t('sources.modal.alerts_affected_title', {
+              defaultValue: '⚠ Alertas afectadas por esta acción ({{count}})',
+              count: affectedAlerts.length,
+            })}
+          </span>
+          <ul style={ui.warnList}>
+            {affectedAlerts.map((a) => (
+              <li key={`aff-${a.id}`}>
+                <span style={{ fontWeight: 600 }}>{a.name}</span>
+                {a.action === 'delete'
+                  ? <span style={ui.warnTagDelete}>
+                      {t('sources.modal.alert_action_delete', { defaultValue: 'se eliminará' })}
+                    </span>
+                  : <span style={ui.warnTagUpdate}>
+                      {t('sources.modal.alert_action_update', { defaultValue: 'se modificará' })}
+                    </span>
+                }
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {error && <div style={ui.modalError}>{error}</div>}
+
       <div style={ui.modalFooter}>
         <button type="button" style={ui.btnGhost} onClick={onClose} disabled={submitting}>
           {t('sources.actions.cancel', { defaultValue: 'Cancelar' })}
         </button>
-        <button type="button" style={ui.btnDanger} onClick={handle} disabled={submitting}>
+        <button
+          type="button"
+          style={ui.btnDanger}
+          onClick={handle}
+          disabled={submitting || alertsLoading}
+        >
           {submitting
             ? '…'
             : t('sources.actions.confirm_delete', { defaultValue: 'Borrar' })}
@@ -447,6 +508,7 @@ const Fuentes = () => {
     fuentes, canales, categorias, newsLoading, newsError,
     createFuente, updateFuente, deleteFuente,
     createCanal,  updateCanal,  deleteCanal,
+    fetchUserAlerts, updateAlertById, deleteAlertById,
   } = useContext(AuthContext);
 
   const [activeTab, setActiveTab]       = useState('fuentes');
@@ -459,7 +521,13 @@ const Fuentes = () => {
   // mode: 'create' | 'edit' | 'delete' | null
   // item: el elemento sobre el que actuamos (en create es null)
   const [modal, setModal] = useState({ kind: null, mode: null, item: null });
-  const closeModal = () => setModal({ kind: null, mode: null, item: null });
+  // Plan de cascada de alertas para el borrado actual
+  const [cascade, setCascade] = useState({ loading: false, plan: [] });
+
+  const closeModal = () => {
+    setModal({ kind: null, mode: null, item: null });
+    setCascade({ loading: false, plan: [] });
+  };
 
   // ─── NORMALIZACIÓN DE DATOS ─────────────────────────────────────────────────
   const safeCategorias = useMemo(() => {
@@ -514,14 +582,92 @@ const Fuentes = () => {
     }),
   [safeCanales, searchText, selectedCats, selectedFts]);
 
+  // ─── PLAN DE CASCADA AL BORRAR ──────────────────────────────────────────────
+  // Regla: una alerta se queda VIVA mientras le quede al menos un canal RSS del
+  // que poder coger noticias. Si la cascada vacía `rss_channels_ids`, la alerta
+  // se borra entera, aunque conserve sources o categorías declaradas — el
+  // rss_worker sólo consume la lista de canales (la inferencia se hace una vez,
+  // al guardar la alerta), así que sin canales no hay noticias posibles.
+  const planForFuenteDeletion = (sourceId, alerts) => {
+    const sourceIdStr = String(sourceId);
+    // Canales que pertenecen a esta fuente (todos)
+    const channelIdsOfSource = new Set(
+      safeCanales
+        .filter((c) => String(c.fuenteId) === sourceIdStr)
+        .map((c) => String(c._backendId ?? c.id))
+    );
+
+    return (alerts || [])
+      .filter((a) => {
+        const inSources  = (a.information_sources_ids || []).map(String).includes(sourceIdStr);
+        const inChannels = (a.rss_channels_ids || []).some((id) => channelIdsOfSource.has(String(id)));
+        return inSources || inChannels;
+      })
+      .map((a) => {
+        const newSources  = (a.information_sources_ids || [])
+          .map(String).filter((id) => id !== sourceIdStr);
+        const newChannels = (a.rss_channels_ids || [])
+          .map(String).filter((id) => !channelIdsOfSource.has(id));
+        // Sin canales restantes, la alerta no podrá producir notificaciones nunca más.
+        const willBeEmpty = newChannels.length === 0;
+        return {
+          id: a.id,
+          name: a.name,
+          action: willBeEmpty ? 'delete' : 'update',
+          payload: willBeEmpty ? null : {
+            information_sources_ids: newSources,
+            rss_channels_ids:        newChannels,
+          },
+        };
+      });
+  };
+
+  // Misma lógica para el borrado de un canal individual: si era el único canal
+  // de la alerta, se elimina la alerta; si quedan otros, sólo se actualiza.
+  const planForCanalDeletion = (channelId, alerts) => {
+    const channelIdStr = String(channelId);
+    return (alerts || [])
+      .filter((a) => (a.rss_channels_ids || []).map(String).includes(channelIdStr))
+      .map((a) => {
+        const newChannels = (a.rss_channels_ids || [])
+          .map(String).filter((id) => id !== channelIdStr);
+        const willBeEmpty = newChannels.length === 0;
+        return {
+          id: a.id,
+          name: a.name,
+          action: willBeEmpty ? 'delete' : 'update',
+          payload: willBeEmpty ? null : {
+            rss_channels_ids: newChannels,
+          },
+        };
+      });
+  };
+
   // ── Handlers de los botones ────────────────────────────────────────────────
   const openCreate = () =>
     setModal({ kind: isFuentesTab ? 'fuente' : 'canal', mode: 'create', item: null });
 
-  const openEditFuente = (item) => setModal({ kind: 'fuente', mode: 'edit',   item });
-  const openEditCanal  = (item) => setModal({ kind: 'canal',  mode: 'edit',   item });
-  const openDelFuente  = (item) => setModal({ kind: 'fuente', mode: 'delete', item });
-  const openDelCanal   = (item) => setModal({ kind: 'canal',  mode: 'delete', item });
+  const openEditFuente = (item) => setModal({ kind: 'fuente', mode: 'edit', item });
+  const openEditCanal  = (item) => setModal({ kind: 'canal',  mode: 'edit', item });
+
+  // Al abrir el modal de borrado, lanzamos en paralelo la búsqueda de alertas
+  // afectadas. Mientras carga, el botón "Borrar" queda deshabilitado.
+  const openDelete = async (kind, item) => {
+    setModal({ kind, mode: 'delete', item });
+    setCascade({ loading: true, plan: [] });
+    try {
+      const alerts = await fetchUserAlerts();
+      const plan = kind === 'fuente'
+        ? planForFuenteDeletion(item.id, alerts)
+        : planForCanalDeletion(item._backendId ?? item.id, alerts);
+      setCascade({ loading: false, plan });
+    } catch (err) {
+      console.error('No se pudieron cargar las alertas afectadas:', err);
+      // Best effort: si no podemos leer las alertas, dejamos seguir con el
+      // borrado pero sin aviso.
+      setCascade({ loading: false, plan: [] });
+    }
+  };
 
   // ── Submit handlers (lanzan al backend vía AuthContext) ────────────────────
   const submitFuenteForm = async ({ name, url }) => {
@@ -543,8 +689,24 @@ const Fuentes = () => {
     }
   };
 
+  // Aplica el plan de cascada de alertas y luego borra la fuente/canal.
+  // Las alertas se procesan en serie para mantener la salida de errores
+  // predecible en caso de fallo parcial.
+  const applyCascadePlan = async (plan) => {
+    for (const step of (plan || [])) {
+      if (step.action === 'delete') {
+        await deleteAlertById(step.id);
+      } else {
+        await updateAlertById(step.id, step.payload);
+      }
+    }
+  };
+
   const confirmDelete = async () => {
     if (!modal.item) return;
+    // 1) Cascada en alertas
+    await applyCascadePlan(cascade.plan);
+    // 2) Borrado del recurso
     if (modal.kind === 'fuente') {
       await deleteFuente(modal.item.id);
     } else {
@@ -595,7 +757,12 @@ const Fuentes = () => {
 
       <div className={styles.mainCard}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardHeaderTitle}>{t('sources.cardTitle')}</span>
+          {/* Lateral izquierdo: título — flex:1 para empujar las tabs al centro */}
+          <div style={ui.headerSide}>
+            <span className={styles.cardHeaderTitle}>{t('sources.cardTitle')}</span>
+          </div>
+
+          {/* Tabs centradas */}
           <div className={styles.tabs}>
             <button
               className={`${styles.tab} ${isFuentesTab ? styles.tabActive : ''}`}
@@ -611,12 +778,14 @@ const Fuentes = () => {
             </button>
           </div>
 
-          {/* Botón "+ Fuente" / "+ Canal RSS" según pestaña activa */}
-          <button type="button" style={ui.addBtn} onClick={openCreate}>
-            {isFuentesTab
-              ? t('sources.actions.add_source',  { defaultValue: '+ Fuente' })
-              : t('sources.actions.add_channel', { defaultValue: '+ Canal RSS' })}
-          </button>
+          {/* Lateral derecho: botón "+ Fuente" / "+ Canal RSS" */}
+          <div style={ui.headerSideEnd}>
+            <button type="button" style={ui.addBtn} onClick={openCreate}>
+              {isFuentesTab
+                ? t('sources.actions.add_source',  { defaultValue: '+ Fuente' })
+                : t('sources.actions.add_channel', { defaultValue: '+ Canal RSS' })}
+            </button>
+          </div>
         </div>
 
         <div className={styles.cardBody}>
@@ -670,7 +839,7 @@ const Fuentes = () => {
                         key={`f-row-${item.id}`}
                         item={item}
                         onEdit={openEditFuente}
-                        onDelete={openDelFuente}
+                        onDelete={(it) => openDelete('fuente', it)}
                       />
                     ))
               ) : (
@@ -681,7 +850,7 @@ const Fuentes = () => {
                         key={`c-row-${item.id}`}
                         item={item}
                         onEdit={openEditCanal}
-                        onDelete={openDelCanal}
+                        onDelete={(it) => openDelete('canal', it)}
                       />
                     ))
               )}
@@ -727,6 +896,8 @@ const Fuentes = () => {
       <ConfirmDeleteModal
         open={modal.mode === 'delete'}
         message={deleteMessage}
+        alertsLoading={cascade.loading}
+        affectedAlerts={cascade.plan}
         onClose={closeModal}
         onConfirm={confirmDelete}
       />

@@ -11,6 +11,9 @@ import {
   createRSSChannel,
   updateRSSChannel,
   deleteRSSChannel,
+  getUserAlerts,
+  updateAlert,
+  deleteAlert,
 } from '../services/newsService';
 
 export const AuthContext = createContext();
@@ -101,6 +104,29 @@ export const AuthProvider = ({ children }) => {
     await loadNewsData(token);
   }, [loadNewsData]);
 
+  // ── Alertas: lectura + mutaciones puntuales ───────────────────────────────
+  // Estas funciones NO tocan el estado de fuentes/canales; las usamos sólo
+  // para la cascada al borrar una fuente o un canal RSS.
+  const fetchUserAlerts = useCallback(async () => {
+    if (!user?.id) return [];
+    const token = authService.getToken();
+    const res = await getUserAlerts(user.id, token);
+    return res.data;
+  }, [user]);
+
+  const updateAlertById = useCallback(async (alertId, payload) => {
+    if (!user?.id) throw new Error('Usuario no disponible');
+    const token = authService.getToken();
+    const res = await updateAlert(user.id, alertId, payload, token);
+    return res.data;
+  }, [user]);
+
+  const deleteAlertById = useCallback(async (alertId) => {
+    if (!user?.id) throw new Error('Usuario no disponible');
+    const token = authService.getToken();
+    await deleteAlert(user.id, alertId, token);
+  }, [user]);
+
   // ── Al arrancar la app, restaurar sesión si hay token guardado ────────────
   useEffect(() => {
     const token      = authService.getToken();
@@ -179,6 +205,10 @@ export const AuthProvider = ({ children }) => {
         createCanal,
         updateCanal,
         deleteCanal,
+        // Alertas (utilidades para cascada)
+        fetchUserAlerts,
+        updateAlertById,
+        deleteAlertById,
       }}
     >
       {children}

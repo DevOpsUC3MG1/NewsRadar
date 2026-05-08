@@ -64,6 +64,20 @@ export const deleteRSSChannel = (sourceId, channelId, token) =>
     { headers: { Authorization: `Bearer ${token}` } }
   );
 
+// ─── CRUD: Alertas (necesario para cascada al borrar fuentes/canales) ────────
+// Para el PUT enviamos sólo los campos que queremos cambiar; gracias a
+// `exclude_unset=True` en el backend, los campos no enviados (p.ej. categories)
+// se preservan tal cual están almacenados, conservando su `id` interno.
+export const updateAlert = (userId, alertId, data, token) =>
+  axios.put(`${API_URL}/users/${userId}/alerts/${alertId}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteAlert = (userId, alertId, token) =>
+  axios.delete(`${API_URL}/users/${userId}/alerts/${alertId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
 // ─── Nubes de palabras ────────────────────────────────────────────────────────
 
 // Nube global: términos más frecuentes de las noticias del usuario
