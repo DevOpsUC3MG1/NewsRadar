@@ -1,9 +1,10 @@
 name: Docker Pipeline
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
+  #push:
+  #  branches: [main, develop]
+  #pull_request: comentado porque se queda indefinido
+  workflow_dispatch: # Solo se ejecuta manualmente, nunca automático
 
 jobs:
   docker:

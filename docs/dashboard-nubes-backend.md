@@ -123,19 +123,12 @@ Consecuencia funcional:
 Implementación:
 
 - `backend/newsradar_api/app/services/analytics_service.py:build_wordcloud`
-- `backend/newsradar_api/app/services/ia_service.py:generate_wordcloud_terms`
+- `backend/newsradar_api/app/services/keyword_service.py:generate_wordcloud_terms`
 - `backend/newsradar_api/app/main.py:GET /api/v1/resumen/clouds/...`
 
 ### Uso de IA
 
-La IA se usa para convertir texto de noticias (título + descripción) en una nube de términos.
-
-Variables de entorno recomendadas (Gemini / Google AI Studio):
-
-```bash
-GOOGLE_API_KEY=AIza...
-GEMINI_MODEL=gemini-1.5-flash
-```
+La nube de términos se genera de forma determinista a partir de la frecuencia de palabras en título y descripción.
 
 ## Cache (para evitar llamadas a IA en cada refresh)
 

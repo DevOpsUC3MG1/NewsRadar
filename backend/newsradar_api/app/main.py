@@ -25,7 +25,7 @@ from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
-from .services.ia_service import generate_synonyms, classify_iptc_level1, upsert_synonyms
+from .services.keyword_service import generate_synonyms, upsert_synonyms
 from .services.rss_worker import RSSWorker
 from .services.analytics_service import build_dashboard, build_wordcloud
 
@@ -195,6 +195,7 @@ class UserInDB(User):
 
 
 class AlertCategoryItem(BaseModel):
+    id: Optional[int] = None
     code: str = Field(..., min_length=1, max_length=60)
     label: str = Field(..., min_length=1, max_length=120)
 
@@ -884,10 +885,10 @@ async def suggest_synonyms(
 ) -> SuggestSynonymsResponse:
     """
     Sugiere sinónimos y palabras relacionadas para palabras clave.
-    
-    Utiliza IA (OpenAI gpt-3.5-turbo) para generar sinónimos que amplíen
-    la cobertura de búsqueda de noticias.
-    
+
+    Usa un diccionario manual y, si está configurado, puede completar
+    resultados con un proveedor IA.
+
     RF-02: Sugerencia automática de sinónimos durante la creación de alertas
     """
     suggested = generate_synonyms(payload.keywords, payload.max_synonyms)

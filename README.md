@@ -15,12 +15,10 @@ API REST para monitorización de noticias basada en alertas RSS, construida con 
 docker-compose -f docker-compose.dev.yml up --build
 ```
 
-Antes de levantar el stack, crea el archivo `.env` en la raíz del proyecto a partir de [`.env.example`](/home/xinbo/Documents/uc3m/curso_4/cuatrimestre_2/doss/NewsRadar/.env.example) y completa las variables de IA que vayas a usar. Para Groq:
+Antes de levantar el stack, crea el archivo `.env` en la raíz del proyecto a partir de [`.env.example`](/home/xinbo/Documents/uc3m/curso_4/cuatrimestre_2/doss/NewsRadar/.env.example). Si quieres personalizar el diccionario manual de sinónimos:
 
 ```bash
-IA_PROVIDER=groq
-GROQ_API_KEY=gsk_...
-GROQ_MODEL=llama-3.1-8b-instant
+MANUAL_SYNONYMS_FILE=./data/manual_synonyms.json
 ```
 
 Esto inicia:

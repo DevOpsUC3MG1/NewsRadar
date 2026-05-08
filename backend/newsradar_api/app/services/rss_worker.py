@@ -19,9 +19,28 @@ from sqlalchemy import select
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..models import Alert as AlertModel, RSSChannel as RSSChannelModel, Category as CategoryModel
-from .ia_service import classify_iptc_level1, expand_keywords
+from .keyword_service import classify_iptc_level1, expand_keywords
 
 logger = logging.getLogger(__name__)
+
+
+_CATEGORY_CODE_TO_DB_NAME = {
+    "politics": "politica",
+    "government": "politica",
+    "economy": "economia",
+    "technology": "tecnologia",
+    "sports": "deportes",
+    "culture": "cultura",
+    "consumption": "sociedad",
+    "society": "sociedad",
+    "international": "internacional",
+    "health": "salud",
+    "education": "educacion",
+    "science": "ciencia",
+    "travel": "viajes",
+    "entertainment": "entretenimiento",
+    "national": "nacional",
+}
 
 
 class RSSWorker:
@@ -30,6 +49,38 @@ class RSSWorker:
     def __init__(self, db: AsyncSession, mongo_db: AsyncIOMotorDatabase):
         self.db = db
         self.mongo_db = mongo_db
+
+    @staticmethod
+    def _normalize_category_value(value: Any) -> str:
+        if value is None:
+            return ""
+        text = str(value).strip().lower()
+        return (
+            text.replace("á", "a")
+            .replace("é", "e")
+            .replace("í", "i")
+            .replace("ó", "o")
+            .replace("ú", "u")
+            .replace("ü", "u")
+            .replace("ñ", "n")
+            .replace("_", " ")
+        )
+
+    @classmethod
+    def _category_aliases(cls, raw_category: Any) -> set[str]:
+        if not isinstance(raw_category, dict):
+            return set()
+
+        aliases: set[str] = set()
+        for key in ("code", "label", "name"):
+            normalized = cls._normalize_category_value(raw_category.get(key))
+            if not normalized:
+                continue
+            aliases.add(normalized)
+            mapped = _CATEGORY_CODE_TO_DB_NAME.get(normalized)
+            if mapped:
+                aliases.add(mapped)
+        return aliases
     
     async def process_alert(self, alert_id: int) -> Dict[str, Any]:
         """
@@ -93,7 +144,7 @@ class RSSWorker:
                 # 5. Guardar en MongoDB
                 for article in articles:
                     try:
-                        stored = await self._store_article(article, alert.category_id, alert_id)
+                        stored = await self._store_article(article, alert_id)
                         if stored:
                             stats["articles_stored"] += 1
                     except Exception as e:
@@ -108,14 +159,44 @@ class RSSWorker:
     
     async def _get_alert_channels(self, alert: AlertModel) -> List[RSSChannelModel]:
         """Obtiene canales RSS asociados a la alerta (por categorías)."""
-        # Las categorías de la alerta determinan los canales
-        category_ids = [c.get("id") for c in (alert.categories or []) if c.get("id")]
-        
-        if not category_ids:
+        channel_ids: List[int] = []
+        for raw_id in (alert.rss_channels_ids or []):
+            try:
+                channel_ids.append(int(raw_id))
+            except (TypeError, ValueError):
+                continue
+
+        if channel_ids:
+            result = await self.db.execute(
+                select(RSSChannelModel).where(RSSChannelModel.id.in_(channel_ids))
+            )
+            return result.scalars().all()
+
+        category_ids = [c.get("id") for c in (alert.categories or []) if isinstance(c, dict) and c.get("id")]
+        if category_ids:
+            result = await self.db.execute(
+                select(RSSChannelModel).where(RSSChannelModel.category_id.in_(category_ids))
+            )
+            return result.scalars().all()
+
+        category_aliases = set()
+        for raw_category in (alert.categories or []):
+            category_aliases.update(self._category_aliases(raw_category))
+
+        if not category_aliases:
             return []
-        
+
+        result = await self.db.execute(select(CategoryModel))
+        matched_category_ids = [
+            category.id
+            for category in result.scalars().all()
+            if self._normalize_category_value(category.name) in category_aliases
+        ]
+        if not matched_category_ids:
+            return []
+
         result = await self.db.execute(
-            select(RSSChannelModel).where(RSSChannelModel.category_id.in_(category_ids))
+            select(RSSChannelModel).where(RSSChannelModel.category_id.in_(matched_category_ids))
         )
         return result.scalars().all()
     
@@ -203,13 +284,12 @@ class RSSWorker:
         # Fallback
         return datetime.utcnow()
     
-    async def _store_article(self, article: Dict[str, Any], category_id: int, alert_id: int) -> bool:
+    async def _store_article(self, article: Dict[str, Any], alert_id: int) -> bool:
         """
         Guardar artículo en MongoDB con clasificación IPTC.
         
         Args:
             article: Datos del artículo
-            category_id: Categoría de la alerta (para herencia)
             alert_id: ID de la alerta que lo generó
             
         Returns:

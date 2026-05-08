@@ -257,11 +257,11 @@
       "namePlaceholder": "E.g.: Stock Market Tracker...",
       "keywordLabel": "KEYWORD (REQUIRED)",
       "keywordPlaceholder": "E.g.: Nasdaq",
-      "iaBtn": "AI",
+      "iaBtn": "Suggest",
       "cronLabel": "PERIODICITY",
       "descriptorsLabel": "DESCRIPTORS / SYNONYMS (OPTIONAL)",
-      "iaSuccess": "AI has suggested synonyms!",
-      "iaHint": "Press the AI button to generate additional descriptors.",
+      "iaSuccess": "Synonyms have been suggested.",
+      "iaHint": "Press Suggest to load additional descriptors.",
       "catLabel": "1. CATEGORIES (Required)",
       "selectAll": "Select all",
       "unselectAll": "Unselect all",
@@ -301,9 +301,9 @@
       "delete": "Error deleting alert:",
       "cantDelete": "Could not delete the alert.",
       "missingKeywordIA": "You must write a Keyword before generating descriptors.",
-      "noIAData": "The AI did not return any additional descriptors.",
-      "iaCall": "Error calling AI:",
-      "iaConfig": "Error generating descriptors with AI. Check your configuration."
+      "noIAData": "No additional descriptors were found.",
+      "iaCall": "Error generating suggestions:",
+      "iaConfig": "Error generating descriptors. Check the dictionary or provider configuration."
     }
   },
   "categorias": {

@@ -258,11 +258,11 @@
       "namePlaceholder": "Ej: Seguimiento Bolsa...",
       "keywordLabel": "PALABRA CLAVE (OBLIGATORIO)",
       "keywordPlaceholder": "Ej: Ibex",
-      "iaBtn": "IA",
+      "iaBtn": "Sugerir",
       "cronLabel": "PERIODICIDAD",
       "descriptorsLabel": "DESCRIPTORES / SINÓNIMOS (OPCIONALES)",
-      "iaSuccess": "¡IA ha sugerido sinónimos!",
-      "iaHint": "Pulsa el botón de IA para generar descriptores adicionales.",
+      "iaSuccess": "Se han sugerido sinónimos.",
+      "iaHint": "Pulsa Sugerir para cargar descriptores adicionales.",
       "catLabel": "1. CATEGORÍAS (Requerido)",
       "selectAll": "Seleccionar todo",
       "unselectAll": "Deseleccionar todo",
@@ -302,9 +302,9 @@
       "delete": "Error borrando la alerta:",
       "cantDelete": "No se pudo borrar la alerta.",
       "missingKeywordIA": "Debes escribir una Palabra Clave antes de generar descriptores.",
-      "noIAData": "La IA no devolvió ningún descriptor adicional.",
-      "iaCall": "Error llamando a la IA:",
-      "iaConfig": "Error al generar descriptores con la IA. Comprueba la configuración."
+      "noIAData": "No se encontró ningún descriptor adicional.",
+      "iaCall": "Error generando sugerencias:",
+      "iaConfig": "Error al generar descriptores. Revisa la configuración del diccionario o del proveedor."
     }
   },
   "categorias": {
@@ -394,4 +394,3 @@
     }
   }
 }
-

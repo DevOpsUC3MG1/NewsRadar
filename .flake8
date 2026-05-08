@@ -1,0 +1,10 @@
+[flake8]
+max-line-length = 120
+exclude =
+    backend/migrations/,
+    .git,
+    __pycache__,
+    .venv
+per-file-ignores =
+    backend/migrations/*: F401, E402
+ignore = E501
