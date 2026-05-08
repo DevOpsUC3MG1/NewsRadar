@@ -29,6 +29,55 @@ export const getAlertNotifications = (userId, alertId, token) =>
     headers: { Authorization: `Bearer ${token}` },
   });
 
+// ─── CRUD: Fuentes de información ─────────────────────────────────────────────
+export const createInformationSource = (data, token) =>
+  axios.post(`${API_URL}/information-sources`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const updateInformationSource = (sourceId, data, token) =>
+  axios.put(`${API_URL}/information-sources/${sourceId}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteInformationSource = (sourceId, token) =>
+  axios.delete(`${API_URL}/information-sources/${sourceId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+// ─── CRUD: Canales RSS ────────────────────────────────────────────────────────
+export const createRSSChannel = (sourceId, data, token) =>
+  axios.post(`${API_URL}/information-sources/${sourceId}/rss-channels`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const updateRSSChannel = (sourceId, channelId, data, token) =>
+  axios.put(
+    `${API_URL}/information-sources/${sourceId}/rss-channels/${channelId}`,
+    data,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+export const deleteRSSChannel = (sourceId, channelId, token) =>
+  axios.delete(
+    `${API_URL}/information-sources/${sourceId}/rss-channels/${channelId}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+// ─── CRUD: Alertas (necesario para cascada al borrar fuentes/canales) ────────
+// Para el PUT enviamos sólo los campos que queremos cambiar; gracias a
+// `exclude_unset=True` en el backend, los campos no enviados (p.ej. categories)
+// se preservan tal cual están almacenados, conservando su `id` interno.
+export const updateAlert = (userId, alertId, data, token) =>
+  axios.put(`${API_URL}/users/${userId}/alerts/${alertId}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteAlert = (userId, alertId, token) =>
+  axios.delete(`${API_URL}/users/${userId}/alerts/${alertId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
 // ─── Nubes de palabras ────────────────────────────────────────────────────────
 
 // Nube global: términos más frecuentes de las noticias del usuario
@@ -112,11 +161,14 @@ export const getAllSourcesWithChannels = async (token) => {
         .replace(/\b\w/g, (l) => l.toUpperCase());
       const seccion = lastSeg && lastSeg.toLowerCase() !== 'rss' ? lastSeg : 'General';
       return {
-        id:         ch.id ?? ++canalId,
-        fuenteId:   sourceId,
-        nombre:     `${sourceName} – ${seccion}`,
-        categoria:  catMap[ch.category_id] ?? String(ch.category_id),
-        _backendId: ch.id,
+        id:          ch.id ?? ++canalId,
+        fuenteId:    sourceId,
+        nombre:      `${sourceName} – ${seccion}`,
+        categoria:   catMap[ch.category_id] ?? String(ch.category_id),
+        // ── datos crudos necesarios para edición/borrado ───────────────────
+        category_id: ch.category_id,
+        url:         ch.url,
+        _backendId:  ch.id,
       };
     })
   );
