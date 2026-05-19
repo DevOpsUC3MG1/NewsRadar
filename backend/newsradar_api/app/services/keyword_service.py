@@ -21,12 +21,29 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+_env_path = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(dotenv_path=str(_env_path) if _env_path.exists() else None)
 
-MANUAL_SYNONYMS_FILE = os.getenv(
-    "MANUAL_SYNONYMS_FILE",
-    str(Path(__file__).resolve().parents[4] / "data" / "manual_synonyms.json"),
-)
+def _find_project_root() -> Path:
+    start = Path(__file__).resolve()
+    for parent in start.parents:
+        candidate = parent / "data" / "manual_synonyms.json"
+        if candidate.exists():
+            return parent
+    return start.parents[4]
+
+_PROJECT_ROOT = _find_project_root()
+_DEFAULT_SYNONYMS = str(_PROJECT_ROOT / "data" / "manual_synonyms.json")
+
+_raw = os.getenv("MANUAL_SYNONYMS_FILE")
+if _raw:
+    MANUAL_SYNONYMS_FILE = str((_PROJECT_ROOT / _raw).resolve())
+    if not os.path.exists(MANUAL_SYNONYMS_FILE):
+        logger.warning("MANUAL_SYNONYMS_FILE not found at '%s' (from env var '%s'), falling back to '%s'",
+                       MANUAL_SYNONYMS_FILE, _raw, _DEFAULT_SYNONYMS)
+        MANUAL_SYNONYMS_FILE = _DEFAULT_SYNONYMS
+else:
+    MANUAL_SYNONYMS_FILE = _DEFAULT_SYNONYMS
 _MANUAL_SYNONYMS_CACHE: Optional[Dict[str, List[str]]] = None
 
 _WORD_RE = re.compile(r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9_-]{2,}")
