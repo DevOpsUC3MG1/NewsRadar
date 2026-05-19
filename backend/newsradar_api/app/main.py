@@ -693,13 +693,41 @@ async def create_user(
     _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    result = await db.execute(select(UserModel).where(UserModel.email == payload.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="El email ya está registrado")
+    # Case-insensitive email duplicate check
+    result = await db.execute(select(UserModel))
+    users = result.scalars().all()
+    for u in users:
+        if u.email.strip().lower() == payload.email.strip().lower():
+            raise HTTPException(status_code=409, detail="El email ya está registrado")
 
-    await ensure_role_ids_exist(payload.role_ids, db)
-    
-    user = UserModel(**payload.model_dump())
+    # XSS sanitization
+    sanitized = {}
+    for field in ("first_name", "last_name", "organization"):
+        val = getattr(payload, field, None)
+        if val:
+            import re
+            sanitized[field] = re.sub(r"<[^>]*>", "", val)
+    for key, val in sanitized.items():
+        setattr(payload, key, val)
+
+    # Default role_ids to gestor if empty
+    role_ids = payload.role_ids
+    if not role_ids:
+        gestor_result = await db.execute(select(RoleModel))
+        gestor_role = None
+        for role in gestor_result.scalars().all():
+            if role.name.strip().lower() == "gestor":
+                gestor_role = role
+                break
+        role_ids = [gestor_role.id] if gestor_role else []
+    elif len(role_ids) > 1:
+        raise HTTPException(status_code=422, detail="Only one role allowed per user")
+
+    await ensure_role_ids_exist(role_ids, db)
+
+    data = payload.model_dump()
+    data["role_ids"] = role_ids
+    user = UserModel(**data)
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -733,13 +761,21 @@ async def update_user(
 
     data = payload.model_dump(exclude_unset=True)
     if "email" in data:
-        result = await db.execute(
-            select(UserModel).where(UserModel.email == data["email"], UserModel.id != user_id)
-        )
-        if result.scalar_one_or_none():
-            raise HTTPException(status_code=409, detail="El email ya está registrado")
+        result = await db.execute(select(UserModel))
+        users = result.scalars().all()
+        for u in users:
+            if u.id != user_id and u.email.strip().lower() == data["email"].strip().lower():
+                raise HTTPException(status_code=409, detail="El email ya está registrado")
+
+    # XSS sanitization
+    import re
+    for field in ("first_name", "last_name", "organization"):
+        if field in data and data[field]:
+            data[field] = re.sub(r"<[^>]*>", "", data[field])
     
     if "role_ids" in data:
+        if len(data["role_ids"]) > 1:
+            raise HTTPException(status_code=422, detail="Only one role allowed per user")
         await ensure_role_ids_exist(data["role_ids"], db)
 
     for key, value in data.items():
@@ -791,13 +827,38 @@ async def list_roles(
     return [Role(id=r.id, name=r.name) for r in roles]
 
 
+async def _check_role_name(name: str) -> str:
+    stripped = name.strip()
+    if not stripped:
+        raise HTTPException(status_code=422, detail="Role name cannot be empty or whitespace-only")
+    if len(name) > 100:
+        raise HTTPException(status_code=422, detail="Role name max length is 100")
+    import re
+    if re.search(r'[\x00-\x1f]', name):
+        raise HTTPException(status_code=422, detail="Role name contains invalid characters")
+    return stripped
+
+
+async def _check_role_duplicate(db: AsyncSession, name: str, exclude_id: Optional[int] = None) -> None:
+    result = await db.execute(select(RoleModel))
+    roles = result.scalars().all()
+    normalized = name.strip().lower()
+    for role in roles:
+        if exclude_id is not None and role.id == exclude_id:
+            continue
+        if role.name.strip().lower() == normalized:
+            raise HTTPException(status_code=409, detail="Role name already exists")
+
+
 @app.post(f"{API_PREFIX}/roles", response_model=Role, status_code=201, tags=["roles"])
 async def create_role(
     payload: RoleCreate,
     _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Role:
-    role = RoleModel(**payload.model_dump())
+    name = await _check_role_name(payload.name)
+    await _check_role_duplicate(db, name)
+    role = RoleModel(name=name)
     db.add(role)
     await db.commit()
     await db.refresh(role)
@@ -830,6 +891,11 @@ async def update_role(
         raise HTTPException(status_code=404, detail="Rol no encontrado")
     
     data = payload.model_dump(exclude_unset=True)
+    if "name" in data and data["name"] is not None:
+        name = await _check_role_name(data["name"])
+        await _check_role_duplicate(db, name, exclude_id=role_id)
+        data["name"] = name
+
     for key, value in data.items():
         setattr(role, key, value)
     
@@ -1011,6 +1077,30 @@ async def list_user_alerts(
     ]
 
 
+def _ensure_descriptors_range(descriptors: List[str]) -> List[str]:
+    cleaned = [d for d in descriptors if isinstance(d, str) and d.strip()]
+    if len(cleaned) > 10:
+        return cleaned[:10]
+    if len(cleaned) >= 3:
+        return cleaned
+    expanded = list(cleaned)
+    seen = {d.lower().strip() for d in expanded}
+    synonyms = generate_synonyms(expanded, max_synonyms=10)
+    for s in synonyms:
+        key = s.lower().strip()
+        if key not in seen:
+            expanded.append(s)
+            seen.add(key)
+    fallbacks = ["noticias", "actualidad", "informacion"]
+    for fb in fallbacks:
+        if len(expanded) >= 3:
+            break
+        if fb not in seen:
+            expanded.append(fb)
+            seen.add(fb)
+    return expanded[:10]
+
+
 @app.post(
     f"{API_PREFIX}/users/{{user_id}}/alerts",
     response_model=Alert,
@@ -1026,9 +1116,42 @@ async def create_user_alert(
     result = await db.execute(select(UserModel).where(UserModel.id == user_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
+
+    try:
+        CronTrigger.from_crontab(payload.cron_expression)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid cron expression")
+
+    existing_alerts = await db.execute(
+        select(AlertModel).where(AlertModel.user_id == user_id)
+    )
+    existing_list = existing_alerts.scalars().all()
+    if len(existing_list) >= 20:
+        raise HTTPException(status_code=422, detail="Maximum of 20 alerts per user reached")
+
+    normalized_name = payload.name.strip()
+    for existing_alert in existing_list:
+        if existing_alert.name.strip().lower() == normalized_name.lower():
+            raise HTTPException(status_code=409, detail="Alert name already exists for this user")
+
+    if len(payload.categories) > 1:
+        raise HTTPException(status_code=422, detail="Only one category per alert is allowed")
+
+    seen_codes = set()
+    for cat in payload.categories:
+        if cat.code in seen_codes:
+            raise HTTPException(status_code=422, detail="Duplicate categories are not allowed")
+        seen_codes.add(cat.code)
+        cat_result = await db.execute(
+            select(CategoryModel).where(CategoryModel.name == cat.label)
+        )
+        if not cat_result.scalar_one_or_none():
+            raise HTTPException(status_code=422, detail=f"Category '{cat.label}' not found in catalog")
+
     alert_data = payload.model_dump()
+    alert_data["name"] = normalized_name
     alert_data["categories"] = [c.model_dump() for c in payload.categories]
+    alert_data["descriptors"] = _ensure_descriptors_range(payload.descriptors)
     alert = AlertModel(user_id=user_id, **alert_data)
     db.add(alert)
     await db.commit()
@@ -1094,7 +1217,28 @@ async def update_user_alert(
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
     
     data = payload.model_dump(exclude_unset=True)
+    if "descriptors" in data and data["descriptors"] is not None:
+        data["descriptors"] = _ensure_descriptors_range(data["descriptors"])
+
+    if "cron_expression" in data and data["cron_expression"] is not None:
+        try:
+            CronTrigger.from_crontab(data["cron_expression"])
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid cron expression")
+
     if "categories" in data and data["categories"] is not None:
+        if len(payload.categories) > 1:
+            raise HTTPException(status_code=422, detail="Only one category per alert is allowed")
+        seen_codes = set()
+        for cat in payload.categories:
+            if cat.code in seen_codes:
+                raise HTTPException(status_code=422, detail="Duplicate categories are not allowed")
+            seen_codes.add(cat.code)
+            cat_result = await db.execute(
+                select(CategoryModel).where(CategoryModel.name == cat.label)
+            )
+            if not cat_result.scalar_one_or_none():
+                raise HTTPException(status_code=422, detail=f"Category '{cat.label}' not found in catalog")
         data["categories"] = [c.model_dump() for c in payload.categories]
     
     for key, value in data.items():
@@ -1432,6 +1576,79 @@ async def delete_category(
     await db.commit()
 
 
+def _normalize_url(url: str) -> str:
+    return url.strip().lower().rstrip("/")
+
+
+async def _check_is_duplicate(db: AsyncSession, name: str, url: str, exclude_id: Optional[int] = None) -> None:
+    result = await db.execute(select(InformationSourceModel))
+    sources = result.scalars().all()
+    norm_name = name.strip().lower()
+    norm_url = _normalize_url(url)
+    for s in sources:
+        if exclude_id is not None and s.id == exclude_id:
+            continue
+        if s.name.strip().lower() == norm_name:
+            raise HTTPException(status_code=409, detail="Information source name already exists")
+        if _normalize_url(s.url) == norm_url:
+            raise HTTPException(status_code=409, detail="Information source url already exists")
+
+
+async def _check_rss_duplicate(db: AsyncSession, url: str, exclude_id: Optional[int] = None) -> None:
+    result = await db.execute(select(RSSChannelModel))
+    channels = result.scalars().all()
+    norm_url = _normalize_url(url)
+    for c in channels:
+        if exclude_id is not None and c.id == exclude_id:
+            continue
+        if _normalize_url(c.url) == norm_url:
+            raise HTTPException(status_code=409, detail="RSS channel url already exists")
+
+
+async def _validate_url_reachable(url: str) -> None:
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=3.0, follow_redirects=False) as client:
+            await client.head(url)
+    except Exception:
+        raise HTTPException(status_code=422, detail="URL is not reachable")
+
+
+async def _validate_rss_url(url: str) -> None:
+    import httpx
+    import re
+    url_lower = url.lower()
+    if re.search(r"(/rss|/feed|\.xml|\.atom|/rss/|/atom)", url_lower):
+        return
+    try:
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+            async with client.stream("GET", url) as resp:
+                if resp.status_code >= 500:
+                    return
+                ct = (resp.headers.get("content-type") or "").lower()
+                if "xml" in ct or "rss" in ct or "+xml" in ct or "atom" in ct:
+                    return
+                non_rss_types = ["text/html", "application/json", "text/plain", "image/"]
+                for t in non_rss_types:
+                    if ct.startswith(t):
+                        chunk = b""
+                        async for bytes_chunk in resp.aiter_bytes():
+                            chunk += bytes_chunk
+                            if len(chunk) >= 2000:
+                                break
+                        text = chunk.decode("utf-8", errors="replace").lstrip()
+                        if text.startswith("<?xml") or "<rss" in text[:500] or "<feed" in text[:500]:
+                            return
+                        raise HTTPException(status_code=422, detail="URL does not point to an RSS/XML feed")
+                return
+    except HTTPException:
+        raise
+    except httpx.ConnectError:
+        raise HTTPException(status_code=422, detail="URL is not reachable or not a valid RSS feed")
+    except Exception:
+        return
+
+
 @app.get(
     f"{API_PREFIX}/information-sources",
     response_model=List[InformationSource],
@@ -1458,7 +1675,10 @@ async def create_information_source(
     db: AsyncSession = Depends(get_db),
 ) -> InformationSource:
     data = payload.model_dump()
-    data["url"] = str(data["url"])  # ✅ FIX
+    data["url"] = str(data["url"])
+
+    await _validate_url_reachable(data["url"])
+    await _check_is_duplicate(db, data["name"], data["url"])
 
     source = InformationSourceModel(**data)
     db.add(source)
@@ -1501,7 +1721,16 @@ async def update_information_source(
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
     
     data = payload.model_dump(exclude_unset=True)
-    data["url"] = str(data["url"])
+    if "url" in data:
+        data["url"] = str(data["url"])
+        await _validate_url_reachable(data["url"])
+    if "name" in data or "url" in data:
+        await _check_is_duplicate(
+            db,
+            data.get("name", source.name),
+            data.get("url", str(source.url)),
+            exclude_id=source_id,
+        )
     for key, value in data.items():
         setattr(source, key, value)
     
@@ -1582,7 +1811,10 @@ async def create_source_channel(
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
 
     data = payload.model_dump()
-    data["url"] = str(data["url"])  # ✅ FIX
+    data["url"] = str(data["url"])
+
+    await _validate_rss_url(data["url"])
+    await _check_rss_duplicate(db, data["url"])
 
     channel = RSSChannelModel(
         information_source_id=source_id,
@@ -1660,7 +1892,10 @@ async def update_source_channel(
         raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
 
     data = payload.model_dump(exclude_unset=True)
-    data["url"] = str(data["url"]) if "url" in data else None
+    if "url" in data:
+        data["url"] = str(data["url"])
+        await _validate_rss_url(data["url"])
+        await _check_rss_duplicate(db, data["url"], exclude_id=channel_id)
     if "category_id" in data:
         result = await db.execute(select(CategoryModel).where(CategoryModel.id == data["category_id"]))
         if not result.scalar_one_or_none():
