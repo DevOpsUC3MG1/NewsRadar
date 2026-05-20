@@ -33,5 +33,5 @@ Base = declarative_base()
 
 # Dependencia para inyectar la sesión en los endpoints de FastAPI
 async def get_db():
-    async with get_async_session_maker() as session:
+    async with get_async_session_maker()() as session:
         yield session

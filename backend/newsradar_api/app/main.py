@@ -1571,10 +1571,11 @@ async def delete_category(
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
 
-    # Check if category is used by any RSS channel
+    # Remove associated RSS channels before deleting the category
     result = await db.execute(select(RSSChannelModel).where(RSSChannelModel.category_id == category_id))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Categoría asociada a canales RSS")
+    for channel in result.scalars():
+        await db.delete(channel)
+    await db.flush()
 
     await db.delete(category)
     await db.commit()

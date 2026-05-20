@@ -11,6 +11,7 @@ Uso: python app/seed.py
 import json
 import asyncio
 import logging
+import sys
 from pathlib import Path
 from sqlalchemy import select
 from .database import get_async_session_maker
@@ -18,7 +19,17 @@ from .models import Category as CategoryModel, InformationSource as InformationS
 
 logger = logging.getLogger(__name__)
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+def _find_data_root() -> Path:
+    start = Path(__file__).resolve()
+    for parent in start.parents:
+        candidate = parent / "data" / "rss_sources.json"
+        if candidate.exists():
+            return parent
+    return start.parents[3]
+
+
+_PROJECT_ROOT = _find_data_root()
 _RSS_SOURCES_PATH = _PROJECT_ROOT / "data" / "rss_sources.json"
 
 
@@ -117,6 +128,7 @@ async def run():
 
 async def main():
     """Punto de entrada del script."""
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(levelname)s:%(name)s:%(message)s")
     try:
         await run()
     except Exception as e:

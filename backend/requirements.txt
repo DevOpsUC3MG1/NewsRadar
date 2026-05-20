@@ -17,6 +17,7 @@ pymongo==4.6.1
 python-dotenv==1.0.1
 python-multipart==0.0.9
 email-validator==2.1.1
+nest-asyncio
 pytest
 pytest-cov
 httpx

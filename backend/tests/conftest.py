@@ -1,8 +1,11 @@
 import os
 import json
+import nest_asyncio
 import pytest
 from datetime import datetime
 from fastapi.testclient import TestClient
+
+nest_asyncio.apply()
 
 
 # --- FIXTURES DE USUARIOS (RF-09) ---
