@@ -17,12 +17,13 @@ from datetime import datetime, timezone
 
 BASE_URL = "http://localhost:8000/api/v1"
 
-ADMIN_EMAIL    = "admin@newsradar.com"
+ADMIN_EMAIL = "admin@newsradar.com"
 ADMIN_PASSWORD = "admin123"
 
 # ─────────────────────────────────────────────
 # FIXTURES / HELPERS
 # ─────────────────────────────────────────────
+
 
 def login(email=ADMIN_EMAIL, password=ADMIN_PASSWORD) -> str:
     """Devuelve el access_token para el usuario dado."""

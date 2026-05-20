@@ -1,6 +1,6 @@
-import pytest
 import responses
 import requests
+
 
 @responses.activate
 def test_worker_con_servidor_mock(mock_rss_xml):

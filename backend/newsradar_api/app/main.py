@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import os
 import smtplib
 import logging
@@ -10,23 +9,21 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from uuid import uuid4
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
-from sqlalchemy import select, delete as sql_delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .database import get_db, engine, Base
+from .database import get_db, get_engine, Base
 from .database_mongodb import get_mongo_db
 from .models import User as UserModel, Role as RoleModel, Alert as AlertModel
 from .models import Category as CategoryModel, InformationSource as InformationSourceModel
 from .models import RSSChannel as RSSChannelModel
 from .services.keyword_service import generate_synonyms, upsert_synonyms
-from .services.rss_worker import RSSWorker
 from .services.analytics_service import build_dashboard, build_wordcloud
 
 # Cargar variables de entorno desde el archivo .env
@@ -40,7 +37,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], # Los puertos de tu React
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Los puertos de tu React
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,6 +58,7 @@ FRONTEND_VERIFY_URL = os.getenv("FRONTEND_VERIFY_URL")
 logger = logging.getLogger("uvicorn.error")
 logger.debug("GMAIL_SENDER: %s", GMAIL_SENDER)
 # No loguear secretos (passwords/tokens)
+
 
 def send_verification_email(to_email: str, token: str) -> None:
     """Envía el correo de verificación de cuenta usando Gmail con contraseña de aplicación."""
@@ -141,6 +139,7 @@ class Metric(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     value: float
 
+
 class NewsRef(BaseModel):
     """Referencia a una noticia incluida en una notificación."""
     title: str = Field(..., min_length=1, max_length=500)
@@ -148,6 +147,7 @@ class NewsRef(BaseModel):
     source_name: str = Field(..., min_length=1, max_length=200)
     category: str = Field(..., min_length=1, max_length=100)
     published: Optional[datetime] = None
+
 
 class RoleBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -364,6 +364,7 @@ class ResetPasswordRequest(BaseModel):
     token: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=6, max_length=128)
 
+
 class UserEmailVerificationStatus(BaseModel):
     email: EmailStr
     is_verified: bool
@@ -402,6 +403,7 @@ class DashboardResponse(BaseModel):
     alertas: int = Field(..., ge=0)
     evolucion: List[DashboardEvolutionItem]
     categorias: List[DashboardCategoryItem]
+
 
 # Token storage (in-memory for simplicity, could be moved to Redis in production)
 # password_reset_tokens almacena {token: user_id} — en producción usar Redis con TTL
@@ -463,10 +465,11 @@ async def ensure_role_ids_exist(role_ids: List[int], db: AsyncSession) -> None:
 
 
 async def create_seed_data() -> None:
-    async with engine.begin() as conn:
+    eng = get_engine()
+    async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    async with AsyncSession(engine) as db:
+    async with AsyncSession(eng) as db:
         # --- Roles (idempotente) ---
         result = await db.execute(select(RoleModel).where(RoleModel.name == "admin"))
         admin_role = result.scalar_one_or_none()
@@ -512,6 +515,7 @@ async def create_seed_data() -> None:
             db.add(UserModel(**u, is_verified=True))
 
         await db.commit()
+
 
 @app.on_event("startup")
 async def on_startup() -> None:
@@ -567,23 +571,23 @@ async def verify_account(
         select(UserModel).where(UserModel.verification_token == payload.token)
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=404,
             detail="Token de verificación inválido o expirado"
         )
-    
+
     if user.is_verified:
         raise HTTPException(
             status_code=400,
             detail="La cuenta ya ha sido verificada"
         )
-    
+
     user.is_verified = True
     user.verification_token = None
     await db.commit()
-    
+
     return VerificationResponse(
         message="Cuenta verificada exitosamente",
         success=True
@@ -598,18 +602,18 @@ async def resend_verification(
     """Reenvía el email de verificación a un usuario"""
     result = await db.execute(select(UserModel).where(UserModel.email == payload))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
+
     if user.is_verified:
         raise HTTPException(status_code=400, detail="La cuenta ya está verificada")
-    
+
     # Regenerar token de verificación
     new_verification_token = str(uuid4())
     user.verification_token = new_verification_token
     await db.commit()
-    
+
     # Enviar email con el nuevo token
     send_verification_email(user.email, new_verification_token)
     return VerificationResponse(
@@ -772,7 +776,7 @@ async def update_user(
     for field in ("first_name", "last_name", "organization"):
         if field in data and data[field]:
             data[field] = re.sub(r"<[^>]*>", "", data[field])
-    
+
     if "role_ids" in data:
         if len(data["role_ids"]) > 1:
             raise HTTPException(status_code=422, detail="Only one role allowed per user")
@@ -780,7 +784,7 @@ async def update_user(
 
     for key, value in data.items():
         setattr(user, key, value)
-    
+
     await db.commit()
     await db.refresh(user)
     return sanitize_user(user)
@@ -807,11 +811,11 @@ async def delete_user(
     # Get alert IDs to delete notifications from MongoDB
     result = await db.execute(select(AlertModel.id).where(AlertModel.user_id == user_id))
     alert_ids = [row[0] for row in result.fetchall()]
-    
+
     # Delete notifications from MongoDB
     if alert_ids:
         await mongo_db.notifications.delete_many({"alert_id": {"$in": alert_ids}})
-    
+
     # Delete user (cascades to alerts)
     await db.delete(user)
     await db.commit()
@@ -889,7 +893,7 @@ async def update_role(
     role = result.scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
-    
+
     data = payload.model_dump(exclude_unset=True)
     if "name" in data and data["name"] is not None:
         name = await _check_role_name(data["name"])
@@ -898,7 +902,7 @@ async def update_role(
 
     for key, value in data.items():
         setattr(role, key, value)
-    
+
     await db.commit()
     await db.refresh(role)
     return Role(id=role.id, name=role.name)
@@ -947,7 +951,7 @@ async def delete_role(
 async def suggest_synonyms(
     payload: SuggestSynonymsRequest,
     _: UserInDB = Depends(get_current_user),
-    mongo_db = Depends(get_mongo_db),
+    mongo_db=Depends(get_mongo_db),
 ) -> SuggestSynonymsResponse:
     """
     Sugiere sinónimos y palabras relacionadas para palabras clave.
@@ -966,7 +970,7 @@ async def suggest_synonyms(
             await upsert_synonyms(mongo_db, keyword=payload.keywords[0], synonyms=suggested, provider="api")
         except Exception as e:
             logger.warning("No se pudo actualizar keyword_dictionary: %s", str(e))
-    
+
     return SuggestSynonymsResponse(
         keywords=payload.keywords,
         suggested_synonyms=suggested,
@@ -986,7 +990,7 @@ async def get_dashboard(
     days: int = 7,
     _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    mongo_db = Depends(get_mongo_db),
+    mongo_db=Depends(get_mongo_db),
     request: Request = None,
 ):
     accept_language = request.headers.get("accept-language") if request else None
@@ -1003,7 +1007,7 @@ async def get_wordcloud_global(
     limit: int = 20,
     current_user: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    mongo_db = Depends(get_mongo_db),
+    mongo_db=Depends(get_mongo_db),
     request: Request = None,
 ):
     accept_language = request.headers.get("accept-language") if request else None
@@ -1029,7 +1033,7 @@ async def get_wordcloud_by_category(
     limit: int = 20,
     current_user: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    mongo_db = Depends(get_mongo_db),
+    mongo_db=Depends(get_mongo_db),
     request: Request = None,
 ):
     accept_language = request.headers.get("accept-language") if request else None
@@ -1059,7 +1063,7 @@ async def list_user_alerts(
     result = await db.execute(select(UserModel).where(UserModel.id == user_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
+
     result = await db.execute(select(AlertModel).where(AlertModel.user_id == user_id))
     alerts = result.scalars().all()
     return [
@@ -1156,7 +1160,7 @@ async def create_user_alert(
     db.add(alert)
     await db.commit()
     await db.refresh(alert)
-    
+
     return Alert(
         id=alert.id,
         user_id=alert.user_id,
@@ -1186,7 +1190,7 @@ async def get_user_alert(
     alert = result.scalar_one_or_none()
     if not alert:
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     return Alert(
         id=alert.id,
         user_id=alert.user_id,
@@ -1215,7 +1219,7 @@ async def update_user_alert(
     alert = result.scalar_one_or_none()
     if not alert:
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     data = payload.model_dump(exclude_unset=True)
     if "descriptors" in data and data["descriptors"] is not None:
         data["descriptors"] = _ensure_descriptors_range(data["descriptors"])
@@ -1240,13 +1244,13 @@ async def update_user_alert(
             if not cat_result.scalar_one_or_none():
                 raise HTTPException(status_code=422, detail=f"Category '{cat.label}' not found in catalog")
         data["categories"] = [c.model_dump() for c in payload.categories]
-    
+
     for key, value in data.items():
         setattr(alert, key, value)
-    
+
     await db.commit()
     await db.refresh(alert)
-    
+
     return Alert(
         id=alert.id,
         user_id=alert.user_id,
@@ -1277,10 +1281,10 @@ async def delete_user_alert(
     alert = result.scalar_one_or_none()
     if not alert:
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     # Delete notifications from MongoDB
     await mongo_db.notifications.delete_many({"alert_id": alert_id})
-    
+
     await db.delete(alert)
     await db.commit()
 
@@ -1304,10 +1308,10 @@ async def list_alert_notifications(
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     cursor = mongo_db.notifications.find({"alert_id": alert_id})
     notifications = await cursor.to_list(length=None)
-    
+
     return [
         Notification(
             id=n["_id"],
@@ -1343,10 +1347,10 @@ async def create_alert_notification(
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     last_doc = await mongo_db.notifications.find_one(sort=[("_id", -1)])
     next_id = (last_doc["_id"] + 1) if last_doc else 1
-    
+
     doc = {
         "_id": next_id,
         "alert_id": alert_id,
@@ -1363,7 +1367,7 @@ async def create_alert_notification(
         doc["news"] = [n.model_dump(mode="json") for n in payload.news]
 
     await mongo_db.notifications.insert_one(doc)
-    
+
     return Notification(
         id=next_id,
         alert_id=alert_id,
@@ -1395,11 +1399,11 @@ async def get_alert_notification(
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     doc = await mongo_db.notifications.find_one({"_id": notification_id, "alert_id": alert_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Notificación no encontrada para la alerta")
-    
+
     return Notification(
         id=doc["_id"],
         alert_id=doc["alert_id"],
@@ -1432,11 +1436,11 @@ async def update_alert_notification(
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     doc = await mongo_db.notifications.find_one({"_id": notification_id, "alert_id": alert_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Notificación no encontrada para la alerta")
-    
+
     update_data = {}
     if payload.timestamp is not None:
         update_data["timestamp"] = payload.timestamp
@@ -1448,14 +1452,14 @@ async def update_alert_notification(
         update_data["content"] = payload.content
     if payload.news is not None:
         update_data["news"] = [n.model_dump(mode="json") for n in payload.news]
-    
+
     if update_data:
         await mongo_db.notifications.update_one(
             {"_id": notification_id},
             {"$set": update_data}
         )
         doc.update(update_data)
-    
+
     return Notification(
         id=doc["_id"],
         alert_id=doc["alert_id"],
@@ -1487,7 +1491,7 @@ async def delete_alert_notification(
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Alerta no encontrada para el usuario")
-    
+
     result = await mongo_db.notifications.delete_one({"_id": notification_id, "alert_id": alert_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Notificación no encontrada para la alerta")
@@ -1540,11 +1544,11 @@ async def update_category(
     category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    
+
     data = payload.model_dump(exclude_unset=True)
     for key, value in data.items():
         setattr(category, key, value)
-    
+
     await db.commit()
     await db.refresh(category)
     return Category(id=category.id, name=category.name, source=category.source)
@@ -1719,7 +1723,7 @@ async def update_information_source(
     source = result.scalar_one_or_none()
     if not source:
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    
+
     data = payload.model_dump(exclude_unset=True)
     if "url" in data:
         data["url"] = str(data["url"])
@@ -1733,7 +1737,7 @@ async def update_information_source(
         )
     for key, value in data.items():
         setattr(source, key, value)
-    
+
     await db.commit()
     await db.refresh(source)
     return InformationSource(id=source.id, name=source.name, url=source.url)
@@ -1774,7 +1778,7 @@ async def list_source_channels(
     result = await db.execute(select(InformationSourceModel).where(InformationSourceModel.id == source_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    
+
     result = await db.execute(
         select(RSSChannelModel).where(RSSChannelModel.information_source_id == source_id)
     )
@@ -1805,7 +1809,7 @@ async def create_source_channel(
     result = await db.execute(select(InformationSourceModel).where(InformationSourceModel.id == source_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    
+
     result = await db.execute(select(CategoryModel).where(CategoryModel.id == payload.category_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
@@ -1823,7 +1827,7 @@ async def create_source_channel(
     db.add(channel)
     await db.commit()
     await db.refresh(channel)
-    
+
     return RSSChannel(
         id=channel.id,
         information_source_id=channel.information_source_id,
@@ -1846,7 +1850,7 @@ async def get_source_channel(
     result = await db.execute(select(InformationSourceModel).where(InformationSourceModel.id == source_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    
+
     result = await db.execute(
         select(RSSChannelModel).where(
             RSSChannelModel.id == channel_id,
@@ -1856,7 +1860,7 @@ async def get_source_channel(
     channel = result.scalar_one_or_none()
     if not channel:
         raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
-    
+
     return RSSChannel(
         id=channel.id,
         information_source_id=channel.information_source_id,
@@ -1880,7 +1884,7 @@ async def update_source_channel(
     result = await db.execute(select(InformationSourceModel).where(InformationSourceModel.id == source_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    
+
     result = await db.execute(
         select(RSSChannelModel).where(
             RSSChannelModel.id == channel_id,
@@ -1903,10 +1907,10 @@ async def update_source_channel(
 
     for key, value in data.items():
         setattr(channel, key, value)
-    
+
     await db.commit()
     await db.refresh(channel)
-    
+
     return RSSChannel(
         id=channel.id,
         information_source_id=channel.information_source_id,
@@ -1931,7 +1935,7 @@ async def delete_source_channel(
     result = await db.execute(select(InformationSourceModel).where(InformationSourceModel.id == source_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
-    
+
     result = await db.execute(
         select(RSSChannelModel).where(
             RSSChannelModel.id == channel_id,
@@ -1941,7 +1945,7 @@ async def delete_source_channel(
     channel = result.scalar_one_or_none()
     if not channel:
         raise HTTPException(status_code=404, detail="Canal RSS no encontrado para la fuente")
-    
+
     await db.delete(channel)
     await db.commit()
 
@@ -1971,13 +1975,13 @@ async def create_stats(
     # Get next ID
     last_doc = await mongo_db.stats.find_one(sort=[("_id", -1)])
     next_id = (last_doc["_id"] + 1) if last_doc else 1
-    
+
     doc = {
         "_id": next_id,
         "metrics": [m.model_dump() for m in payload.metrics],
     }
     await mongo_db.stats.insert_one(doc)
-    
+
     return Stats(id=next_id, metrics=payload.metrics)
 
 
@@ -1990,7 +1994,7 @@ async def get_stats(
     doc = await mongo_db.stats.find_one({"_id": stats_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
-    
+
     return Stats(
         id=doc["_id"],
         metrics=[Metric(**m) for m in doc.get("metrics", [])],
@@ -2011,14 +2015,14 @@ async def update_stats(
     update_data = {}
     if payload.metrics is not None:
         update_data["metrics"] = [m.model_dump() for m in payload.metrics]
-    
+
     if update_data:
         await mongo_db.stats.update_one(
             {"_id": stats_id},
             {"$set": update_data}
         )
         doc.update(update_data)
-    
+
     return Stats(
         id=doc["_id"],
         metrics=[Metric(**m) for m in doc.get("metrics", [])],
@@ -2040,28 +2044,29 @@ async def delete_stats(
     result = await mongo_db.stats.delete_one({"_id": stats_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stats no encontrados")
-    
+
+
 @app.get(
-    f"{API_PREFIX}/users/email/{{email}}/verification-status", 
-    response_model=UserEmailVerificationStatus, 
+    f"{API_PREFIX}/users/email/{{email}}/verification-status",
+    response_model=UserEmailVerificationStatus,
     tags=["users"]
 )
 async def get_user_verification_status_by_email(
     email: EmailStr,
-    _: UserInDB = Depends(get_current_user), # Borra esta línea si quieres que el endpoint sea público
+    _: UserInDB = Depends(get_current_user),  # Borra esta línea si quieres que el endpoint sea público
     db: AsyncSession = Depends(get_db),
 ) -> UserEmailVerificationStatus:
     """Comprueba si la cuenta de un usuario está verificada a partir de su correo electrónico."""
-    
+
     # Hacemos la consulta a la base de datos buscando por email
     result = await db.execute(select(UserModel).where(UserModel.email == email))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
     # Devolvemos el email y el valor de la columna is_verified (que será True/False equivalente a t/f en Postgres)
     return UserEmailVerificationStatus(
-        email=user.email, 
+        email=user.email,
         is_verified=user.is_verified
     )

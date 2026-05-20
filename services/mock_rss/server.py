@@ -32,6 +32,7 @@ TEMPLATES = {
     }
 }
 
+
 def generate_news(category: str, count: int = 5):
     """Genera una lista de noticias aleatorias basadas en plantillas."""
     news = []
@@ -46,6 +47,7 @@ def generate_news(category: str, count: int = 5):
         })
     return news
 
+
 def rss_template(channel_title: str, items: list) -> str:
     now = datetime.now(timezone.utc)
     items_xml = ""
@@ -58,7 +60,7 @@ def rss_template(channel_title: str, items: list) -> str:
       <guid isPermaLink="false">{it['guid']}</guid>
       <pubDate>{format_datetime(now)}</pubDate>
     </item>"""
-    
+
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -69,6 +71,7 @@ def rss_template(channel_title: str, items: list) -> str:
     {items_xml}
   </channel>
 </rss>"""
+
 
 class AdvancedHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -105,6 +108,7 @@ class AdvancedHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
 
 if __name__ == "__main__":
     server = HTTPServer(("0.0.0.0", 8080), AdvancedHandler)

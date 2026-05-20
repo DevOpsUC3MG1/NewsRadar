@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 _env_path = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(dotenv_path=str(_env_path) if _env_path.exists() else None)
 
+
 def _find_project_root() -> Path:
     start = Path(__file__).resolve()
     for parent in start.parents:
@@ -31,6 +32,7 @@ def _find_project_root() -> Path:
         if candidate.exists():
             return parent
     return start.parents[4]
+
 
 _PROJECT_ROOT = _find_project_root()
 _DEFAULT_SYNONYMS = str(_PROJECT_ROOT / "data" / "manual_synonyms.json")

@@ -2,7 +2,6 @@ import os
 import json
 import pytest
 from datetime import datetime
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
@@ -18,6 +17,7 @@ def fixture_user_lector():
         "role": "Lector",
         "is_active": True
     }
+
 
 @pytest.fixture
 def fixture_user_gestor():
@@ -74,11 +74,13 @@ def mock_headers_auth(fixture_user_gestor):
         "Content-Type": "application/json"
     }
 
+
 @pytest.fixture(scope="session")
 def db_engine():
     """Configuración de la conexión a DB para todos los tests."""
     yield "engine_ready"
     print("\nCerrando conexión de test...")
+
 
 @pytest.fixture
 def client():
@@ -86,6 +88,7 @@ def client():
     from newsradar_api.app.main import app
     with TestClient(app) as c:
         yield c
+
 
 @pytest.fixture
 def load_valid_users():
@@ -95,6 +98,7 @@ def load_valid_users():
 
     with open(json_path, "r", encoding="utf-8") as file:
         return json.load(file)
+
 
 @pytest.fixture
 def mock_rss_xml():
