@@ -31,6 +31,7 @@ const Alerts = () => {
     descriptores: [], categorias: [],
     information_sources_ids: [], rss_channels_ids: []
   });
+  const [cronFields, setCronFields] = useState({ min: '', hour: '', dom: '', month: '', dow: '' });
 
   const safeCategorias = useMemo(() => {
     const cats = categorias || [];
@@ -136,16 +137,20 @@ const Alerts = () => {
       setErrorMsg(t('alerts.errors.missingFields'));
       return;
     }
-    if (!form.periodicidad.trim()) {
+
+    // Validar que los 5 campos cron estén rellenos
+    const { min, hour, dom, month, dow } = cronFields;
+    if (!min.trim() || !hour.trim() || !dom.trim() || !month.trim() || !dow.trim()) {
       setErrorMsg(t('alerts.errors.missingFields'));
+      return;
+    }
+    const cronExpr = `${min.trim()} ${hour.trim()} ${dom.trim()} ${month.trim()} ${dow.trim()}`;
+    if (!isValidCron(cronExpr)) {
+      setErrorMsg(t('alerts.errors.invalidCron'));
       return;
     }
     if (form.categorias.length === 0 && form.information_sources_ids.length === 0) {
       setErrorMsg(t('alerts.errors.missingFields'));
-      return;
-    }
-    if (!isValidCron(form.periodicidad)) {
-      setErrorMsg(t('alerts.errors.invalidCron'));
       return;
     }
 
@@ -182,7 +187,7 @@ const Alerts = () => {
       categories: finalCategories,
       information_sources_ids: form.information_sources_ids.map(String),
       rss_channels_ids: finalChannelIds,
-      cron_expression: form.periodicidad.trim()
+      cron_expression: cronExpr
     };
 
     try {
@@ -265,9 +270,8 @@ const Alerts = () => {
   const handleToggleCategory = (cat) => {
     setForm(prev => ({
       ...prev,
-      categorias: prev.categorias.includes(cat)
-        ? prev.categorias.filter(c => c !== cat)
-        : [...prev.categorias, cat]
+      // El backend solo permite 1 categoría por alerta
+      categorias: prev.categorias.includes(cat) ? [] : [cat]
     }));
   };
 
@@ -335,6 +339,7 @@ const Alerts = () => {
         <button className={styles.newAlertBtn} onClick={() => {
           setEditingAlert(null);
           setForm({nombre:'', keyword:'', periodicidad:'', descriptores:[], categorias:[], information_sources_ids:[], rss_channels_ids:[]});
+          setCronFields({ min: '', hour: '', dom: '', month: '', dow: '' });
           setSuggestedDescriptors([]);
           setErrorMsg("");
           setIsModalOpen(true);
@@ -388,6 +393,15 @@ const Alerts = () => {
                             <button className={styles.editBtn} onClick={() => {
                               setEditingAlert(alert);
                               setForm(alert);
+                              // Descomponer la cron expression en los 5 campos
+                              const parts = (alert.periodicidad || '').trim().split(/\s+/);
+                              setCronFields({
+                                min:   parts[0] || '',
+                                hour:  parts[1] || '',
+                                dom:   parts[2] || '',
+                                month: parts[3] || '',
+                                dow:   parts[4] || '',
+                              });
                               setSuggestedDescriptors([]);
                               setIsModalOpen(true);
                             }}><Pencil size={18} /></button>
@@ -447,8 +461,9 @@ const Alerts = () => {
                     </button>
                   </div>
                 </div>
+              </div>
 
-                <div className={styles.inputGroup}>
+              <div className={styles.inputGroupFull}>
                   <label className={styles.labelWithInfo}>
                     {t('alerts.form.cronLabel')}
                     <div className={styles.infoWrapper}>
@@ -485,8 +500,28 @@ const Alerts = () => {
                       </div>
                     </div>
                   </label>
-                  <input type="text" value={form.periodicidad} onChange={(e) => setForm({...form, periodicidad: e.target.value})} placeholder="* * * * *" />
-                </div>
+                  {/* 5 inputs individuales para cada campo de la expresión cron */}
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    {[
+                      { key: 'min',   label: t('alerts.tooltip.min'),   placeholder: '*', range: '0-59'  },
+                      { key: 'hour',  label: t('alerts.tooltip.hour'),  placeholder: '0', range: '0-23'  },
+                      { key: 'dom',   label: t('alerts.tooltip.day'),   placeholder: '*', range: '1-31'  },
+                      { key: 'month', label: t('alerts.tooltip.month'), placeholder: '*', range: '1-12'  },
+                      { key: 'dow',   label: t('alerts.tooltip.week'),  placeholder: '*', range: '0-6'   },
+                    ].map(({ key, label, placeholder, range }) => (
+                      <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '4px' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: '600', color: '#555', whiteSpace: 'nowrap' }}>{label}</span>
+                        <input
+                          type="text"
+                          value={cronFields[key]}
+                          onChange={(e) => setCronFields(prev => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={placeholder}
+                          style={{ width: '100%', textAlign: 'center', padding: '6px 4px' }}
+                        />
+                        <span style={{ fontSize: '0.65rem', color: '#aaa' }}>{range}</span>
+                      </div>
+                    ))}
+                  </div>
               </div>
 
               {/* ── Descriptores IA ── */}
@@ -514,19 +549,16 @@ const Alerts = () => {
                 </div>
               </div>
 
-              {/* ── Categorías ── */}
+              {/* ── Categorías (selección única — límite del backend) ── */}
               <div className={styles.sectionContainer}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <label style={{ margin: 0 }}>{t('alerts.form.catLabel')}</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" style={btnPillStyle('all')} onClick={() => setForm({...form, categorias: safeCategorias})}>{t('alerts.form.selectAll')}</button>
-                    <button type="button" style={btnPillStyle('none')} onClick={() => setForm({...form, categorias: []})}>{t('alerts.form.unselectAll')}</button>
-                  </div>
+                  <button type="button" style={btnPillStyle('none')} onClick={() => setForm({...form, categorias: []})}>{t('alerts.form.unselectAll')}</button>
                 </div>
                 <div className={styles.checkboxGrid}>
                   {safeCategorias.map(cat => (
                     <label key={cat} className={styles.customCheckboxContainer}>
-                      <input type="checkbox" checked={form.categorias.includes(cat)} onChange={() => handleToggleCategory(cat)} className={styles.hiddenCheckbox} />
+                      <input type="radio" name="alert-category" checked={form.categorias.includes(cat)} onChange={() => handleToggleCategory(cat)} className={styles.hiddenCheckbox} />
                       <span className={styles.checkmark}></span> {t(`categorias.${cat}`, { defaultValue: cat })}
                     </label>
                   ))}
