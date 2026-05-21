@@ -1,0 +1,5 @@
+newsradar_api/.venv
+.env
+__pycache__
+*.pyc
+*.pyo
