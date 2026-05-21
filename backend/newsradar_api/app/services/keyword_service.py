@@ -55,7 +55,17 @@ _STOPWORDS = {
         "durante", "el", "ella", "ellas", "ellos", "en", "entre", "era", "esta", "este", "estos", "estas",
         "fue", "han", "hasta", "hay", "hoy", "la", "las", "le", "les", "lo", "los", "mas", "muy", "noticia",
         "noticias", "para", "pero", "por", "que", "quien", "se", "segun", "ser", "sin", "sobre", "son", "sus",
-        "tras", "una", "uno", "unos", "unas", "video",
+        "tras", "una", "uno", "unos", "unas", "video", "asi", "aun", "aunque", "bien", "casi", "cosa",
+        "cosas", "dijo", "dice", "dicho", "diferente", "distintos", "donde", "dos", "ejemplo", "embargo",
+        "etc", "falta", "fin", "forma", "frente", "gracias", "gran", "grandes", "grupo", "hace", "hacer",
+        "hecho", "hubo", "igual", "informacion", "junto", "largo", "lugar", "mayor", "medio", "mejor",
+        "menor", "menos", "mes", "mientras", "millones", "minutos", "mismo", "modo", "momento", "mundo",
+        "nacional", "nadie", "necesita", "ningun", "nivel", "noche", "nueva", "nuevo", "nuevos", "nunca",
+        "obra", "pais", "parece", "parte", "pasado", "pasar", "personas", "pie", "poco", "podia", "podria",
+        "puesto", "punto", "realizo", "recibir", "respecto", "sabe", "salen", "sido", "siete", "sigue",
+        "siguiente", "sino", "situacion", "solo", "tarde", "tenido", "tendra", "tengan", "tenia", "tiene",
+        "tienen", "tipo", "todo", "trabajo", "través", "tras", "trata", "través", "tres", "tuvo", "ultimo",
+        "usa", "usan", "uso", "vamos", "varias", "varios", "veces", "ver", "vez", "via", "vida", "visto",
     },
     "en": {
         "about", "after", "also", "and", "are", "been", "but", "for", "from", "have", "into", "its", "more",
@@ -193,7 +203,9 @@ def _fallback_wordcloud_terms(*, texts: List[str], lang: str, limit: int) -> Lis
         seen_in_text = set()
         for raw in _WORD_RE.findall(text or ""):
             word = raw.strip("-_").lower()
-            if len(word) < 3 or word.isdigit() or word in stopwords:
+            normalized = unicodedata.normalize("NFKD", word)
+            normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+            if len(word) < 3 or word.isdigit() or normalized in stopwords:
                 continue
             seen_in_text.add(word)
         counts.update(seen_in_text)

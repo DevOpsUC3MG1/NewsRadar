@@ -358,6 +358,7 @@ async def process_alert(
             "source_name": it.source_name[:200],
             "category": it.channel_category[:100],
             "published": it.published.isoformat() if it.published else None,
+            "description": it.summary[:5000] if it.summary else None,
         }
         for it in matched
     ]

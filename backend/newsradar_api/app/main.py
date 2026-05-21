@@ -37,7 +37,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Los puertos de tu React
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:8100"],  # Los puertos de tu React
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -147,6 +147,7 @@ class NewsRef(BaseModel):
     source_name: str = Field(..., min_length=1, max_length=200)
     category: str = Field(..., min_length=1, max_length=100)
     published: Optional[datetime] = None
+    description: Optional[str] = Field(default=None, max_length=10000)
 
 
 class RoleBase(BaseModel):

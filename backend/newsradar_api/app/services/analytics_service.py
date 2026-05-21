@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Alert as AlertModel, InformationSource as InformationSourceModel, RSSChannel as RSSChannelModel
-from .keyword_service import generate_wordcloud_terms
+from .keyword_service import generate_wordcloud_terms, classify_iptc_level1
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +186,7 @@ async def build_wordcloud(
 ) -> List[Dict[str, Any]]:
     """
     Devuelve [{term, count}] para nube global o por categoria.
+    Lee de notifications.news (única colección poblada por el daemon).
     Se cachea en Mongo en `wordcloud_cache`.
     """
     lang = _parse_lang(accept_language)
@@ -217,28 +218,30 @@ async def build_wordcloud(
             if isinstance(terms, list):
                 return terms
 
-    match: Dict[str, Any] = {
-        "created_at": {"$gte": start.replace(tzinfo=None)},
-        "alert_id": {"$in": alert_ids},
-    }
-    if cloud_category:
-        # Filtramos por iptc->cloud category
-        # Guardamos iptc_category en news; filtramos por un set equivalente.
-        # Como el mapping no es 1:1, hacemos filtro por iptc_category y mapeamos en python.
-        pass
+    notif_docs = await mongo_db.notifications.find(
+        {"alert_id": {"$in": alert_ids}, "timestamp": {"$gte": start}},
+        {"news": 1},
+    ).sort("timestamp", -1).to_list(length=200)
 
-    docs = await mongo_db.news.find(match, {"title": 1, "description": 1, "iptc_category": 1}).sort(
-        "created_at", -1
-    ).limit(200).to_list(length=200)
+    articles: List[Dict[str, Any]] = []
+    for nd in notif_docs:
+        for item in nd.get("news") or []:
+            articles.append(item)
+            if len(articles) >= 200:
+                break
+        if len(articles) >= 200:
+            break
 
     texts: List[str] = []
-    for d in docs:
+    for a in articles:
         if cloud_category:
-            mapped = _map_iptc_to_cloud_category(d.get("iptc_category") or "")
+            text_for_class = f"{a.get('title', '')} {a.get('description', '')}"
+            iptc_cat = classify_iptc_level1(text_for_class)
+            mapped = _map_iptc_to_cloud_category(iptc_cat)
             if mapped != cloud_category:
                 continue
-        title = (d.get("title") or "").strip()
-        desc = (d.get("description") or "").strip()
+        title = (a.get("title") or "").strip()
+        desc = (a.get("description") or "").strip()
         if title or desc:
             texts.append(f"{title}\n{desc}".strip())
 

@@ -218,8 +218,8 @@ const Nubes = () => {
               categorias.map((cat) => (
                 <CategoriaCloud 
                   key={cat.id || cat.name || cat} 
-                  categoriaSlug={getBackendSlug(cat)} // Envía 'politics' al backend
-                  categoriaTraduccionKey={cat.name || cat} // Usa 'Politica' para el t()
+                  categoriaSlug={getBackendSlug(cat)}
+                  categoriaTraduccionKey={cat.name || cat}
                   refreshCount={refreshCount} 
                 />
               ))
