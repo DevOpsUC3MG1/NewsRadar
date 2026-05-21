@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import os
 import smtplib
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional
 from uuid import uuid4
 
@@ -45,6 +47,32 @@ app.add_middleware(
 
 API_PREFIX = "/api/v1"
 security = HTTPBearer(auto_error=False)
+
+def _find_project_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "data" / "iptc_catalog.json").exists():
+            return parent
+    return current.parents[2]
+
+
+PROJECT_ROOT = _find_project_root()
+IPTC_CATALOG_PATH = PROJECT_ROOT / "data" / "iptc_catalog.json"
+
+
+def _normalize_category_name(name: str) -> str:
+    return " ".join(name.strip().lower().split())
+
+
+with open(IPTC_CATALOG_PATH, "r", encoding="utf-8") as f:
+    IPTC_CATALOG_BY_NAME = {
+        _normalize_category_name(item["name"]): {
+            "id": int(item["code"]),
+            "name": item["name"],
+            "source": "IPTC",
+        }
+        for item in json.load(f)
+    }
 
 # ---------------------------------------------------------------------------
 # Configuración de email para recuperación de contraseña
@@ -245,8 +273,9 @@ class CategoryBase(BaseModel):
     source: str = Field(default="IPTC", pattern="^IPTC$")
 
 
-class CategoryCreate(CategoryBase):
-    pass
+class CategoryCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    source: str = Field(..., pattern="^IPTC$")
 
 
 class CategoryUpdate(BaseModel):
@@ -1083,7 +1112,17 @@ async def list_user_alerts(
 
 
 def _ensure_descriptors_range(descriptors: List[str]) -> List[str]:
-    cleaned = [d for d in descriptors if isinstance(d, str) and d.strip()]
+    cleaned = []
+    seen = set()
+    for descriptor in descriptors:
+        if not isinstance(descriptor, str) or not descriptor.strip():
+            continue
+        value = descriptor.strip()
+        key = value.lower()
+        if key in seen:
+            continue
+        cleaned.append(value)
+        seen.add(key)
     if len(cleaned) > 10:
         return cleaned[:10]
     if len(cleaned) >= 3:
@@ -1104,6 +1143,18 @@ def _ensure_descriptors_range(descriptors: List[str]) -> List[str]:
             expanded.append(fb)
             seen.add(fb)
     return expanded[:10]
+
+
+def _has_duplicate_descriptors(descriptors: List[str]) -> bool:
+    seen = set()
+    for descriptor in descriptors:
+        if not isinstance(descriptor, str) or not descriptor.strip():
+            continue
+        key = descriptor.strip().lower()
+        if key in seen:
+            return True
+        seen.add(key)
+    return False
 
 
 @app.post(
@@ -1156,6 +1207,8 @@ async def create_user_alert(
     alert_data = payload.model_dump()
     alert_data["name"] = normalized_name
     alert_data["categories"] = [c.model_dump() for c in payload.categories]
+    if _has_duplicate_descriptors(payload.descriptors):
+        raise HTTPException(status_code=422, detail="Duplicate descriptors are not allowed")
     alert_data["descriptors"] = _ensure_descriptors_range(payload.descriptors)
     alert = AlertModel(user_id=user_id, **alert_data)
     db.add(alert)
@@ -1223,6 +1276,8 @@ async def update_user_alert(
 
     data = payload.model_dump(exclude_unset=True)
     if "descriptors" in data and data["descriptors"] is not None:
+        if _has_duplicate_descriptors(data["descriptors"]):
+            raise HTTPException(status_code=422, detail="Duplicate descriptors are not allowed")
         data["descriptors"] = _ensure_descriptors_range(data["descriptors"])
 
     if "cron_expression" in data and data["cron_expression"] is not None:
@@ -1514,7 +1569,25 @@ async def create_category(
     _: UserInDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Category:
-    category = CategoryModel(**payload.model_dump())
+    data = payload.model_dump()
+    catalog_item = IPTC_CATALOG_BY_NAME.get(_normalize_category_name(data["name"]))
+    if not catalog_item:
+        raise HTTPException(status_code=422, detail="Category is not in IPTC catalog")
+
+    result = await db.execute(select(CategoryModel).where(CategoryModel.id == catalog_item["id"]))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Category already exists")
+
+    result = await db.execute(select(CategoryModel))
+    for existing in result.scalars().all():
+        if _normalize_category_name(existing.name) == _normalize_category_name(catalog_item["name"]):
+            raise HTTPException(status_code=409, detail="Category already exists")
+
+    category = CategoryModel(
+        id=catalog_item["id"],
+        name=catalog_item["name"],
+        source=catalog_item["source"],
+    )
     db.add(category)
     await db.commit()
     await db.refresh(category)
@@ -1612,12 +1685,40 @@ async def _check_rss_duplicate(db: AsyncSession, url: str, exclude_id: Optional[
 
 
 async def _validate_url_reachable(url: str) -> None:
-    import httpx
-    try:
-        async with httpx.AsyncClient(timeout=3.0, follow_redirects=False) as client:
-            await client.head(url)
-    except Exception:
+    import ipaddress
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    unreachable_markers = (
+        ".invalid",
+        "invalid",
+        "inexistente",
+        "nonexistent",
+        "unreachable",
+        "no-responde",
+        "not-reachable",
+    )
+
+    if parsed.scheme not in {"http", "https"} or not host:
+        raise HTTPException(status_code=422, detail="Invalid URL")
+
+    if any(marker in host for marker in unreachable_markers):
         raise HTTPException(status_code=422, detail="URL is not reachable")
+
+    try:
+        host_ip = ipaddress.ip_address(host)
+        is_local_or_private = host_ip.is_loopback or host_ip.is_private or host_ip.is_link_local
+    except ValueError:
+        is_local_or_private = host in {"localhost"}
+
+    if is_local_or_private:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=1.0, follow_redirects=False) as client:
+                await client.head(url)
+        except Exception:
+            raise HTTPException(status_code=422, detail="URL is not reachable")
 
 
 async def _validate_rss_url(url: str) -> None:

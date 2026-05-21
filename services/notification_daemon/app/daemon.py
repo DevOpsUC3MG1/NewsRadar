@@ -71,14 +71,23 @@ class AlertRegistry:
 
     def __init__(self) -> None:
         self._last_run: dict[int, datetime] = {}
-        # alertas actualmente programadas (para detectar añadidas/borradas)
         self._scheduled: dict[int, str] = {}  # alert_id -> cron_expression
+        self._seen_guids: dict[int, set[str]] = {}  # alert_id -> GUIDs ya procesados
 
     def get_last_run(self, alert_id: int) -> datetime | None:
         return self._last_run.get(alert_id)
 
     def set_last_run(self, alert_id: int, when: datetime) -> None:
         self._last_run[alert_id] = when
+
+    def has_seen_guid(self, alert_id: int, guid: str) -> bool:
+        return guid in self._seen_guids.setdefault(alert_id, set())
+
+    def mark_seen_guid(self, alert_id: int, guid: str) -> None:
+        self._seen_guids.setdefault(alert_id, set()).add(guid)
+
+    def cleanup_guids(self, alert_id: int) -> None:
+        self._seen_guids.pop(alert_id, None)
 
     def is_scheduled(self, alert_id: int, cron_expr: str) -> bool:
         return self._scheduled.get(alert_id) == cron_expr
@@ -250,23 +259,22 @@ async def process_alert(
         registry.set_last_run(alert_id, fired_at)
         return
 
-    # 4. fecha desde la que buscar noticias
-    since = registry.get_last_run(alert_id)
-    if since is None:
-        # primera ejecución: usamos "ahora" como baseline para no notificar
-        # noticias antiguas al arrancar.
-        since = fired_at
-        logger.info(
-            "Primera ejecución de alerta %s; baseline = %s",
-            alert_id, since.isoformat(),
-        )
-
-    # 5. descargar y parsear feeds
-    items = await gather_news(channels, since=since)
+    # 4. descargar y parsear feeds (sin filtro de fecha; la dedup evita duplicados)
+    items = await gather_news(channels, since=None)
     logger.info(
-        "Alerta %s: %d items obtenidos de %d canales (since=%s)",
-        alert_id, len(items), len(channels), since.isoformat(),
+        "Alerta %s: %d items obtenidos de %d canales",
+        alert_id, len(items), len(channels),
     )
+
+    # 5. filtrar GUIDs ya procesados (evitar duplicados entre ejecuciones)
+    new_items: list = []
+    for it in items:
+        if it.guid and registry.has_seen_guid(alert_id, it.guid):
+            continue
+        if it.guid:
+            registry.mark_seen_guid(alert_id, it.guid)
+        new_items.append(it)
+    items = new_items
 
     # 6. filtrar por descriptor OR categoría
     descriptors = alert.get("descriptors") or []

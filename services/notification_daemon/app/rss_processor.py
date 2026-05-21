@@ -32,6 +32,7 @@ class NewsItem:
     source_name: str
     channel_url: str
     channel_category: str  # categoría del canal en rss_sources.json (p.ej. "Politica")
+    guid: str = ""
     matched_descriptors: list[str] = field(default_factory=list)
     matched_category: str | None = None
 
@@ -105,6 +106,7 @@ def parse_feed(
             source_name=source_name,
             channel_url=channel_url,
             channel_category=channel_category,
+            guid=(entry.get("id") or entry.get("link") or "").strip(),
         ))
     return items
 
