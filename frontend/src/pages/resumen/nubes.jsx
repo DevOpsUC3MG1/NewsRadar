@@ -134,29 +134,27 @@ const Nubes = () => {
     loadGlobalData();
   }, [fetchNubeGlobal, refreshCount]);
 
-  // MAPEO DE SEGURIDAD: Mapeamos los nombres/IDs que vienen de la DB a los Slugs del Backend
   const getBackendSlug = (cat) => {
     const name = cat.name || cat;
-    // Normalizamos quitando acentos por si vienen de la DB con ellos
     const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     
     const map = {
-      "Politica": "politics",
-      "Economia": "economy",
-      "Tecnologia": "technology",
-      "Deportes": "sports",
-      "Cultura": "culture",
-      "Sociedad": "society",
-      "Internacional": "international",
-      "Salud": "health",
-      "Educacion": "education",
-      "Ciencia": "science",
-      "Viajes": "travel",
-      "Entretenimiento": "entertainment",
-      "General": "general"
+      "Politica":       "politics",
+      "Economia":       "economy",
+      "Tecnologia":     "technology",
+      "Deportes":       "sports",
+      "Cultura":        "culture",
+      "Sociedad":       "consumption",
+      "Internacional":  "international",
+      "Salud":          "consumption",
+      "Educacion":      "national",
+      "Ciencia":        "technology",
+      "Viajes":         "national",
+      "Entretenimiento":"entertainment",
+      "General":        "national",
     };
 
-    return map[normalized] || normalized.toLowerCase();
+    return map[normalized] || "national";
   };
 
   return (
