@@ -60,7 +60,7 @@ def _parse_date(entry: dict) -> datetime | None:
                 return datetime(*struct[:6], tzinfo=timezone.utc)
             except (TypeError, ValueError):
                 pass
-    
+
     return None
 
 

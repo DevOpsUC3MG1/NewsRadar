@@ -11,5 +11,7 @@ client = AsyncIOMotorClient(MONGO_URL)
 db_mongo = client.newsradar_archive
 
 # Dependencia para FastAPI
+
+
 def get_mongo_db():
     return db_mongo

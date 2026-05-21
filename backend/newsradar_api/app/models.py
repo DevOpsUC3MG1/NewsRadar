@@ -1,11 +1,13 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from .database import Base
+
 
 class Role(Base):
     __tablename__ = "roles"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -20,6 +22,7 @@ class User(Base):
     verification_token = Column(String(128), nullable=True)
     alerts = relationship("Alert", back_populates="user", cascade="all, delete")
 
+
 class Alert(Base):
     __tablename__ = "alerts"
     id = Column(Integer, primary_key=True)
@@ -32,11 +35,13 @@ class Alert(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="alerts")
 
+
 class Category(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True)
     name = Column(String(120))
     source = Column(String(10), default="IPTC")
+
 
 class InformationSource(Base):
     __tablename__ = "information_sources"
@@ -44,6 +49,7 @@ class InformationSource(Base):
     name = Column(String(120))
     url = Column(String(500))
     channels = relationship("RSSChannel", back_populates="source", cascade="all, delete")
+
 
 class RSSChannel(Base):
     __tablename__ = "rss_channels"

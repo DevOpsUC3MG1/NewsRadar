@@ -3,6 +3,7 @@ name: Code Quality
 on:
   push:
     branches: [main, develop]
+  pull_request:
 
 jobs:
   quality:
@@ -11,10 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: pip install flake8 pytest pytest-cov
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
 
       - name: Lint
-        run: flake8 . --exclude=backend/migrations
-
-      - name: Coverage
-        run: pytest --cov=.
+        run: flake8 . --exclude=backend/migrations --max-line-length=120

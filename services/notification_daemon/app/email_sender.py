@@ -104,12 +104,12 @@ def send_alert_email(
     msg["From"] = sender
     msg["To"] = to_email
 
-    text_body = (
-        f"Hola {user_first_name},\n\n"
-        f"Tu alerta '{alert_name}' tiene {len(items)} noticia(s) nueva(s):\n\n"
-        + _format_news_text(items)
-        + "\n— NewsRadar"
-    )
+    text_body = "\n\n".join([
+        f"Hola {user_first_name},",
+        f"Tu alerta '{alert_name}' tiene {len(items)} noticia(s) nueva(s):",
+        _format_news_text(items),
+        "— NewsRadar",
+    ])
 
     html_body = f"""
     <html>

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -168,7 +168,7 @@ async def build_dashboard(
         "fuentes": {"activas": len(sources_count), "rss": len(rss_count)},
         "noticias": {"hoy": int(news_today), "semana": int(news_period)},
         "alertas": len(alerts_count),
-        "evolucion": evolution[-max(1, min(days, 90)) :],
+        "evolucion": evolution[-max(1, min(days, 90)):],
         "categorias": categorias,
     }
 

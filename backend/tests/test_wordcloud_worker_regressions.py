@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from newsradar_api.app.services.keyword_service import generate_synonyms, generate_wordcloud_terms
-from newsradar_api.app.services.rss_worker import RSSWorker
+from newsradar_api.app.services.keyword_service import generate_synonyms, generate_wordcloud_terms  # noqa: E402
+from newsradar_api.app.services.rss_worker import RSSWorker  # noqa: E402
 
 
 class _FakeExecuteResult:

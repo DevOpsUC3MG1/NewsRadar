@@ -1,0 +1,19 @@
+[
+  {"code": "01000000", "name": "Artes, cultura, entretenimiento y medios"},
+  {"code": "02000000", "name": "Policía y justicia"},
+  {"code": "03000000", "name": "Catástrofes y accidentes"},
+  {"code": "04000000", "name": "Economía, negocios y finanzas"},
+  {"code": "05000000", "name": "Educación"},
+  {"code": "06000000", "name": "Medio ambiente"},
+  {"code": "07000000", "name": "Salud"},
+  {"code": "08000000", "name": "Interés humano, animales, insólito"},
+  {"code": "09000000", "name": "Mano de obra"},
+  {"code": "10000000", "name": "Estilo de vida y tiempo libre"},
+  {"code": "11000000", "name": "Política"},
+  {"code": "12000000", "name": "Religión y culto"},
+  {"code": "13000000", "name": "Ciencia y tecnología"},
+  {"code": "14000000", "name": "Sociedad"},
+  {"code": "15000000", "name": "Deporte"},
+  {"code": "16000000", "name": "Conflicto, guerra y paz"},
+  {"code": "17000000", "name": "Meteorología"}
+]
