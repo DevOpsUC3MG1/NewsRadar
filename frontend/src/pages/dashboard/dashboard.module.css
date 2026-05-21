@@ -148,6 +148,48 @@
   min-height: 300px;
 }
 
+.categoryStatsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.categoryStatRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eef0f3;
+  color: #1f2937;
+}
+
+.categoryName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoryMetric {
+  font-size: 0.82rem;
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+.categoryMetric strong {
+  color: #0E0E1D;
+}
+
+.emptyStats {
+  color: #666;
+  font-size: 0.95rem;
+  padding-top: 16px;
+}
+
 /* Wrapper scrollable horizontalmente en móvil */
 .chartScrollWrapper {
   width: 100%;

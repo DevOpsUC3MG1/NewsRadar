@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Cell, PieChart, Pie, Legend
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend
 } from 'recharts';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import authService from '../../services/authService';
 import styles from './dashboard.module.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const PIE_COLORS = ['#0E0E1D', '#4CC9F0', '#B5179E', '#2A9D8F', '#F77F00', '#6C757D'];
 
 const Dashboard = () => {
   const { t, i18n } = useTranslation();
@@ -24,16 +24,16 @@ const Dashboard = () => {
     setError(false);
     try {
       const token = authService.getToken();
-      if (!token) throw new Error("No hay token disponible");
+      if (!token) throw new Error('No hay token disponible');
 
       const days = newsFilter === '1D' ? 1 : 7;
 
       const response = await fetch(`${API_BASE}/api/v1/dashboard?days=${days}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Accept-Language': i18n.language || navigator.language || 'es'
-        }
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Accept-Language': i18n.language || navigator.language || 'es',
+        },
       });
 
       if (!response.ok) {
@@ -41,35 +41,15 @@ const Dashboard = () => {
       }
 
       const backendData = await response.json();
-
-      // --- DICCIONARIOS DE NORMALIZACIÓN ---
-      // Evita los errores de "missingKey" de i18next traduciendo del backend a tu JSON
-      const dayMap = { lun: 'mon', mar: 'tue', mie: 'wed', jue: 'thu', vie: 'fri', sab: 'sat', dom: 'sun' };
-      const catMap = { politica: 'politics', economia: 'economy', salud: 'health', tecnologia: 'tech', tecno: 'tech' };
-
-      const translatedData = {
+      setData({
         ...backendData,
-        evolucion: backendData.evolucion?.map(item => {
-          const rawName = item.name?.toLowerCase() || '';
-          const mappedKey = dayMap[rawName] || rawName;
-          return {
-            ...item,
-            name: t(`dashboard.days.${mappedKey}`, { defaultValue: item.name })
-          };
-        }) || [],
-        categorias: backendData.categorias?.map(item => {
-          const rawName = item.name?.toLowerCase() || '';
-          const mappedKey = catMap[rawName] || rawName;
-          return {
-            ...item,
-            name: t(`dashboard.categories.${mappedKey}`, { defaultValue: item.name })
-          };
-        }) || []
-      };
-
-      setData(translatedData);
+        categorias: (backendData.categorias || []).map((item) => ({
+          ...item,
+          name: t(`categorias.${item.name}`, { defaultValue: item.name }),
+        })),
+      });
     } catch (err) {
-      console.error("Error al cargar datos del dashboard:", err);
+      console.error('Error al cargar datos del dashboard:', err);
       setError(true);
     } finally {
       setLoading(false);
@@ -84,8 +64,11 @@ const Dashboard = () => {
     if (active && payload && payload.length) {
       return (
         <div className={styles.customTooltip}>
-          <p className={styles.tooltipLabel}>{`${payload[0].name}`}</p>
+          <p className={styles.tooltipLabel}>{payload[0].name}</p>
           <p className={styles.tooltipValue}>{`${t('dashboard.charts.newsLabel')}${payload[0].value}`}</p>
+          <p className={styles.tooltipValue}>
+            {`${t('dashboard.charts.alertsLabel', { defaultValue: 'Alertas: ' })}${payload[0].payload?.alertas || 0}`}
+          </p>
         </div>
       );
     }
@@ -147,11 +130,15 @@ const Dashboard = () => {
             <button
               className={newsFilter === '1D' ? styles.filterBtnActive : styles.filterBtnInactive}
               onClick={() => setNewsFilter('1D')}
-            >1D</button>
+            >
+              1D
+            </button>
             <button
               className={newsFilter === '7D' ? styles.filterBtnActive : styles.filterBtnInactive}
               onClick={() => setNewsFilter('7D')}
-            >7D</button>
+            >
+              7D
+            </button>
           </div>
         </div>
 
@@ -166,27 +153,33 @@ const Dashboard = () => {
 
       <div className={styles.bottomRow}>
         <div className={`${styles.card} ${styles.largeCard}`}>
-          <span className={styles.cardTitle}>{t('dashboard.charts.evolutionTitle')}</span>
-          <div className={styles.chartScrollWrapper}>
-            <div className={styles.chartInner}>
-            {/* SOLUCIÓN AL WARNING: minWidth={1} y minHeight={1} obligan a recharts a no leer valores negativos iniciales */}
-              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                <BarChart data={data.evolucion}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{fill: '#f0f0f0'}} />
-                  <Bar dataKey="noticias" name={t('dashboard.charts.news')} fill="#0088FE" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>  
+          <span className={styles.cardTitle}>
+            {t('dashboard.charts.categoryCountersTitle', { defaultValue: 'RESUMEN POR CATEGORIA' })}
+          </span>
+          <div className={styles.categoryStatsList}>
+            {(data.categorias || []).length === 0 ? (
+              <div className={styles.emptyStats}>
+                {t('dashboard.charts.noCategoryData', { defaultValue: 'Sin datos por categoria' })}
+              </div>
+            ) : (
+              data.categorias.map((item) => (
+                <div className={styles.categoryStatRow} key={item.key}>
+                  <span className={styles.categoryName}>{item.name}</span>
+                  <span className={styles.categoryMetric}>
+                    <strong>{item.value || 0}</strong> {t('dashboard.charts.news', { defaultValue: 'Noticias' })}
+                  </span>
+                  <span className={styles.categoryMetric}>
+                    <strong>{item.alertas || 0}</strong> {t('dashboard.charts.alerts', { defaultValue: 'Alertas' })}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className={`${styles.card} ${styles.largeCard}`}>
           <span className={styles.cardTitle}>{t('dashboard.charts.categoriesTitle')}</span>
-          <div className={styles.chartContainer} style={{ width: '100%', height: '300px', minHeight: '300px' }}>
-             {/* SOLUCIÓN AL WARNING */}
+          <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <PieChart>
                 <Pie
@@ -197,7 +190,7 @@ const Dashboard = () => {
                   dataKey="value"
                 >
                   {data.categorias?.map((entry, index) => (
-                    <Cell key={index} fill={['#0E0E1D', '#4CC9F0', '#B5179E', '#7209B7'][index % 4]} />
+                    <Cell key={entry.key} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip content={<CustomPieTooltip />} />

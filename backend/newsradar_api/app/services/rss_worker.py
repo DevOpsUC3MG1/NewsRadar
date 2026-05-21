@@ -13,12 +13,13 @@ Responsabilidades:
 import logging
 import feedparser
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..models import Alert as AlertModel, RSSChannel as RSSChannelModel, Category as CategoryModel
+from ..models import InformationSource as InformationSourceModel
 from .keyword_service import classify_iptc_level1, expand_keywords
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,7 @@ class RSSWorker:
         stats["channels_processed"] = len(rss_channels)
 
         # 4. Procesar cada canal RSS
+        notification_news = []
         for channel in rss_channels:
             try:
                 articles = await self._fetch_and_parse_channel(channel, keywords)
@@ -147,6 +149,7 @@ class RSSWorker:
                         stored = await self._store_article(article, alert_id)
                         if stored:
                             stats["articles_stored"] += 1
+                            notification_news.append(self._article_to_notification_news(stored))
                     except Exception as e:
                         logger.error(f"Error guardando artículo: {str(e)}")
                         stats["errors"].append(str(e))
@@ -154,6 +157,9 @@ class RSSWorker:
             except Exception as e:
                 logger.error(f"Error procesando canal {channel.id}: {str(e)}")
                 stats["errors"].append(f"Canal {channel.id}: {str(e)}")
+
+        if notification_news:
+            await self._create_notification(alert, notification_news, stats)
 
         return stats
 
@@ -214,6 +220,9 @@ class RSSWorker:
         articles = []
 
         try:
+            source_name = await self._get_source_name(channel.information_source_id)
+            category_name = await self._get_category_name(channel.category_id)
+
             # Fetch del feed
             feed = feedparser.parse(str(channel.url))
 
@@ -228,6 +237,9 @@ class RSSWorker:
                         "description": entry.get("summary", "") or entry.get("description", ""),
                         "url": entry.get("link", ""),
                         "channel_id": channel.id,
+                        "category_id": channel.category_id,
+                        "category": category_name,
+                        "source_name": source_name,
                         "published_date": self._parse_date(entry.get("published", "")),
                         "source_origin": str(channel.information_source_id) if channel.information_source_id else None,
                     }
@@ -284,7 +296,56 @@ class RSSWorker:
         # Fallback
         return datetime.utcnow()
 
-    async def _store_article(self, article: Dict[str, Any], alert_id: int) -> bool:
+    async def _get_source_name(self, source_id: Optional[int]) -> str:
+        if not source_id:
+            return "Fuente desconocida"
+        result = await self.db.execute(select(InformationSourceModel).where(InformationSourceModel.id == source_id))
+        source = result.scalar_one_or_none()
+        return source.name if source else f"Fuente {source_id}"
+
+    async def _get_category_name(self, category_id: Optional[int]) -> str:
+        if not category_id:
+            return "Sin categoria"
+        result = await self.db.execute(select(CategoryModel).where(CategoryModel.id == category_id))
+        category = result.scalar_one_or_none()
+        return category.name if category else f"Categoria {category_id}"
+
+    def _article_to_notification_news(self, article: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "title": article.get("title") or "Sin titulo",
+            "link": article.get("url") or "#",
+            "source_name": article.get("source_name") or "Fuente desconocida",
+            "category": article.get("category") or article.get("iptc_category") or "Sin categoria",
+            "published": article.get("published_date"),
+            "description": article.get("description") or "",
+        }
+
+    async def _create_notification(
+        self,
+        alert: AlertModel,
+        news_items: List[Dict[str, Any]],
+        stats: Dict[str, Any],
+    ) -> None:
+        last_doc = await self.mongo_db.notifications.find_one(sort=[("_id", -1)])
+        last_id = last_doc.get("_id") if last_doc else 0
+        next_id = (last_id + 1) if isinstance(last_id, int) else 1
+        await self.mongo_db.notifications.insert_one(
+            {
+                "_id": next_id,
+                "alert_id": int(alert.id),
+                "timestamp": datetime.utcnow(),
+                "title": f"Noticias detectadas para {alert.name}",
+                "content": f"Se detectaron {len(news_items)} noticias nuevas.",
+                "metrics": [
+                    {"name": "channels_processed", "value": stats["channels_processed"]},
+                    {"name": "articles_detected", "value": stats["articles_detected"]},
+                    {"name": "articles_stored", "value": stats["articles_stored"]},
+                ],
+                "news": news_items,
+            }
+        )
+
+    async def _store_article(self, article: Dict[str, Any], alert_id: int) -> Optional[Dict[str, Any]]:
         """
         Guardar artículo en MongoDB con clasificación IPTC.
 
@@ -308,7 +369,7 @@ class RSSWorker:
 
             if existing:
                 logger.debug(f"Artículo duplicado: {article['url']}")
-                return False
+                return None
 
             # Documento final
             doc = {
@@ -320,8 +381,8 @@ class RSSWorker:
 
             result = await self.mongo_db.news.insert_one(doc)
             logger.info(f"Artículo guardado: {result.inserted_id}")
-            return True
+            return doc
 
         except Exception as e:
             logger.error(f"Error guardando artículo en MongoDB: {str(e)}")
-            return False
+            return None

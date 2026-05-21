@@ -422,9 +422,10 @@ class DashboardEvolutionItem(BaseModel):
 
 
 class DashboardCategoryItem(BaseModel):
-    key: str = Field(..., min_length=1, max_length=30)
-    name: str = Field(..., min_length=1, max_length=60)
+    key: str = Field(..., min_length=1, max_length=120)
+    name: str = Field(..., min_length=1, max_length=120)
     value: int = Field(..., ge=0)
+    alertas: int = Field(default=0, ge=0)
 
 
 class DashboardResponse(BaseModel):
@@ -1367,6 +1368,34 @@ async def list_alert_notifications(
 
     cursor = mongo_db.notifications.find({"alert_id": alert_id})
     notifications = await cursor.to_list(length=None)
+
+    if not notifications:
+        news_docs = await mongo_db.news.find({"alert_id": alert_id}).sort("created_at", -1).to_list(length=200)
+        if news_docs:
+            notifications = [
+                {
+                    "_id": 1,
+                    "alert_id": alert_id,
+                    "timestamp": news_docs[0].get("created_at") or datetime.now(timezone.utc),
+                    "metrics": [
+                        {"name": "articles_detected", "value": len(news_docs)},
+                        {"name": "articles_stored", "value": len(news_docs)},
+                    ],
+                    "title": "Noticias detectadas",
+                    "content": f"Se detectaron {len(news_docs)} noticias.",
+                    "news": [
+                        {
+                            "title": item.get("title") or "Sin titulo",
+                            "link": item.get("url") or "#",
+                            "source_name": item.get("source_name") or item.get("source_origin") or "Fuente desconocida",
+                            "category": item.get("category") or item.get("iptc_category") or "Sin categoria",
+                            "published": item.get("published_date"),
+                            "description": item.get("description") or "",
+                        }
+                        for item in news_docs
+                    ],
+                }
+            ]
 
     return [
         Notification(

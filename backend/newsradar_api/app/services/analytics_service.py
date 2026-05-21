@@ -47,9 +47,87 @@ _DASH_CATEGORY_LABELS = {
     "es": {"politics": "Politica", "economy": "Economia", "health": "Salud", "tech": "Tecnologia"},
 }
 
+_IPTC_TO_ES = {
+    "Politics": "Politica",
+    "Business": "Economia",
+    "Health": "Salud",
+    "Technology": "Tecnologia",
+    "Science": "Ciencia y tecnologia",
+    "Sports": "Deporte",
+    "Entertainment": "Cultura",
+    "Lifestyle": "Estilo de vida y tiempo libre",
+    "World": "Internacional",
+}
+
 
 def _dashboard_category_label(key: str, lang: str) -> str:
     return (_DASH_CATEGORY_LABELS.get(lang) or _DASH_CATEGORY_LABELS["en"]).get(key, key)
+
+
+def _normalize_dashboard_category(value: str) -> str:
+    return " ".join((value or "").strip().split())
+
+
+def _category_key(label: str) -> str:
+    return _normalize_dashboard_category(label).lower()
+
+
+def _news_category_label(raw_category: str, lang: str) -> str:
+    value = _normalize_dashboard_category(raw_category)
+    if not value:
+        return "Sin categoria" if lang == "es" else "Uncategorized"
+    if lang == "es":
+        return _IPTC_TO_ES.get(value, value)
+    return value
+
+
+async def _notification_news_stats(mongo_db, start: datetime, start_today: datetime, lang: str) -> Dict[str, Any]:
+    start_naive = start.replace(tzinfo=None)
+    start_today_naive = start_today.replace(tzinfo=None)
+    docs = await mongo_db.notifications.find(
+        {"timestamp": {"$gte": start_naive}},
+        {"timestamp": 1, "news": 1},
+    ).to_list(length=2000)
+
+    total = 0
+    today = 0
+    by_category: Dict[str, int] = {}
+    for doc in docs:
+        news_items = doc.get("news") or []
+        if not isinstance(news_items, list):
+            continue
+        ts = doc.get("timestamp")
+        is_today = isinstance(ts, datetime) and ts >= start_today_naive
+        for item in news_items:
+            if not isinstance(item, dict):
+                continue
+            total += 1
+            if is_today:
+                today += 1
+            label = _news_category_label(item.get("category") or "", lang)
+            by_category[label] = by_category.get(label, 0) + 1
+
+    return {"total": total, "today": today, "by_category": by_category}
+
+
+async def _mongo_news_stats(mongo_db, start: datetime, start_today: datetime, lang: str) -> Dict[str, Any]:
+    start_naive = start.replace(tzinfo=None)
+    start_today_naive = start_today.replace(tzinfo=None)
+    total = await mongo_db.news.count_documents({"created_at": {"$gte": start_naive}})
+    today = await mongo_db.news.count_documents({"created_at": {"$gte": start_today_naive}})
+    rows = await mongo_db.news.aggregate(
+        [
+            {"$match": {"created_at": {"$gte": start_naive}}},
+            {"$group": {"_id": "$iptc_category", "count": {"$sum": 1}}},
+        ]
+    ).to_list(length=100)
+
+    by_category: Dict[str, int] = {}
+    for row in rows:
+        label = _news_category_label(row.get("_id") or "", lang)
+        by_category[label] = by_category.get(label, 0) + int(row.get("count") or 0)
+
+    return {"total": int(total), "today": int(today), "by_category": by_category}
 
 
 def _map_iptc_to_cloud_category(iptc: str) -> str:
@@ -107,68 +185,42 @@ async def build_dashboard(
     rss_count = (await db.execute(select(RSSChannelModel))).scalars().all()
     alerts_count = (await db.execute(select(AlertModel))).scalars().all()
 
-    # Mongo counts
-    news_today = await mongo_db.news.count_documents({"created_at": {"$gte": start_today.replace(tzinfo=None)}})
-    news_period = await mongo_db.news.count_documents({"created_at": {"$gte": start.replace(tzinfo=None)}})
+    # Las noticias visibles para el usuario viven en notifications.news. Si no
+    # hay notificaciones, caemos a mongo.news, que es lo que rellena el worker.
+    notification_stats = await _notification_news_stats(mongo_db, start, start_today, lang)
+    news_stats = notification_stats
+    if notification_stats["total"] == 0:
+        news_stats = await _mongo_news_stats(mongo_db, start, start_today, lang)
 
-    # Evolution: news per day (last N days)
-    # created_at se guarda como naive UTC en rss_worker -> comparamos con naive UTC.
-    pipeline = [
-        {"$match": {"created_at": {"$gte": start.replace(tzinfo=None)}}},
-        {
-            "$group": {
-                "_id": {
-                    "y": {"$year": "$created_at"},
-                    "m": {"$month": "$created_at"},
-                    "d": {"$dayOfMonth": "$created_at"},
-                },
-                "count": {"$sum": 1},
-            }
-        },
-        {"$sort": {"_id.y": 1, "_id.m": 1, "_id.d": 1}},
-    ]
-    rows = await mongo_db.news.aggregate(pipeline).to_list(length=500)
+    alert_bucket: Dict[str, int] = {}
+    for alert in alerts_count:
+        for category in alert.categories or []:
+            if not isinstance(category, dict):
+                continue
+            label = _normalize_dashboard_category(category.get("label") or category.get("name") or "")
+            if not label:
+                continue
+            alert_bucket[label] = alert_bucket.get(label, 0) + 1
 
-    # Relleno de dias faltantes
-    by_day: Dict[str, int] = {}
-    for r in rows:
-        _id = r.get("_id") or {}
-        y, m, d = _id.get("y"), _id.get("m"), _id.get("d")
-        if not (y and m and d):
-            continue
-        key = f"{y:04d}-{m:02d}-{d:02d}"
-        by_day[key] = int(r.get("count") or 0)
-
-    evolution: List[Dict[str, Any]] = []
-    cur = _start_of_day_utc(start)
-    end = _start_of_day_utc(now)
-    while cur <= end:
-        key = cur.strftime("%Y-%m-%d")
-        evolution.append({"name": _dow_label(cur, lang), "date": key, "noticias": by_day.get(key, 0)})
-        cur += timedelta(days=1)
-
-    # Categories (4 buckets) from iptc_category
-    cat_pipeline = [
-        {"$match": {"created_at": {"$gte": start.replace(tzinfo=None)}}},
-        {"$group": {"_id": "$iptc_category", "count": {"$sum": 1}}},
-    ]
-    cat_rows = await mongo_db.news.aggregate(cat_pipeline).to_list(length=50)
-    bucket = {"politics": 0, "economy": 0, "health": 0, "tech": 0}
-    for r in cat_rows:
-        key = _map_iptc_to_dashboard_category(r.get("_id") or "")
-        if not key:
-            continue
-        bucket[key] += int(r.get("count") or 0)
-
+    category_names = sorted(
+        set(news_stats["by_category"].keys()) | set(alert_bucket.keys()),
+        key=lambda name: (-int(news_stats["by_category"].get(name, 0)), name.lower()),
+    )
     categorias = [
-        {"key": k, "name": _dashboard_category_label(k, lang), "value": v} for k, v in bucket.items()
+        {
+            "key": _category_key(name),
+            "name": name,
+            "value": int(news_stats["by_category"].get(name, 0)),
+            "alertas": int(alert_bucket.get(name, 0)),
+        }
+        for name in category_names
     ]
 
     return {
         "fuentes": {"activas": len(sources_count), "rss": len(rss_count)},
-        "noticias": {"hoy": int(news_today), "semana": int(news_period)},
+        "noticias": {"hoy": int(news_stats["today"]), "semana": int(news_stats["total"])},
         "alertas": len(alerts_count),
-        "evolucion": evolution[-max(1, min(days, 90)):],
+        "evolucion": [],
         "categorias": categorias,
     }
 
