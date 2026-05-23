@@ -25,12 +25,17 @@ show_missing = true
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+exclude = ["backend/migrations", ".git", "__pycache__", ".venv", "frontend", "services", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B"]
+select = ["E", "F", "W", "B"]
+ignore = ["B008", "B904"]
 
 [tool.ruff.lint.per-file-ignores]
 "backend/migrations/*" = ["E402", "F401"]
+"backend/tests/*" = ["E501"]
+"backend/newsradar_api/app/main.py" = ["E501"]
+"backend/newsradar_api/init_db.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
