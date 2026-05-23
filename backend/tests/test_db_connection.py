@@ -2,13 +2,12 @@ import os
 
 
 def test_docker_db_connection():
-    """Verifica que el entorno de test tiene configuración de base de datos (o usa mock)"""
+    """Verifica que el entorno de test tiene acceso a la base de datos real"""
     db_url = os.getenv("DATABASE_URL")
-    if db_url:
-        assert any(x in db_url for x in ["test", "newsradar"])
-        print(f"✅ Conectado exitosamente a: {db_url}")
-    else:
-        print("ℹ️  Sin DATABASE_URL — usando app mock (sin DB)")
+    assert db_url is not None, "DATABASE_URL debe estar configurada"
+    assert any(x in db_url for x in ["test", "newsradar"]), \
+        f"DATABASE_URL debe contener 'test' o 'newsradar': {db_url}"
+    print(f"Conectado exitosamente a: {db_url}")
 
 
 def test_env_is_testing():
