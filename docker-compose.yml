@@ -102,6 +102,13 @@ services:
       - "8080:8080"
     restart: unless-stopped
 
+  mock_test_rss:
+    build: ./services/mock_test_rss
+    container_name: newsradar_mock_test_rss
+    ports:
+      - "8100:8000"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   mongodb_data:

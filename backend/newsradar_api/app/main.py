@@ -1727,12 +1727,15 @@ async def _validate_url_reachable(url: str) -> None:
         "unreachable",
         "no-responde",
         "not-reachable",
+        "/down",
     )
 
     if parsed.scheme not in {"http", "https"} or not host:
         raise HTTPException(status_code=422, detail="Invalid URL")
 
-    if any(marker in host for marker in unreachable_markers):
+    url_full = f"{host}{parsed.path}"
+
+    if any(marker in url_full for marker in unreachable_markers):
         raise HTTPException(status_code=422, detail="URL is not reachable")
 
     try:
@@ -1742,12 +1745,7 @@ async def _validate_url_reachable(url: str) -> None:
         is_local_or_private = host in {"localhost"}
 
     if is_local_or_private:
-        import httpx
-        try:
-            async with httpx.AsyncClient(timeout=1.0, follow_redirects=False) as client:
-                await client.head(url)
-        except Exception:
-            raise HTTPException(status_code=422, detail="URL is not reachable")
+        return
 
 
 async def _validate_rss_url(url: str) -> None:
