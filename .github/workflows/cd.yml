@@ -50,5 +50,4 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMG_FRONTEND }}:latest
             ${{ env.REGISTRY }}/${{ env.IMG_FRONTEND }}:${{ github.sha }}
 
-      - name: Deploy
-        run: bash scripts/deploy.sh
+
