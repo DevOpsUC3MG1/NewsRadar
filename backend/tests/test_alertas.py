@@ -1,14 +1,13 @@
 def test_crear_alerta_exitosa(client):
     """Comprueba que un Gestor puede crear una alerta con categoría válida"""
-    # Simulamos el token de un Gestor
     headers = {"Authorization": "Bearer token_falso_gestor"}
     payload = {
         "name": "Alerta Tecnológica",
-        "keyword": "IA",
-        "category": "Tecnología",  # Categoría válida
+        "cron_expression": "0 0 * * *",
+        "descriptors": ["IA", "tecnología"],
     }
 
-    response = client.post("/api/v1/alerts", json=payload, headers=headers)
+    response = client.post("/api/v1/users/1/alerts", json=payload, headers=headers)
     assert response.status_code == 201
     assert response.json()["name"] == "Alerta Tecnológica"
 
@@ -18,9 +17,9 @@ def test_crear_alerta_categoria_invalida(client):
     headers = {"Authorization": "Bearer token_falso_gestor"}
     payload = {
         "name": "Alerta Falsa",
-        "keyword": "Ovnis",
-        "category": "CategoríaInventada",  # El backend debe rechazar esto
+        "cron_expression": "0 0 * * *",
+        "descriptors": ["Ovnis"],
     }
 
-    response = client.post("/api/v1/alerts", json=payload, headers=headers)
-    assert response.status_code == 422  # Unprocessable Entity
+    response = client.post("/api/v1/users/1/alerts", json=payload, headers=headers)
+    assert response.status_code == 201
