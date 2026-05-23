@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "newsradar"
+version = "1.0.0"
+description = "NewsRadar - API REST para gestión de alertas y noticias RSS"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_test_loop_scope = "session"
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["backend/tests"]
+
+[tool.coverage.run]
+source = ["backend/newsradar_api"]
+omit = ["backend/migrations/*"]
+
+[tool.coverage.report]
+fail_under = 50
+show_missing = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/migrations/*" = ["E402", "F401"]
+
+[tool.ruff.format]
+quote-style = "double"

@@ -18,6 +18,13 @@ pytest tests/test_api.py -v
 # Lint
 flake8 . --exclude=backend/migrations --max-line-length=120
 
+# Ruff (linter/formatter moderno)
+ruff check .
+ruff format --check .
+
+# Generate API docs
+bash scripts/docs.sh
+
 # Frontend (from frontend/)
 npm run dev
 ```
