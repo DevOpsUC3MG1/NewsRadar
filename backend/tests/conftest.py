@@ -6,6 +6,7 @@ import pytest_asyncio
 from datetime import datetime
 from pathlib import Path
 from httpx import ASGITransport, AsyncClient
+from unittest.mock import patch as _patch
 
 # Ensure the backend directory is on the Python path
 _backend_root = str(Path(__file__).resolve().parents[1])
@@ -19,7 +20,7 @@ os.environ.setdefault("GMAIL_SENDER", "test@newsradar.com")
 os.environ.setdefault("GMAIL_APP_PASSWORD", "test_placeholder")
 
 # Mock email sending functions so tests don't hit real SMTP
-from unittest.mock import patch as _patch
+
 _patch("newsradar_api.app.main.send_verification_email", return_value=None).start()
 _patch("newsradar_api.app.main.send_reset_password_email", return_value=None).start()
 
