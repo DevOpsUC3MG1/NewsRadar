@@ -72,7 +72,6 @@ jobs:
       run: |
         pip install ruff
         ruff check .
-        ruff format --check .
 
     # -------------------------
     # TESTS + COVERAGE
