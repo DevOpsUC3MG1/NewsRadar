@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import asyncio
 import pytest
 import pytest_asyncio
 from datetime import datetime
@@ -14,6 +13,15 @@ if _backend_root not in sys.path:
     sys.path.insert(0, _backend_root)
 
 os.environ.setdefault("ENV", "testing")
+
+# Ensure Gmail env vars are set so import doesn't crash
+os.environ.setdefault("GMAIL_SENDER", "test@newsradar.com")
+os.environ.setdefault("GMAIL_APP_PASSWORD", "test_placeholder")
+
+# Mock email sending functions so tests don't hit real SMTP
+from unittest.mock import patch as _patch
+_patch("newsradar_api.app.main.send_verification_email", return_value=None).start()
+_patch("newsradar_api.app.main.send_reset_password_email", return_value=None).start()
 
 
 # --- DB INIT (async, session-scoped) ---
