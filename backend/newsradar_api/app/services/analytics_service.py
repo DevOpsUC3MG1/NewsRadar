@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import logging
 import os
+import unicodedata
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Alert as AlertModel, InformationSource as InformationSourceModel, RSSChannel as RSSChannelModel
-from .keyword_service import generate_wordcloud_terms, classify_iptc_level1
+from .keyword_service import generate_wordcloud_terms
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +170,33 @@ def _map_iptc_to_dashboard_category(iptc: str) -> Optional[str]:
     return None
 
 
+def _alert_category_to_cloud_slug(label: str) -> str:
+    if not label:
+        return "national"
+    normalized = unicodedata.normalize("NFD", label)
+    normalized = "".join(c for c in normalized if unicodedata.category(c) != "Mn")
+    mapping = {
+        "Artes, cultura, entretenimiento y medios": "culture",
+        "Policia y justicia": "national",
+        "Catastrofes y accidentes": "national",
+        "Economia, negocios y finanzas": "economy",
+        "Educacion": "education",
+        "Medio ambiente": "national",
+        "Salud": "health",
+        "Interes humano, animales, insolito": "national",
+        "Mano de obra": "national",
+        "Estilo de vida y tiempo libre": "culture",
+        "Politica": "politics",
+        "Religion y culto": "national",
+        "Ciencia y tecnologia": "technology",
+        "Sociedad": "society",
+        "Deporte": "sports",
+        "Conflicto, guerra y paz": "national",
+        "Meteorologia": "national",
+    }
+    return mapping.get(normalized, "national")
+
+
 async def build_dashboard(
     *,
     db: AsyncSession,
@@ -260,6 +288,7 @@ async def build_wordcloud(
         return []
 
     cache_key = {
+        "version": 2,
         "scope": "category" if cloud_category else "global",
         "category": cloud_category,
         "user_id": int(user_id),
@@ -276,32 +305,35 @@ async def build_wordcloud(
             if isinstance(terms, list):
                 return terms
 
+    alert_slugs: Dict[int, Set[str]] = {}
+    for alert in user_alerts:
+        slugs = set()
+        for cat in alert.categories or []:
+            label = cat.get("label") or cat.get("name") or ""
+            slug = _alert_category_to_cloud_slug(label)
+            slugs.add(slug)
+        alert_slugs[int(alert.id)] = slugs
+
     notif_docs = await mongo_db.notifications.find(
         {"alert_id": {"$in": alert_ids}, "timestamp": {"$gte": start}},
         {"news": 1},
     ).sort("timestamp", -1).to_list(length=200)
 
-    articles: List[Dict[str, Any]] = []
-    for nd in notif_docs:
-        for item in nd.get("news") or []:
-            articles.append(item)
-            if len(articles) >= 200:
-                break
-        if len(articles) >= 200:
-            break
-
     texts: List[str] = []
-    for a in articles:
+    for nd in notif_docs:
         if cloud_category:
-            text_for_class = f"{a.get('title', '')} {a.get('description', '')}"
-            iptc_cat = classify_iptc_level1(text_for_class)
-            mapped = _map_iptc_to_cloud_category(iptc_cat)
-            if mapped != cloud_category:
+            nd_slugs = alert_slugs.get(nd.get("alert_id"), set())
+            if cloud_category not in nd_slugs:
                 continue
-        title = (a.get("title") or "").strip()
-        desc = (a.get("description") or "").strip()
-        if title or desc:
-            texts.append(f"{title}\n{desc}".strip())
+        for item in nd.get("news") or []:
+            title = (item.get("title") or "").strip()
+            desc = (item.get("description") or "").strip()
+            if title or desc:
+                texts.append(f"{title}\n{desc}".strip())
+            if len(texts) >= 200:
+                break
+        if len(texts) >= 200:
+            break
 
     if not texts:
         await mongo_db.wordcloud_cache.update_one(

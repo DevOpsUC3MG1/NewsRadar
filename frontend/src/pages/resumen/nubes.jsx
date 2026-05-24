@@ -115,43 +115,32 @@ const CategoriaCloud = ({ categoriaSlug, categoriaTraduccionKey, refreshCount })
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 const Nubes = () => {
   const { t } = useTranslation();
-  const { fetchNubeGlobal, categorias, newsLoading } = useContext(AuthContext);
+  const { categorias, newsLoading } = useContext(AuthContext);
 
-  const [globalTerminos, setGlobalTerminos] = useState([]);
-  const [globalLoading,  setGlobalLoading]  = useState(true);
-  const [globalError,    setGlobalError]    = useState(false);
-  const [refreshCount,   setRefreshCount]   = useState(0);
-
-  const loadGlobalData = () => {
-    setGlobalLoading(true);
-    setGlobalError(false);
-    fetchNubeGlobal()
-      .then((data) => { setGlobalTerminos(data); setGlobalLoading(false); })
-      .catch(() => { setGlobalError(true); setGlobalLoading(false); });
-  };
-
-  useEffect(() => {
-    loadGlobalData();
-  }, [fetchNubeGlobal, refreshCount]);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   const getBackendSlug = (cat) => {
     const name = cat.name || cat;
     const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     
     const map = {
-      "Politica":       "politics",
-      "Economia":       "economy",
-      "Tecnologia":     "technology",
-      "Deportes":       "sports",
-      "Cultura":        "culture",
-      "Sociedad":       "consumption",
-      "Internacional":  "international",
-      "Salud":          "consumption",
-      "Educacion":      "national",
-      "Ciencia":        "technology",
-      "Viajes":         "national",
-      "Entretenimiento":"entertainment",
-      "General":        "national",
+      "Artes, cultura, entretenimiento y medios": "culture",
+      "Policia y justicia":                       "national",
+      "Catastrofes y accidentes":                 "national",
+      "Economia, negocios y finanzas":            "economy",
+      "Educacion":                                "education",
+      "Medio ambiente":                           "national",
+      "Salud":                                    "health",
+      "Interes humano, animales, insolito":       "national",
+      "Mano de obra":                             "national",
+      "Estilo de vida y tiempo libre":            "culture",
+      "Politica":                                 "politics",
+      "Religion y culto":                         "national",
+      "Ciencia y tecnologia":                     "technology",
+      "Sociedad":                                 "society",
+      "Deporte":                                  "sports",
+      "Conflicto, guerra y paz":                  "national",
+      "Meteorologia":                             "national",
     };
 
     return map[normalized] || "national";
@@ -179,30 +168,10 @@ const Nubes = () => {
           onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3b71ca'}
           onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4e8df5'}
         >
-          <RefreshCw size={18} className={globalLoading ? styles.spinning : ''} />
+          <RefreshCw size={18} />
           {t('clouds.refreshBtn', 'Actualizar')}
         </button>
       </div>
-
-      {/* ── NUBE GLOBAL ── */}
-      <section className={styles.globalSection}>
-        <div className={styles.globalCard}>
-          <h2 className={styles.globalTitle}>
-            <span className={styles.accentBar} />
-            {t('clouds.globalTitle', 'Términos Globales')}
-          </h2>
-          {globalError
-            ? <p style={{ color: '#e74c3c', fontSize: '0.85rem' }}>{t('clouds.errorGlobal')}</p>
-            : <WordCloud
-                terminos={globalTerminos}
-                loading={globalLoading}
-                minFontRem={0.8}
-                maxFontRem={2.5}
-                showCreateAlert={true}
-              />
-          }
-        </div>
-      </section>
 
       {/* ── NUBES POR CATEGORÍA ── */}
       <section className={styles.catsSection}>
