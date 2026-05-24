@@ -1,0 +1,1283 @@
+{
+  "inteligencia artificial": [
+    "IA",
+    "IA generativa",
+    "aprendizaje automatico",
+    "machine learning",
+    "modelos generativos"
+  ],
+  "machine learning": [
+    "aprendizaje automatico",
+    "IA",
+    "modelos predictivos",
+    "algoritmos de aprendizaje"
+  ],
+  "big data": [
+    "datos masivos",
+    "analitica de datos",
+    "ciencia de datos",
+    "procesamiento de datos"
+  ],
+  "cloud computing": [
+    "computacion en la nube",
+    "servicios cloud",
+    "infraestructura en la nube",
+    "plataformas cloud"
+  ],
+  "ciberataque": [
+    "ataque informatico",
+    "ataque cibernetico",
+    "intrusion digital",
+    "incidente de seguridad"
+  ],
+  "ibex": [
+    "IBEX 35",
+    "mercado bursatil espanol",
+    "bolsa espanola",
+    "indice bursatil"
+  ],
+  "bolsa": [
+    "mercado bursatil",
+    "mercados financieros",
+    "renta variable",
+    "parque bursatil"
+  ],
+  "acciones": [
+    "titulos bursatiles",
+    "renta variable",
+    "valores cotizados",
+    "mercado de acciones"
+  ],
+  "inversion": [
+    "inversiones",
+    "mercados financieros",
+    "capital",
+    "activos financieros"
+  ],
+  "inflacion": [
+    "subida de precios",
+    "IPC",
+    "coste de vida",
+    "presion inflacionaria"
+  ],
+  "tipos de interes": [
+    "tasas de interes",
+    "coste del dinero",
+    "politica monetaria",
+    "subida de tipos"
+  ],
+  "banco central": [
+    "autoridad monetaria",
+    "regulador monetario",
+    "politica monetaria",
+    "emisor central"
+  ],
+  "bitcoin": [
+    "BTC",
+    "criptomoneda",
+    "cripto",
+    "blockchain",
+    "activos digitales"
+  ],
+  "ethereum": [
+    "ETH",
+    "criptomoneda",
+    "blockchain",
+    "ecosistema cripto"
+  ],
+  "criptomonedas": [
+    "criptoactivos",
+    "monedas digitales",
+    "activos digitales",
+    "tokenes"
+  ],
+  "blockchain": [
+    "cadena de bloques",
+    "tecnologia blockchain",
+    "red descentralizada",
+    "registro distribuido"
+  ],
+  "ciberseguridad": [
+    "seguridad informatica",
+    "seguridad digital",
+    "proteccion de datos",
+    "amenazas ciberneticas"
+  ],
+  "privacidad": [
+    "proteccion de datos",
+    "datos personales",
+    "confidencialidad",
+    "seguridad de la informacion"
+  ],
+  "proteccion de datos": [
+    "privacidad",
+    "datos personales",
+    "cumplimiento digital",
+    "seguridad de datos"
+  ],
+  "salud publica": [
+    "sanidad publica",
+    "sistema sanitario",
+    "politica sanitaria",
+    "atencion medica publica"
+  ],
+  "salud": [
+    "sanidad",
+    "atencion sanitaria",
+    "sector salud",
+    "medicina"
+  ],
+  "hospital": [
+    "centro sanitario",
+    "servicio de salud",
+    "atencion hospitalaria",
+    "clinica"
+  ],
+  "vacuna": [
+    "inmunizacion",
+    "campana de vacunacion",
+    "dosis",
+    "vacunacion"
+  ],
+  "pandemia": [
+    "crisis sanitaria",
+    "emergencia sanitaria",
+    "brote global",
+    "contagio masivo"
+  ],
+  "medicina": [
+    "atencion medica",
+    "ciencias de la salud",
+    "practica clinica",
+    "sector sanitario"
+  ],
+  "tecnologia": [
+    "innovacion",
+    "sector tecnologico",
+    "tecnologia digital",
+    "desarrollo tecnologico"
+  ],
+  "startup": [
+    "empresa emergente",
+    "emprendimiento",
+    "compania emergente",
+    "negocio innovador"
+  ],
+  "software": [
+    "programas",
+    "aplicaciones",
+    "desarrollo de software",
+    "soluciones digitales"
+  ],
+  "hardware": [
+    "equipos informaticos",
+    "componentes",
+    "dispositivos",
+    "infraestructura tecnologica"
+  ],
+  "semiconductores": [
+    "chips",
+    "microchips",
+    "industria de chips",
+    "componentes electronicos"
+  ],
+  "movil": [
+    "smartphone",
+    "telefono inteligente",
+    "dispositivo movil",
+    "terminal movil"
+  ],
+  "energia": [
+    "sector energetico",
+    "mercado energetico",
+    "recursos energeticos",
+    "suministro energetico"
+  ],
+  "petroleo": [
+    "crudo",
+    "barril de petroleo",
+    "mercado del crudo",
+    "industria petrolera"
+  ],
+  "gas natural": [
+    "mercado del gas",
+    "suministro de gas",
+    "sector gasista",
+    "energia gasista"
+  ],
+  "renovables": [
+    "energias renovables",
+    "energia limpia",
+    "transicion energetica",
+    "generacion verde"
+  ],
+  "solar": [
+    "energia solar",
+    "fotovoltaica",
+    "paneles solares",
+    "sector solar"
+  ],
+  "eolica": [
+    "energia eolica",
+    "parques eolicos",
+    "generacion eolica",
+    "sector eolico"
+  ],
+  "cambio climatico": [
+    "crisis climatica",
+    "calentamiento global",
+    "emisiones",
+    "impacto climatico"
+  ],
+  "sostenibilidad": [
+    "desarrollo sostenible",
+    "impacto ambiental",
+    "criterios ESG",
+    "responsabilidad ambiental"
+  ],
+  "esg": [
+    "sostenibilidad",
+    "gobernanza",
+    "impacto social",
+    "criterios ambientales"
+  ],
+  "politica": [
+    "escena politica",
+    "actividad institucional",
+    "debate politico",
+    "actualidad politica"
+  ],
+  "gobierno": [
+    "ejecutivo",
+    "administracion",
+    "gabinete",
+    "poder ejecutivo"
+  ],
+  "parlamento": [
+    "camara legislativa",
+    "congreso",
+    "senado",
+    "poder legislativo"
+  ],
+  "elecciones": [
+    "comicios",
+    "jornada electoral",
+    "votacion",
+    "proceso electoral"
+  ],
+  "presupuesto": [
+    "cuentas publicas",
+    "gasto publico",
+    "plan presupuestario",
+    "partidas presupuestarias"
+  ],
+  "impuestos": [
+    "tributos",
+    "carga fiscal",
+    "recaudacion",
+    "fiscalidad"
+  ],
+  "geopolitica": [
+    "escenario internacional",
+    "tension internacional",
+    "equilibrio global",
+    "relaciones estrategicas"
+  ],
+  "guerra": [
+    "conflicto armado",
+    "enfrentamiento belico",
+    "ofensiva militar",
+    "escalada militar"
+  ],
+  "defensa": [
+    "seguridad nacional",
+    "fuerzas armadas",
+    "industria militar",
+    "ambito defensivo"
+  ],
+  "economia": [
+    "actividad economica",
+    "panorama economico",
+    "mercado",
+    "coyuntura economica"
+  ],
+  "recesion": [
+    "desaceleracion economica",
+    "caida economica",
+    "contraccion",
+    "enfriamiento economico"
+  ],
+  "empleo": [
+    "mercado laboral",
+    "trabajo",
+    "ocupacion",
+    "contratacion"
+  ],
+  "paro": [
+    "desempleo",
+    "tasa de paro",
+    "mercado laboral",
+    "falta de empleo"
+  ],
+  "vivienda": [
+    "mercado inmobiliario",
+    "sector inmobiliario",
+    "hogar",
+    "residencial"
+  ],
+  "alquiler": [
+    "arrendamiento",
+    "renta de vivienda",
+    "mercado del alquiler",
+    "precio del alquiler"
+  ],
+  "turismo": [
+    "sector turistico",
+    "viajes",
+    "actividad turistica",
+    "industria turistica"
+  ],
+  "aerolineas": [
+    "companias aereas",
+    "transporte aereo",
+    "sector aereo",
+    "vuelos comerciales"
+  ],
+  "automocion": [
+    "industria del automovil",
+    "sector automotriz",
+    "fabricantes de coches",
+    "movilidad"
+  ],
+  "coche electrico": [
+    "vehiculo electrico",
+    "movilidad electrica",
+    "automovil electrico",
+    "EV"
+  ],
+  "logistica": [
+    "cadena de suministro",
+    "transporte de mercancias",
+    "operaciones logisticas",
+    "distribucion"
+  ],
+  "deportes": [
+    "actualidad deportiva",
+    "competicion",
+    "deporte profesional",
+    "mundo del deporte"
+  ],
+  "futbol": [
+    "balompie",
+    "liga de futbol",
+    "competicion futbolistica",
+    "clubes de futbol"
+  ],
+  "champions": [
+    "liga de campeones",
+    "champions league",
+    "competicion europea",
+    "torneo continental"
+  ],
+  "real madrid": [
+    "club blanco",
+    "equipo madridista",
+    "madrid",
+    "conjunto blanco"
+  ],
+  "barcelona": [
+    "barca",
+    "fc barcelona",
+    "equipo blaugrana",
+    "club cule",
+    "ciudad condal",
+    "capital catalana",
+    "area metropolitana de barcelona"
+  ],
+  "tenis": [
+    "circuito ATP",
+    "circuito WTA",
+    "raqueta",
+    "torneo de tenis"
+  ],
+  "formula 1": [
+    "F1",
+    "gran premio",
+    "automovilismo",
+    "categoria reina"
+  ],
+  "baloncesto": [
+    "basket",
+    "liga de baloncesto",
+    "competicion de basket",
+    "canasta"
+  ],
+  "cultura": [
+    "actualidad cultural",
+    "sector cultural",
+    "panorama cultural",
+    "vida cultural"
+  ],
+  "cine": [
+    "industria cinematografica",
+    "peliculas",
+    "sector audiovisual",
+    "estrenos"
+  ],
+  "series": [
+    "ficcion televisiva",
+    "producciones seriadas",
+    "plataformas de streaming",
+    "television"
+  ],
+  "musica": [
+    "industria musical",
+    "escena musical",
+    "artistas",
+    "lanzamientos musicales"
+  ],
+  "streaming": [
+    "plataformas de streaming",
+    "contenido en linea",
+    "emision digital",
+    "video bajo demanda"
+  ],
+  "educacion": [
+    "sistema educativo",
+    "ensenanza",
+    "sector educativo",
+    "formacion"
+  ],
+  "universidad": [
+    "educacion superior",
+    "campus",
+    "centro universitario",
+    "ambito academico"
+  ],
+  "investigacion": [
+    "I+D",
+    "ciencia",
+    "innovacion",
+    "desarrollo cientifico"
+  ],
+  "justicia": [
+    "sistema judicial",
+    "tribunales",
+    "poder judicial",
+    "ambito juridico"
+  ],
+  "tribunal": [
+    "juzgado",
+    "organo judicial",
+    "sede judicial",
+    "instancia judicial"
+  ],
+  "corrupcion": [
+    "trama corrupta",
+    "caso de corrupcion",
+    "irregularidades",
+    "malversacion"
+  ],
+  "consumo": [
+    "gasto de los hogares",
+    "demanda interna",
+    "compras",
+    "mercado de consumo"
+  ],
+  "retail": [
+    "comercio minorista",
+    "ventas al por menor",
+    "distribucion comercial",
+    "sector retail"
+  ],
+  "inmigracion": [
+    "movimientos migratorios",
+    "flujo migratorio",
+    "extranjeria",
+    "politica migratoria"
+  ],
+  "ultraderecha": [
+    "extrema derecha",
+    "populismo de derechas",
+    "radicalismo politico",
+    "ultraconservadurismo"
+  ],
+  "feminismo": [
+    "igualdad de genero",
+    "movimiento feminista",
+    "brecha de genero",
+    "perspectiva de genero"
+  ],
+  "catastrofe natural": [
+    "desastre natural",
+    "tragedia natural",
+    "fenomeno climatico extremo",
+    "emergencia climatica"
+  ],
+  "inundacion": [
+    "crecida",
+    "desbordamiento",
+    "lluvias torrenciales",
+    "avenida de agua"
+  ],
+  "terremoto": [
+    "sismo",
+    "movimiento sismico",
+    "seismo",
+    "actividad sismica"
+  ],
+  "sequia": [
+    "falta de lluvias",
+    "escasez de agua",
+    "estres hidrico",
+    "periodo de seca"
+  ],
+  "incendio forestal": [
+    "fuego",
+    "incendio",
+    "quema forestal",
+    "ola de incendios"
+  ],
+  "contaminacion": [
+    "polucion",
+    "emisiones contaminantes",
+    "calidad del aire",
+    "huella ecologica"
+  ],
+  "reciclaje": [
+    "economia circular",
+    "gestion de residuos",
+    "reutilizacion",
+    "tratamiento de residuos"
+  ],
+  "biodiversidad": [
+    "diversidad biologica",
+    "ecosistema",
+    "especies protegidas",
+    "conservacion natural"
+  ],
+  "espacio": [
+    "exploracion espacial",
+    "sector espacial",
+    "carrera espacial",
+    "investigacion espacial"
+  ],
+  "biotecnologia": [
+    "biotech",
+    "ingenieria genetica",
+    "tecnologia biologica",
+    "ciencias genomicas"
+  ],
+  "nano tecnologia": [
+    "nanotecnologia",
+    "materiales avanzados",
+    "ingenieria molecular",
+    "tecnologia nanometrica"
+  ],
+  "5g": [
+    "quinta generacion",
+    "tecnologia 5G",
+    "red de nueva generacion",
+    "conectividad movil"
+  ],
+  "metaverso": [
+    "realidad virtual",
+    "mundo virtual",
+    "realidad aumentada",
+    "entorno digital"
+  ],
+  "robotica": [
+    "automatizacion",
+    "robots",
+    "automatizacion industrial",
+    "sistemas autonomos"
+  ],
+  "pib": [
+    "producto interior bruto",
+    "crecimiento economico",
+    "actividad productiva",
+    "producto nacional"
+  ],
+  "deuda publica": [
+    "deuda soberana",
+    "pasivo publico",
+    "endeudamiento del estado",
+    "deuda del gobierno"
+  ],
+  "deficit": [
+    "desequilibrio presupuestario",
+    "deficit fiscal",
+    "saldo negativo",
+    "deficit publico"
+  ],
+  "subsidio": [
+    "ayuda publica",
+    "subvencion",
+    "prestacion economica",
+    "fondo publico"
+  ],
+  "pensiones": [
+    "sistema de pensiones",
+    "jubilacion",
+    "prestacion contributiva",
+    "seguridad social"
+  ],
+  "sindicato": [
+    "organizacion sindical",
+    "representacion laboral",
+    "negociacion colectiva",
+    "trabajadores organizados"
+  ],
+  "huelga": [
+    "paro laboral",
+    "movilizacion sindical",
+    "protesta laboral",
+    "suspension de actividad"
+  ],
+  "manifestacion": [
+    "protesta",
+    "movilizacion social",
+    "concentracion ciudadana",
+    "marcha de protesta"
+  ],
+  "atentado": [
+    "ataque terrorista",
+    "acto terrorista",
+    "accion violenta",
+    "atentado terrorista"
+  ],
+  "violencia de genero": [
+    "maltrato",
+    "violencia machista",
+    "violencia domestica",
+    "agresion sexista"
+  ],
+  "accidente": [
+    "siniestro",
+    "incidente",
+    "colision",
+    "percance"
+  ],
+  "enfermedad": [
+    "patologia",
+    "afeccion",
+    "trastorno",
+    "dolencia"
+  ],
+  "cancer": [
+    "tumor",
+    "neoplasia",
+    "oncologia",
+    "proceso oncologico"
+  ],
+  "alzheimer": [
+    "demencia",
+    "deterioro cognitivo",
+    "enfermedad neurodegenerativa",
+    "perdida de memoria"
+  ],
+  "diabetes": [
+    "enfermedad metabolica",
+    "trastorno glucemico",
+    "nivel de azucar",
+    "resistencia insulinica"
+  ],
+  "obesidad": [
+    "sobrepeso",
+    "exceso de peso",
+    "problemas de peso",
+    "indice de masa corporal"
+  ],
+  "salud mental": [
+    "bienestar emocional",
+    "salud psicologica",
+    "trastorno mental",
+    "equilibrio psicologico"
+  ],
+  "ansiedad": [
+    "estres",
+    "nerviosismo",
+    "angustia",
+    "trastorno de ansiedad"
+  ],
+  "depresion": [
+    "trastorno depresivo",
+    "bajo estado de animo",
+    "sintomas depresivos",
+    "salud emocional"
+  ],
+  "atletismo": [
+    "pruebas de pista",
+    "atletas",
+    "competicion atletica",
+    "carreras"
+  ],
+  "ciclismo": [
+    "ciclismo profesional",
+    "competicion ciclista",
+    "vuelta ciclista",
+    "ruta"
+  ],
+  "natacion": [
+    "deporte acuatico",
+    "competicion de natacion",
+    "piscina",
+    "pruebas acuaticas"
+  ],
+  "motociclismo": [
+    "moto GP",
+    "mundial de motociclismo",
+    "competicion de motos",
+    "velocidad"
+  ],
+  "golf": [
+    "circuito de golf",
+    "torneo de golf",
+    "campo de golf",
+    "pga"
+  ],
+  "boxeo": [
+    "combate",
+    "pelea",
+    "velada boxistica",
+    "peso"
+  ],
+  "olimpiadas": [
+    "juegos olimpicos",
+    "cita olimpica",
+    "evento olimpico",
+    "deporte olimpico"
+  ],
+  "madrid": [
+    "capital de espana",
+    "comunidad de madrid",
+    "municipio madrileno",
+    "region madrilena"
+  ],
+  "vaticano": [
+    "santa sede",
+    "iglesia catolica",
+    "papa",
+    "pontificado"
+  ],
+  "otan": [
+    "alianza atlantica",
+    "organizacion del tratado del atlantico norte",
+    "alianza militar",
+    "defensa colectiva"
+  ],
+  "union europea": [
+    "UE",
+    "europa comunitaria",
+    "instituciones europeas",
+    "bloque comunitario"
+  ],
+  "brexit": [
+    "salida del reino unido",
+    "relacion post-brexit",
+    "acuerdo comercial uk-ue",
+    "divorcio britanico"
+  ],
+  "catastrofe aerea": [
+    "accidente aereo",
+    "siniestro aereo",
+    "incidente de aviacion",
+    "desastre aereo"
+  ],
+  "catastrofe maritima": [
+    "naufragio",
+    "hundimiento",
+    "siniestro maritimo",
+    "accidente naval"
+  ],
+  "sucesos": [
+    "cronica de sucesos",
+    "noticias de sucesos",
+    "hechos delictivos",
+    "actualidad policial"
+  ],
+  "delincuencia": [
+    "criminalidad",
+    "actividad delictiva",
+    "hecho delictivo",
+    "infraccion penal"
+  ],
+  "fraude": [
+    "estafa",
+    "timo",
+    "ingenieria financiera fraudulenta",
+    "actuacion fraudulenta"
+  ],
+  "alimentacion": [
+    "sector alimentario",
+    "industria alimentaria",
+    "seguridad alimentaria",
+    "produccion de alimentos"
+  ],
+  "agricultura": [
+    "sector agricola",
+    "produccion agraria",
+    "campo",
+    "actividad agricola"
+  ],
+  "ganaderia": [
+    "sector ganadero",
+    "produccion ganadera",
+    "explotacion ganadera",
+    "cabana ganadera"
+  ],
+  "pesca": [
+    "sector pesquero",
+    "actividad pesquera",
+    "flota pesquera",
+    "industria pesquera"
+  ],
+  "vino": [
+    "sector vitivinicola",
+    "industria del vino",
+    "denominacion de origen",
+    "cosecha"
+  ],
+  "telecomunicaciones": [
+    "sector de las telecomunicaciones",
+    "operadoras",
+    "redes de comunicacion",
+    "sector telco"
+  ],
+  "inteligencia artificial": [
+    "IA",
+    "IA generativa",
+    "aprendizaje automatico",
+    "machine learning",
+    "modelos generativos",
+    "deep learning",
+    "redes neuronales",
+    "procesamiento del lenguaje natural"
+  ],
+  "deep learning": [
+    "aprendizaje profundo",
+    "redes neuronales",
+    "modelos de deep learning",
+    "entrenamiento de modelos"
+  ],
+  "gpt": [
+    "modelo de lenguaje",
+    "lenguaje natural",
+    "gran modelo de lenguaje",
+    "LLM"
+  ],
+  "chatbot": [
+    "asistente virtual",
+    "agente conversacional",
+    "bot conversacional",
+    "asistente inteligente"
+  ],
+  "automovil": [
+    "coche",
+    "vehiculo",
+    "sector del automovil",
+    "industria automotriz"
+  ],
+  "tren": [
+    "ferrocarril",
+    "transporte ferroviario",
+    "alta velocidad",
+    "AVE"
+  ],
+  "aviacion": [
+    "transporte aereo",
+    "sector aeronautico",
+    "industria aeronautica",
+    "vuelo comercial"
+  ],
+  "puerto": [
+    "infraestructura portuaria",
+    "actividad portuaria",
+    "transporte maritimo",
+    "trafico portuario"
+  ],
+  "carretera": [
+    "infraestructura viaria",
+    "red de carreteras",
+    "autovia",
+    "transporte por carretera"
+  ],
+  "vivienda protegida": [
+    "vpo",
+    "vivienda social",
+    "vivienda asequible",
+    "vivienda de proteccion oficial"
+  ],
+  "hipoteca": [
+    "prestamo hipotecario",
+    "credito hipotecario",
+    "tasa hipotecaria",
+    "contrato hipotecario"
+  ],
+  "banco": [
+    "entidad bancaria",
+    "sector bancario",
+    "entidad financiera",
+    "banca"
+  ],
+  "seguros": [
+    "sector asegurador",
+    "compania de seguros",
+    "poliza",
+    "industria aseguradora"
+  ],
+  "fintech": [
+    "tecnologia financiera",
+    "innovacion financiera",
+    "banca digital",
+    "servicios financieros digitales"
+  ],
+  "prestamo": [
+    "credito",
+    "financiacion",
+    "linea de credito",
+    "facilidad financiera"
+  ],
+  "emprendedor": [
+    "emprendimiento",
+    "startup",
+    "iniciativa empresarial",
+    "proyecto emprendedor"
+  ],
+  "pyme": [
+    "pequena empresa",
+    "mediana empresa",
+    "negocio familiar",
+    "empresa de proximidad"
+  ],
+  "multinacional": [
+    "gran corporacion",
+    "empresa global",
+    "grupo empresarial",
+    "compania transnacional"
+  ],
+  "exportacion": [
+    "comercio exterior",
+    "ventas internacionales",
+    "balanza comercial",
+    "mercado exterior"
+  ],
+  "importacion": [
+    "compras exteriores",
+    "mercancia importada",
+    "procedente del exterior",
+    "aprovisionamiento externo"
+  ],
+  "catastrofe": [
+    "tragedia",
+    "desastre",
+    "situacion catastrofica",
+    "hecho tragico"
+  ],
+  "victima": [
+    "damnificado",
+    "afectado",
+    "fallecido",
+    "herido"
+  ],
+  "rescate": [
+    "operacion de salvamento",
+    "dispositivo de emergencia",
+    "equipos de rescate",
+    "salvamento"
+  ],
+  "emergencia": [
+    "situacion de emergencia",
+    "urgencia",
+    "alerta",
+    "activacion de protocolos"
+  ],
+  "proteccion civil": [
+    "servicios de emergencia",
+    "defensa civil",
+    "gestion de emergencias",
+    "seguridad ciudadana"
+  ],
+  "policia": [
+    "cuerpos de seguridad",
+    "fuerzas de seguridad",
+    "agentes policiales",
+    "cuerpo policial"
+  ],
+  "ejercito": [
+    "fuerzas armadas",
+    "militar",
+    "tropa",
+    "estamento militar"
+  ],
+  "guardia civil": [
+    "benemerita",
+    "instituto armado",
+    "cuerpo de seguridad",
+    "fuerza de seguridad"
+  ],
+  "incendio": [
+    "fuego",
+    "llamas",
+    "siniestro",
+    "quema"
+  ],
+  "explosion": [
+    "detonacion",
+    "estallido",
+    "deflagracion",
+    "onda expansiva"
+  ],
+  "juicio": [
+    "proceso judicial",
+    "vista oral",
+    "procedimiento legal",
+    "causa judicial"
+  ],
+  "sentencia": [
+    "fallo judicial",
+    "resolucion judicial",
+    "condena",
+    "veredicto"
+  ],
+  "juez": [
+    "magistrado",
+    "titular del juzgado",
+    "presidencia del tribunal",
+    "autoridad judicial"
+  ],
+  "abogado": [
+    "letrado",
+    "defensa",
+    "representacion legal",
+    "profesional del derecho"
+  ],
+  "fiscal": [
+    "ministerio fiscal",
+    "representante del ministerio publico",
+    "acusacion publica",
+    "fiscalia"
+  ],
+  "preso": [
+    "recluso",
+    "interno",
+    "privado de libertad",
+    "encarcelado"
+  ],
+  "carcel": [
+    "prision",
+    "centro penitenciario",
+    "institucion penitenciaria",
+    "reclusion"
+  ],
+  "indulto": [
+    "medida de gracia",
+    "conmutacion de pena",
+    "perdon judicial",
+    "gracia del gobierno"
+  ],
+  "amnistia": [
+    "ley de amnistia",
+    "medida de gracia colectiva",
+    "olvido legal",
+    "extincion de responsabilidad"
+  ],
+  "referendum": [
+    "consulta popular",
+    "votacion popular",
+    "consulta ciudadana",
+    "proceso referendum"
+  ],
+  "autonomia": [
+    "comunidad autonoma",
+    "gobierno autonomico",
+    "administracion regional",
+    "competencia transferida"
+  ],
+  "independentismo": [
+    "soberanismo",
+    "movimiento independentista",
+    "proceso soberanista",
+    "separatismo"
+  ],
+  "monarquia": [
+    "casa real",
+    "familia real",
+    "institucion monarquica",
+    "corona"
+  ],
+  "rey": [
+    "monarca",
+    "soberano",
+    "jefe del estado",
+    "coronacion"
+  ],
+  "principe": [
+    "heredero",
+    "principe de asturias",
+    "sucesion",
+    "casa real"
+  ],
+  "boda real": [
+    "enlace real",
+    "ceremonias reales",
+    "celebracion monarquica",
+    "union real"
+  ],
+  "natalidad": [
+    "tasa de natalidad",
+    "demografia",
+    "nacimientos",
+    "indice de fecundidad"
+  ],
+  "envejecimiento": [
+    "poblacion mayor",
+    "tercera edad",
+    "personas mayores",
+    "edad avanzada"
+  ],
+  "juventud": [
+    "poblacion joven",
+    "jovenes",
+    "generacion joven",
+    "sector juvenil"
+  ],
+  "discapacidad": [
+    "diversidad funcional",
+    "capacidades diferentes",
+    "minusvalia",
+    "necesidades especiales"
+  ],
+  "dependencia": [
+    "atencion a la dependencia",
+    "personas dependientes",
+    "cuidados de larga duracion",
+    "asistencia domiciliaria"
+  ],
+  "inmobiliario": [
+    "sector inmobiliario",
+    "mercado de la vivienda",
+    "promocion inmobiliaria",
+    "desarrollo urbanistico"
+  ],
+  "construccion": [
+    "sector de la construccion",
+    "industria constructora",
+    "obra",
+    "edificacion"
+  ],
+  "obra publica": [
+    "infraestructura publica",
+    "proyecto de infraestructura",
+    "contrato de obra",
+    "licitacion publica"
+  ],
+  "licitacion": [
+    "concurso publico",
+    "contratacion publica",
+    "proceso de licitacion",
+    "adjudicacion"
+  ],
+  "subasta": [
+    "puja",
+    "venta en subasta",
+    "procedimiento de subasta",
+    "licitacion competitiva"
+  ],
+  "oposicion": [
+    "examen de oposicion",
+    "funcion publica",
+    "empleo publico",
+    "proceso selectivo"
+  ],
+  "funcionario": [
+    "empleado publico",
+    "trabajador publico",
+    "plantilla publica",
+    "personal de la administracion"
+  ],
+  "administracion publica": [
+    "sector publico",
+    "administracion del estado",
+    "gestion publica",
+    "burocracia"
+  ],
+  "donacion": [
+    "solidaridad",
+    "donativo",
+    "aporte solidario",
+    "contribucion altruista"
+  ],
+  "ong": [
+    "organizacion no gubernamental",
+    "asociacion humanitaria",
+    "organizacion solidaria",
+    "entidad sin animo de lucro"
+  ],
+  "voluntariado": [
+    "trabajo voluntario",
+    "accion voluntaria",
+    "colaboracion desinteresada",
+    "servicio voluntario"
+  ],
+  "pobreza": [
+    "exclusion social",
+    "desigualdad",
+    "vulnerabilidad",
+    "precariedad"
+  ],
+  "desigualdad": [
+    "brecha social",
+    "diferencia economica",
+    "desequilibrio social",
+    "inequidad"
+  ],
+  "conciliacion": [
+    "equilibrio laboral",
+    "jornada flexible",
+    "corresponsabilidad",
+    "vida laboral y familiar"
+  ],
+  "teletrabajo": [
+    "trabajo remoto",
+    "trabajo a distancia",
+    "trabajo desde casa",
+    "oficina virtual"
+  ],
+  "inteligencia emocional": [
+    "bienestar emocional",
+    "gestion emocional",
+    "competencias emocionales",
+    "salud emocional"
+  ],
+  "acoso": [
+    "acoso laboral",
+    "hostigamiento",
+    "intimidacion",
+    "maltrato psicologico"
+  ],
+  "discriminacion": [
+    "segregacion",
+    "trato desigual",
+    "exclusion",
+    "marginalidad"
+  ],
+  "racismo": [
+    "xenofobia",
+    "discriminacion racial",
+    "intolerancia",
+    "odio racial"
+  ],
+  "lgbt": [
+    "colectivo lgbt",
+    "diversidad sexual",
+    "derechos lgbt",
+    "comunidad lgbtq"
+  ],
+  "transgenero": [
+    "personas trans",
+    "identidad de genero",
+    "colectivo trans",
+    "transexualidad"
+  ]
+}
