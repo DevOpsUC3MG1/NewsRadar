@@ -165,7 +165,9 @@ def matches_alert(
                 if re.search(rf"\b{re.escape(d)}\b", haystack):
                     item.matched_descriptors.append(desc)
 
-    return bool(item.matched_descriptors) or item.matched_category is not None
+    if category_codes:
+        return item.matched_category is not None
+    return bool(item.matched_descriptors)
 
 
 async def gather_news(
