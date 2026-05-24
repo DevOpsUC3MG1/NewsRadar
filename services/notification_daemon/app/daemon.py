@@ -280,8 +280,9 @@ async def process_alert(
     descriptors = alert.get("descriptors") or []
     categories = alert.get("categories") or []
     category_codes = [c.get("code", "") for c in categories if c.get("code")]
+    category_labels = [c.get("label", "") for c in categories if c.get("label")]
 
-    matched = [it for it in items if matches_alert(it, descriptors, category_codes)]
+    matched = [it for it in items if matches_alert(it, descriptors, category_codes, category_labels)]
     logger.info("Alerta %s: %d/%d noticias matchean", alert_id, len(matched), len(items))
 
     # actualizamos el last_run aunque no haya matches: ya hemos revisado hasta aquí

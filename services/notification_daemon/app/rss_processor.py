@@ -121,6 +121,22 @@ def _strip_html(text: str) -> str:
     return _TAG_RE.sub("", text).strip()
 
 
+_RSS_CATEGORY_TO_IPTC = {
+    "Politica": "Política",
+    "Economia": "Economía, negocios y finanzas",
+    "Tecnologia": "Ciencia y tecnología",
+    "Deportes": "Deporte",
+    "Cultura": "Artes, cultura, entretenimiento y medios",
+    "Sociedad": "Sociedad",
+    "Internacional": "Conflicto, guerra y paz",
+    "Salud": "Salud",
+    "Educacion": "Educación",
+    "Ciencia": "Ciencia y tecnología",
+    "Viajes": "Estilo de vida y tiempo libre",
+    "Entretenimiento": "Artes, cultura, entretenimiento y medios",
+}
+
+
 def _normalize(s: str) -> str:
     """Lowercase + sin acentos básicos para matching insensible."""
     s = s.lower()
@@ -128,29 +144,41 @@ def _normalize(s: str) -> str:
     return s.translate(repl)
 
 
+def _build_iptc_to_rss_categories() -> dict[str, set[str]]:
+    rev: dict[str, set[str]] = {}
+    for rss_cat, iptc in _RSS_CATEGORY_TO_IPTC.items():
+        rev.setdefault(_normalize(iptc), set()).add(_normalize(rss_cat))
+    return rev
+
+
+_IPTC_LABEL_TO_RSS_CATEGORIES = _build_iptc_to_rss_categories()
+
+
+def _match_category(item: NewsItem, category_codes: list[str], category_labels: list[str]) -> bool:
+    ch_cat = _normalize(item.channel_category)
+    for code in category_codes:
+        if _normalize(code) == ch_cat:
+            item.matched_category = item.channel_category
+            return True
+    for label in category_labels:
+        rss_names = _IPTC_LABEL_TO_RSS_CATEGORIES.get(_normalize(label))
+        if rss_names and ch_cat in rss_names:
+            item.matched_category = item.channel_category
+            return True
+    return False
+
+
 def matches_alert(
     item: NewsItem,
     descriptors: list[str],
     category_codes: list[str],
+    category_labels: list[str] | None = None,
 ) -> bool:
-    """Devuelve True si la noticia matchea por descriptor O categoría.
+    """Devuelve True si la noticia matchea por descriptor O categoría."""
+    if category_codes or category_labels:
+        _match_category(item, category_codes, category_labels or [])
 
-    - descriptor: palabra/frase que aparece en title o summary
-      (búsqueda como subcadena, normalizada y sensible a límite de palabra
-      para evitar falsos positivos como "Ibex" dentro de "exhibe").
-    - category_codes: lista de códigos de categoría (p.ej. "politica").
-      Match si la categoría del canal coincide con alguno (case-insensitive).
-    """
-    # category match
-    if category_codes:
-        ch_cat = _normalize(item.channel_category)
-        for code in category_codes:
-            if _normalize(code) == ch_cat:
-                item.matched_category = item.channel_category
-                # no return: queremos también guardar matched_descriptors si los hay
-                break
-
-    # descriptor match: usamos word boundaries para evitar false positives
+    # descriptor match
     if descriptors:
         haystack = _normalize(f"{item.title} {item.summary}")
         for desc in descriptors:

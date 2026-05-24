@@ -1069,8 +1069,8 @@ async def get_wordcloud_by_category(
     request: Request = None,
 ):
     accept_language = request.headers.get("accept-language") if request else None
-    # category esperada por frontend (ver nubes.jsx): culture, consumption, sports, economy, entertainment,
-    # government, international, national, politics, technology
+    # category puede ser un slug inglés legacy (culture, politics...) o un ID numérico
+    # de categoría IPTC (ej: "4000000" para "Economía, negocios y finanzas")
     return await build_wordcloud(
         db=db,
         user_id=current_user.id,

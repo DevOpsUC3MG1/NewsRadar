@@ -7,7 +7,16 @@
         { "url": "http://mock_rss:8080/test.xml", "category": "Politica" },
         { "url": "http://mock_rss:8080/politica.xml", "category": "Politica" },
         { "url": "http://mock_rss:8080/economia.xml", "category": "Economia" },
-        { "url": "http://mock_rss:8080/deportes.xml", "category": "Deportes" }
+        { "url": "http://mock_rss:8080/deportes.xml", "category": "Deportes" },
+        { "url": "http://mock_rss:8080/tecnologia.xml", "category": "Tecnologia" },
+        { "url": "http://mock_rss:8080/cultura.xml", "category": "Cultura" },
+        { "url": "http://mock_rss:8080/salud.xml", "category": "Salud" },
+        { "url": "http://mock_rss:8080/sociedad.xml", "category": "Sociedad" },
+        { "url": "http://mock_rss:8080/internacional.xml", "category": "Internacional" },
+        { "url": "http://mock_rss:8080/ciencia.xml", "category": "Ciencia" },
+        { "url": "http://mock_rss:8080/viajes.xml", "category": "Viajes" },
+        { "url": "http://mock_rss:8080/entretenimiento.xml", "category": "Entretenimiento" },
+        { "url": "http://mock_rss:8080/educacion.xml", "category": "Educacion" }
       ]
     },
     {

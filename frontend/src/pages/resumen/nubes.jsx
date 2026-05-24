@@ -135,10 +135,14 @@ const Nubes = () => {
   }, [fetchNubeGlobal, refreshCount]);
 
   const getBackendSlug = (cat) => {
+    // cat = { id, name } de GET /api/v1/categories → usar ID numérico IPTC como slug
+    if (cat && cat.id) return String(cat.id);
+
+    // fallback para cadenas planas (legacy)
     const name = cat.name || cat;
     const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    
-    const map = {
+
+    const shortMap = {
       "Politica":       "politics",
       "Economia":       "economy",
       "Tecnologia":     "technology",
@@ -154,7 +158,7 @@ const Nubes = () => {
       "General":        "national",
     };
 
-    return map[normalized] || "national";
+    return shortMap[normalized] || "national";
   };
 
   return (

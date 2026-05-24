@@ -130,6 +130,74 @@ async def _mongo_news_stats(mongo_db, start: datetime, start_today: datetime, la
     return {"total": int(total), "today": int(today), "by_category": by_category}
 
 
+_IPTC_ID_TO_NAME: Dict[int, str] = {
+    1000000: "Artes, cultura, entretenimiento y medios",
+    2000000: "Policía y justicia",
+    3000000: "Catástrofes y accidentes",
+    4000000: "Economía, negocios y finanzas",
+    5000000: "Educación",
+    6000000: "Medio ambiente",
+    7000000: "Salud",
+    8000000: "Interés humano, animales, insólito",
+    9000000: "Mano de obra",
+    10000000: "Estilo de vida y tiempo libre",
+    11000000: "Política",
+    12000000: "Religión y culto",
+    13000000: "Ciencia y tecnología",
+    14000000: "Sociedad",
+    15000000: "Deporte",
+    16000000: "Conflicto, guerra y paz",
+    17000000: "Meteorología",
+}
+
+_RSS_TO_IPTC_NAME: Dict[str, str] = {
+    "Politica": "Política",
+    "Economia": "Economía, negocios y finanzas",
+    "Tecnologia": "Ciencia y tecnología",
+    "Deportes": "Deporte",
+    "Cultura": "Artes, cultura, entretenimiento y medios",
+    "Sociedad": "Sociedad",
+    "Internacional": "Conflicto, guerra y paz",
+    "Salud": "Salud",
+    "Educacion": "Educación",
+    "Ciencia": "Ciencia y tecnología",
+    "Viajes": "Estilo de vida y tiempo libre",
+    "Entretenimiento": "Artes, cultura, entretenimiento y medios",
+}
+
+_IPTC_NAME_TO_RSS: Dict[str, set[str]] = {}
+for _rss_cat, _iptc_name in _RSS_TO_IPTC_NAME.items():
+    _IPTC_NAME_TO_RSS.setdefault(_iptc_name, set()).add(_rss_cat)
+
+_CHANNEL_CATEGORY_TO_CLOUD = {
+    "politica": "politics",
+    "economia": "economy",
+    "tecnologia": "technology",
+    "deportes": "sports",
+    "cultura": "culture",
+    "sociedad": "consumption",
+    "internacional": "international",
+    "salud": "consumption",
+    "educacion": "national",
+    "ciencia": "technology",
+    "viajes": "national",
+    "entretenimiento": "entertainment",
+    "general": "national",
+}
+
+
+def _map_article_to_cloud_category(a: Dict[str, Any]) -> str:
+    iptc = a.get("iptc_category")
+    if iptc:
+        return _map_iptc_to_cloud_category(iptc)
+    raw = a.get("category") or ""
+    mapped = _CHANNEL_CATEGORY_TO_CLOUD.get(raw.strip().lower())
+    if mapped:
+        return mapped
+    text = f"{a.get('title', '')} {a.get('description', '')}"
+    return _map_iptc_to_cloud_category(classify_iptc_level1(text))
+
+
 def _map_iptc_to_cloud_category(iptc: str) -> str:
     # Mapeo pragmatico para encajar con las claves que usa el frontend en Nubes.
     v = (iptc or "").strip()
@@ -234,7 +302,7 @@ async def build_wordcloud(
     limit: int,
     accept_language: Optional[str],
     cloud_category: Optional[str],
-    cache_max_age_hours: int = 6,
+    cache_max_age_hours: int = 1,
 ) -> List[Dict[str, Any]]:
     """
     Devuelve [{term, count}] para nube global o por categoria.
@@ -263,17 +331,22 @@ async def build_wordcloud(
     }
 
     cached = await mongo_db.wordcloud_cache.find_one(cache_key)
-    if cached and isinstance(cached.get("updated_at"), datetime):
+    if cached and isinstance(cached.get("updated_at"), datetime) and cached.get("terms"):
         age = now - cached["updated_at"].astimezone(timezone.utc)
         if age.total_seconds() <= cache_max_age_hours * 3600:
-            terms = cached.get("terms") or []
-            if isinstance(terms, list):
-                return terms
+            return cached["terms"]
 
     notif_docs = await mongo_db.notifications.find(
         {"alert_id": {"$in": alert_ids}, "timestamp": {"$gte": start}},
         {"news": 1},
     ).sort("timestamp", -1).to_list(length=200)
+
+    if not notif_docs:
+        news_docs = await mongo_db.news.find(
+            {"alert_id": {"$in": alert_ids}, "created_at": {"$gte": start}},
+        ).sort("created_at", -1).to_list(length=200)
+        if news_docs:
+            notif_docs = [{"news": news_docs}]
 
     articles: List[Dict[str, Any]] = []
     for nd in notif_docs:
@@ -287,10 +360,16 @@ async def build_wordcloud(
     texts: List[str] = []
     for a in articles:
         if cloud_category:
-            text_for_class = f"{a.get('title', '')} {a.get('description', '')}"
-            iptc_cat = classify_iptc_level1(text_for_class)
-            mapped = _map_iptc_to_cloud_category(iptc_cat)
-            if mapped != cloud_category:
+            if cloud_category.isdigit():
+                category_id = int(cloud_category)
+                iptc_name = _IPTC_ID_TO_NAME.get(category_id)
+                rss_cats = _IPTC_NAME_TO_RSS.get(iptc_name) if iptc_name else None
+                if rss_cats:
+                    if a.get("category", "").strip() not in rss_cats:
+                        continue
+                else:
+                    continue
+            elif _map_article_to_cloud_category(a) != cloud_category:
                 continue
         title = (a.get("title") or "").strip()
         desc = (a.get("description") or "").strip()
@@ -298,11 +377,6 @@ async def build_wordcloud(
             texts.append(f"{title}\n{desc}".strip())
 
     if not texts:
-        await mongo_db.wordcloud_cache.update_one(
-            cache_key,
-            {"$set": {**cache_key, "terms": [], "updated_at": now}},
-            upsert=True,
-        )
         return []
 
     try:

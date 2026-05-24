@@ -137,28 +137,6 @@ async def run():
 
             await db.commit()
 
-        first_source = await db.execute(select(InformationSourceModel))
-        source = first_source.scalars().first()
-        if source:
-            for item in iptc_catalog:
-                category_id = int(item["code"])
-                existing_channel = await db.execute(
-                    select(RSSChannelModel).where(RSSChannelModel.category_id == category_id)
-                )
-                if existing_channel.scalars().first():
-                    continue
-
-                db.add(
-                    RSSChannelModel(
-                        url=f"https://newsradar.local/rss/{item['code']}.xml",
-                        category_id=category_id,
-                        information_source_id=source.id,
-                    )
-                )
-                total_channels += 1
-
-            await db.commit()
-
         logger.info("Canales: %s cargados", total_channels)
         logger.info("Seeding completado exitosamente")
 
