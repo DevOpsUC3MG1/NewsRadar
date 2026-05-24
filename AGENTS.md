@@ -18,6 +18,13 @@ pytest tests/test_api.py -v
 # Lint
 flake8 . --exclude=backend/migrations --max-line-length=120
 
+# Ruff (linter/formatter moderno)
+ruff check .
+ruff format --check .
+
+# Generate API docs
+bash scripts/docs.sh
+
 # Frontend (from frontend/)
 npm run dev
 ```
@@ -46,8 +53,12 @@ If the resolved path doesn't exist, the code logs a warning and falls back to `<
 
 ## Testing
 
-- `backend/tests/` — pytest with `TestClient`, fixtures in `backend/tests/fixtures/` and `conftest.py`
-- `tests/test_api.py` — integration tests against live API at localhost:8000 (needs full stack up)
+- `backend/tests/` — pytest with `httpx.AsyncClient` + `ASGITransport` against **real API app** (`newsradar_api.app.main`)
+- Session-scoped `db_init` fixture drops/recreates tables + seeds admin (`admin@newsradar.com`/`admin123`) via `create_seed_data()`
+- **MongoDB required for notifications, stats, wordcloud, dashboard tests** — runs at `mongodb://admin:adminpassword@localhost:27017`
+- Run locally: `DATABASE_URL="postgresql+asyncpg://..." MONGODB_URL="mongodb://admin:adminpassword@localhost:27017" ENV=testing python -m pytest backend/tests/ -v --cov=backend/newsradar_api --cov-report=term`
+- **Coverage target: 70%** (`--cov-fail-under=70`)
+- `pytest.ini` configures `asyncio_mode = auto` and `asyncio_default_test_loop_scope = session` + `asyncio_default_fixture_loop_scope = session`
 
 ## Conventions
 

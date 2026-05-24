@@ -1,17 +1,53 @@
 name: CD
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy
-        run: bash scripts/deploy.sh
+      - name: Set lowercase image names
+        run: |
+          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+          echo "IMG_BACKEND=${GITHUB_REPOSITORY,,}-backend" >> $GITHUB_ENV
+          echo "IMG_FRONTEND=${GITHUB_REPOSITORY,,}-frontend" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMG_BACKEND }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMG_BACKEND }}:${{ github.sha }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: frontend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMG_FRONTEND }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMG_FRONTEND }}:${{ github.sha }}
+
+

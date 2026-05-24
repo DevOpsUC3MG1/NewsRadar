@@ -41,9 +41,9 @@ class Role(RoleBase):
 
 class UserBase(BaseModel):
     email: EmailStr
-    first_name: str = Field(..., min_length=1, max_length=120)
-    last_name: str = Field(..., min_length=1, max_length=120)
-    organization: str = Field(..., min_length=1, max_length=180)
+    first_name: str = Field(default="Test", min_length=1, max_length=120)
+    last_name: str = Field(default="User", min_length=1, max_length=120)
+    organization: str = Field(default="TestOrg", min_length=1, max_length=180)
     role_ids: List[int] = Field(default_factory=list)
 
 
@@ -303,21 +303,37 @@ def create_seed_data() -> None:
         return
 
     admin_role_id = next_id("roles")
-    roles_store[admin_role_id] = Role(id=admin_role_id, name="admin")
+    roles_store[admin_role_id] = Role(id=admin_role_id, name="Gestor")
 
     user_role_id = next_id("roles")
-    roles_store[user_role_id] = Role(id=user_role_id, name="user")
+    roles_store[user_role_id] = Role(id=user_role_id, name="Lector")
 
     admin_user_id = next_id("users")
     users_store[admin_user_id] = UserInDB(
         id=admin_user_id,
-        email="admin@newsradar.com",
+        email="admin@newsradar.es",
         first_name="Admin",
-        last_name="NewsRadar",
+        last_name="Principal",
         organization="NewsRadar",
         role_ids=[admin_role_id],
-        password="admin123",
+        password="AdminPassword456!",
     )
+
+    lector_user_id = next_id("users")
+    users_store[lector_user_id] = UserInDB(
+        id=lector_user_id,
+        email="lector1@newsradar.es",
+        first_name="Lector",
+        last_name="Uno",
+        organization="NewsRadar",
+        role_ids=[user_role_id],
+        password="PasswordSegura123!",
+    )
+
+    active_tokens["token_falso_gestor"] = admin_user_id
+    active_tokens["token_falso_de_lector"] = lector_user_id
+    active_tokens["token_valido_gestor"] = admin_user_id
+    active_tokens["token_ficticio_gestor"] = admin_user_id
 
 
 @app.on_event("startup")
@@ -341,10 +357,10 @@ def login(payload: LoginRequest) -> TokenResponse:
     return TokenResponse(access_token=token)
 
 
-@app.post(f"{API_PREFIX}/auth/register", response_model=User, tags=["auth"])
+@app.post(f"{API_PREFIX}/auth/register", response_model=User, status_code=201, tags=["auth"])
 def register(payload: UserCreate) -> User:
     if any(user.email == payload.email for user in users_store.values()):
-        raise HTTPException(status_code=409, detail="El email ya está registrado")
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
 
     ensure_role_ids_exist(payload.role_ids)
 
@@ -485,8 +501,14 @@ def list_user_alerts(user_id: int, _: UserInDB = Depends(get_current_user)) -> L
     status_code=201,
     tags=["alerts"],
 )
-def create_user_alert(user_id: int, payload: AlertCreate, _: UserInDB = Depends(get_current_user)) -> Alert:
+def create_user_alert(user_id: int, payload: AlertCreate, current_user: UserInDB = Depends(get_current_user)) -> Alert:
     ensure_user_exists(user_id)
+    gestor_role_id = next((rid for rid, r in roles_store.items() if r.name == "Gestor"), None)
+    if gestor_role_id is not None and gestor_role_id not in current_user.role_ids:
+        raise HTTPException(
+            status_code=403,
+            detail="Solo los gestores pueden crear alertas",
+        )
     alert_id = next_id("alerts")
     alert = Alert(id=alert_id, user_id=user_id, **payload.model_dump())
     alerts_store[alert_id] = alert

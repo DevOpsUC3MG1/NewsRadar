@@ -48,6 +48,7 @@ app.add_middleware(
 API_PREFIX = "/api/v1"
 security = HTTPBearer(auto_error=False)
 
+
 def _find_project_root() -> Path:
     current = Path(__file__).resolve()
     for parent in current.parents:

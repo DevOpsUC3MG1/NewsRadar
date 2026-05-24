@@ -24,6 +24,19 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: adminpassword
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     # -------------------------
     # Checkout
@@ -31,7 +44,8 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Necesario para que git pueda obtener el hash del commit
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     # -------------------------
     # Setup Python
@@ -47,13 +61,18 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest pytest-cov flake8 nest-asyncio fastapi starlette httpx requests responses python-dotenv sqlalchemy asyncpg motor pymongo openai feedparser apscheduler pydantic[email] uvicorn python-multipart email-validator
+        pip install pytest pytest-cov pytest-asyncio flake8 nest-asyncio fastapi starlette httpx requests responses python-dotenv sqlalchemy asyncpg motor pymongo openai feedparser apscheduler pydantic[email] uvicorn python-multipart email-validator
 
     # -------------------------
-    # LINT
+    # LINT (flake8 + Ruff)
     # -------------------------
-    # - name: Lint code
-    #   run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=backend/migrations
+    - name: Lint code (flake8)
+      run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=backend/migrations
+
+    - name: Lint code (Ruff)
+      run: |
+        pip install ruff
+        ruff check .
 
     # -------------------------
     # TESTS + COVERAGE
@@ -62,26 +81,31 @@ jobs:
       env:
         ENV: testing
         DATABASE_URL: postgresql+asyncpg://test_user:test_pass@localhost:5432/newsradar_test
+        MONGODB_URL: mongodb://admin:adminpassword@localhost:27017
       run: |
-        # COMENTADO: --cov-fail-under=70
-        # Lo desactivamos temporalmente para que el pipeline no falle mientras creamos los tests.
         pytest backend/tests/ \
-          --cov=backend \
+          --cov=backend/newsradar_api \
           --cov-report=xml \
-          --cov-report=html
+          --cov-report=html \
+          --cov-report=term \
+          --cov-fail-under=50
+
+    # -------------------------
+    # DOCUMENTATION GENERATION
+    # -------------------------
+    - name: Generate API docs (pdoc)
+      run: |
+        pip install pdoc
+        PYTHONPATH=backend bash scripts/docs.sh
+
     # -------------------------
     # DOCKER BUILD & TAGGING
     # -------------------------
     - name: Build Docker images with Tagging
       run: |
-        # Obtenemos el hash corto del commit (ej: a1b2c3d)
         SHA_SHORT=$(git rev-parse --short HEAD)
         echo "Generando imágenes con tag: ${SHA_SHORT}"
-
-        # Construimos la imagen con el tag del commit y el tag 'latest'
         docker build -t newsradar-backend:${SHA_SHORT} -t newsradar-backend:latest ./backend
-
-        # Listamos las imágenes para verificar en los logs del pipeline
         docker images
 
     # -------------------------
@@ -96,16 +120,17 @@ jobs:
           htmlcov/
 
     # -------------------------
-    # SONARCLOUD
+    # Upload API docs
     # -------------------------
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-github-action@v2
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    - name: Upload API docs
+      uses: actions/upload-artifact@v4
+      with:
+        name: api-docs
+        path: docs/api/
 
     # -------------------------
     # CLEANUP
     # -------------------------
     - name: Cleanup
       if: always()
-      run: docker compose down --remove-orphans
+      run: docker compose -f docker-compose.yml down || true

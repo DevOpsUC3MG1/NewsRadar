@@ -1,0 +1,51 @@
+@startuml
+title NewsRadar — Arquitectura del Sistema
+
+actor Usuario
+
+package "Frontend" as fe_pkg {
+  rectangle "<b>React 18 + Vite</b>\nPuerto: 5173\nLibrerías: Recharts, i18n ES/EN\nComponentes reutilizables (Badge, Button, Card, Modal, Table)" as fe
+}
+
+package "API Backend" as api_pkg {
+  rectangle "<b>FastAPI + Python 3.12</b>\nPuerto: 8000\nAPI REST /api/v1 — Autenticación JWT en memoria\n\n<b>Orden de arranque:</b>\n1. init_db.py (tablas + seed: admin@newsradar.com)\n2. app.seed (carga rss_sources.json)\n3. uvicorn\n\n<b>Depende de:</b> PostgreSQL + MongoDB (healthy)\n<b>Healthcheck:</b> GET /api/v1/health (10s, start_period 30s)" as api
+}
+
+package "Persistencia" {
+  database "<b>PostgreSQL 15-Alpine</b>\nPuerto: 5432 — Volumen: postgres_data\n\nEntidades: usuarios, roles, alertas,\ncategorías IPTC, fuentes, canales RSS\nConexión: SQLAlchemy async (asyncpg)\nHealthcheck: pg_isready (5s, 5 retries)" as pg
+
+  database "<b>MongoDB 7.0</b>\nPuerto: 27017 — Volumen: mongodb_data\n\nEntidades: notificaciones, estadísticas,\nartículos RSS, caché keywords/wordcloud\nConexión: Motor async\nHealthcheck: mongosh ping (5s, 5 retries)" as mongo
+}
+
+package "Notification Daemon" as nd_pkg {
+  rectangle "<b>APScheduler + Python</b>\nLogin: admin@newsradar.com\n\n<b>Flujo:</b>\n1. Login en API\n2. Carga rss_sources.json\n3. Sincroniza alertas → programa jobs\n4. Cada job: descarga RSS → filtra por\n   descriptor/categoría → email + notificación\n5. Refresca alertas cada 300s\n\n<b>Variables:</b> API_BASE_URL, RSS_SOURCES_PATH,\nSMTP_HOST/PORT, GMAIL_SENDER/APP_PASSWORD" as nd
+}
+
+package "Servicios RSS Mock" {
+  rectangle "<b>mock_rss</b>\nPuerto: 8080\nSimula feeds RSS en desarrollo" as mrss
+  rectangle "<b>mock_test_rss</b>\nPuerto: 8100\nSimula feeds RSS para tests" as mtrss
+}
+
+package "Datos de inicialización" {
+  file "rss_sources.json\niptc_catalog.json\nmanual_synonyms.json" as data
+}
+
+rectangle "<b>Gmail SMTP</b>\nSSL 465\nEnvío: verificación,\nrecuperación password,\nnotificaciones de alertas" as gmail
+rectangle "<b>IA Providers</b>\nGemini / Groq / OpenAI\nClasificación y análisis\nde noticias" as ia
+
+' --- Conexiones ---
+Usuario --> fe : HTTP 5173
+fe --> api : HTTP REST 8000 (JSON)
+api --> pg : asyncpg 5432 — SQLAlchemy async
+api --> mongo : motor 27017 — AsyncIOMotorClient
+api --> gmail : SMTP SSL 465
+api --> ia : HTTP REST
+nd --> api : HTTP 8000 (cliente httpx)
+nd --> mongo : motor 27017
+nd --> gmail : SMTP SSL 465
+api -.-> data : Lectura startup (carga IPTC, sinónimos, fuentes)
+nd -.-> data : Lectura arranque (carga rss_sources.json)
+fe -.-> mrss : HTTP 8080 (dev)
+fe -.-> mtrss : HTTP 8100 (tests)
+
+@enduml

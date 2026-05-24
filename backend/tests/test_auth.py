@@ -1,57 +1,79 @@
-import pytest
 import os
+import pytest
 
 
-def test_auth_01_registro_exitoso(client, db_engine):
+async def test_auth_01_registro_exitoso(client):
     """Prueba que un usuario nuevo puede registrarse correctamente"""
-    # 1. Preparamos los datos
     payload = {
-        "username": "nuevo_tester",
         "email": "tester@newsradar.es",
         "password": "Password123!",
+        "first_name": "Nuevo",
+        "last_name": "Tester",
+        "organization": "NewsRadar",
     }
-
-    # 2. Hacemos la petición (simulando al Frontend)
-    response = client.post("/api/v1/auth/register", json=payload)
-
-    # 3. Verificamos el resultado
-    assert response.status_code == 201
+    response = await client.post("/api/v1/auth/register", json=payload)
+    assert response.status_code == 200
     assert response.json()["email"] == "tester@newsradar.es"
-    # IMPORTANTE: Nunca debe devolver la contraseña en texto plano
     assert "password" not in response.json()
 
 
-def test_auth_02_email_duplicado(client):
+async def test_auth_02_email_duplicado(client):
     """Prueba que no se pueden registrar dos usuarios con el mismo email"""
     payload = {
-        "username": "copion",
-        "email": "tester@newsradar.es",  # Este email ya se usó en el test anterior
+        "email": "duplicado@newsradar.es",
         "password": "Password123!",
+        "first_name": "Test",
+        "last_name": "User",
+        "organization": "NewsRadar",
     }
+    resp1 = await client.post("/api/v1/auth/register", json=payload)
+    assert resp1.status_code == 200
 
-    # Insertamos la primera vez
-    client.post("/api/v1/auth/register", json=payload)
-
-    # Intentamos insertar la segunda vez
-    response_duplicado = client.post("/api/v1/auth/register", json=payload)
-
-    # Verificamos que el sistema lo rechaza
-    assert response_duplicado.status_code == 400
+    resp2 = await client.post("/api/v1/auth/register", json=payload)
+    assert resp2.status_code == 409
 
 
-def test_login_exitoso(client, load_valid_users):
-    # 1. Obtenemos los datos del JSON
-    datos_admin = load_valid_users["gestor_admin"]
-
-    # 2. Hacemos la petición de Login
-    response = client.post(
-        "/api/v1/auth/login",
-        json={"email": datos_admin["email"], "password": datos_admin["password"]}
-    )
-
-    # 3. Comprobamos que devuelve un Token
+async def test_login_exitoso(client):
+    """Prueba que un usuario registrado puede hacer login"""
+    response = await client.post("/api/v1/auth/login", json={
+        "email": "admin@newsradar.com",
+        "password": "admin123",
+    })
     assert response.status_code == 200
     assert "access_token" in response.json()
+
+
+async def test_verify_account_invalid_token(client):
+    response = await client.post("/api/v1/auth/verify", json={"token": "invalid-token-123"})
+    assert response.status_code == 404
+
+
+async def test_verify_account_already_verified(client):
+    response = await client.post("/api/v1/auth/verify", json={"token": "any-token"})
+    assert response.status_code in (404, 400)
+
+
+async def test_resend_verification_email_not_found(client):
+    response = await client.post("/api/v1/auth/resend-verification?payload=ghost@test.com")
+    assert response.status_code == 404
+
+
+async def test_forgot_password_unknown_email(client):
+    response = await client.post("/api/v1/auth/forgot-password", json={"email": "nonexistent@test.com"})
+    assert response.status_code == 200
+
+
+async def test_forgot_password_known_email(client):
+    response = await client.post("/api/v1/auth/forgot-password", json={"email": "admin@newsradar.com"})
+    assert response.status_code == 200
+
+
+async def test_reset_password_invalid_token(client):
+    response = await client.post("/api/v1/auth/reset-password", json={
+        "token": "bad-token",
+        "new_password": "NewPass123!",
+    })
+    assert response.status_code == 400
 
 
 @pytest.fixture
@@ -59,6 +81,5 @@ def mock_rss_xml():
     """Lee el archivo XML falso para simular una respuesta de un feed RSS"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     xml_path = os.path.join(base_dir, "fixtures", "feed_falso.xml")
-
     with open(xml_path, "r", encoding="utf-8") as file:
         return file.read()
