@@ -20,12 +20,7 @@ export default function Sidebar() {
     { label: t('sidebar.clouds'), icon: <PieChart size={20} />, path: '/nubes' },
     { label: t('sidebar.alerts'), icon: <Bell size={20} />, path: '/alerts' },
     { label: t('sidebar.sources'), icon: <Rss size={20} />, path: '/fuentes' },
-    {
-      label: t('sidebar.notifications'),
-      icon: <Bell size={20} />,
-      path: '/notificaciones',
-      notifications: 3 // Este número supongo que vendrá de alguna API más adelante
-    },
+    { label: t('sidebar.notifications'), icon: <Bell size={20} />, path: '/notificaciones' },
     { divider: true },
     { label: t('sidebar.profile'), icon: <User size={20} />, path: '/profile' },
   ];
@@ -50,9 +45,7 @@ export default function Sidebar() {
                   {React.cloneElement(item.icon, { className: styles.icon })}
                   <span className={styles.label}>{item.label}</span>
                 </div>
-                {item.notifications > 0 && (
-                  <span className={styles.badge}>{item.notifications}</span>
-                )}
+
               </Link>
             </li>
           );
