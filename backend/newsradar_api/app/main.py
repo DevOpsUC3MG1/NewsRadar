@@ -6,7 +6,7 @@ import smtplib
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -583,6 +583,7 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> U
     user = UserModel(
         **payload.model_dump(),
         verification_token=verification_token,
+        verification_token_expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
         is_verified=False
     )
     db.add(user)
@@ -616,8 +617,19 @@ async def verify_account(
             detail="La cuenta ya ha sido verificada"
         )
 
+    # Comprobar expiración del token (24h)
+    if user.verification_token_expires_at and user.verification_token_expires_at < datetime.now(timezone.utc):
+        user.verification_token = None
+        user.verification_token_expires_at = None
+        await db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="El enlace de verificación ha expirado. Solicita uno nuevo en 'Reenviar verificación'."
+        )
+
     user.is_verified = True
     user.verification_token = None
+    user.verification_token_expires_at = None
     await db.commit()
 
     return VerificationResponse(
@@ -644,6 +656,7 @@ async def resend_verification(
     # Regenerar token de verificación
     new_verification_token = str(uuid4())
     user.verification_token = new_verification_token
+    user.verification_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
     await db.commit()
 
     # Enviar email con el nuevo token
