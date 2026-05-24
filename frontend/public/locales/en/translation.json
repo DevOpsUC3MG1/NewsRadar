@@ -118,8 +118,12 @@
     "charts": {
       "evolutionTitle": "CAPTURE EVOLUTION - NEWS PER DAY",
       "categoriesTitle": "NEWS BY CATEGORY",
+      "categoryCountersTitle": "SUMMARY BY CATEGORY",
+      "noCategoryData": "No category data available",
       "newsLabel": "News: ",
-      "news": "News"
+      "news": "News",
+      "alertsLabel": "Alerts: ",
+      "alerts": "Alerts"
     },
     "days": {
       "mon": "Mon",
@@ -221,7 +225,8 @@
     "errorCategory": "Error loading this category's cloud.",
     "errorGlobal": "Error loading the global cloud.",
     "loadingCategories": "Loading categories...",
-    "noCategories": "No categories available found."
+    "noCategories": "No categories available found.",
+    "refreshBtn": "Refresh clouds"
   },
   "alerts": {
     "title": "ALERTS",
@@ -319,7 +324,22 @@
     "Ciencia": "Science",
     "Viajes": "Travel",
     "Entretenimiento": "Entertainment",
-    "General": "General"
+    "General": "General",
+    "Artes, cultura, entretenimiento y medios": "Arts, culture, entertainment and media",
+    "Policía y justicia": "Crime, law and justice",
+    "Catástrofes y accidentes": "Disasters and accidents",
+    "Economía, negocios y finanzas": "Economy, business and finance",
+    "Educación": "Education",
+    "Medio ambiente": "Environment",
+    "Interés humano, animales, insólito": "Human interest, animals and curiosities",
+    "Mano de obra": "Labour",
+    "Estilo de vida y tiempo libre": "Lifestyle and leisure",
+    "Política": "Politics",
+    "Religión y culto": "Religion and belief",
+    "Ciencia y tecnología": "Science and technology",
+    "Deporte": "Sports",
+    "Conflicto, guerra y paz": "Conflict, war and peace",
+    "Meteorología": "Weather"
   },
   "sources": {
     "loading": "Loading sources and channels from the server...",

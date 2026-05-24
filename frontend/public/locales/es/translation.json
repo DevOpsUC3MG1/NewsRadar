@@ -118,8 +118,12 @@
     "charts": {
       "evolutionTitle": "EVOLUCIÓN DE CAPTURA - NOTICIAS POR DÍA",
       "categoriesTitle": "NOTICIAS POR CATEGORÍA",
+      "categoryCountersTitle": "RESUMEN POR CATEGORÍA",
+      "noCategoryData": "Sin datos por categoría",
       "newsLabel": "Noticias: ",
-      "news": "Noticias"
+      "news": "Noticias",
+      "alertsLabel": "Alertas: ",
+      "alerts": "Alertas"
     },
     "days": {
       "mon": "Lun",
@@ -320,7 +324,22 @@
     "Ciencia": "Ciencia",
     "Viajes": "Viajes",
     "Entretenimiento": "Entretenimiento",
-    "General": "General"
+    "General": "General",
+    "Artes, cultura, entretenimiento y medios": "Artes, cultura, entretenimiento y medios",
+    "Policía y justicia": "Policía y justicia",
+    "Catástrofes y accidentes": "Catástrofes y accidentes",
+    "Economía, negocios y finanzas": "Economía, negocios y finanzas",
+    "Educación": "Educación",
+    "Medio ambiente": "Medio ambiente",
+    "Interés humano, animales, insólito": "Interés humano, animales, insólito",
+    "Mano de obra": "Mano de obra",
+    "Estilo de vida y tiempo libre": "Estilo de vida y tiempo libre",
+    "Política": "Política",
+    "Religión y culto": "Religión y culto",
+    "Ciencia y tecnología": "Ciencia y tecnología",
+    "Deporte": "Deporte",
+    "Conflicto, guerra y paz": "Conflicto, guerra y paz",
+    "Meteorología": "Meteorología"
   },
   "sources": {
     "loading": "Cargando fuentes y canales desde el servidor...",

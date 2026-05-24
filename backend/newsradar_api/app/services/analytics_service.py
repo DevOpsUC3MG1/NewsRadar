@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -76,9 +77,7 @@ def _news_category_label(raw_category: str, lang: str) -> str:
     value = _normalize_dashboard_category(raw_category)
     if not value:
         return "Sin categoria" if lang == "es" else "Uncategorized"
-    if lang == "es":
-        return _IPTC_TO_ES.get(value, value)
-    return value
+    return _canonical_dashboard_category(value)
 
 
 async def _notification_news_stats(mongo_db, start: datetime, start_today: datetime, lang: str) -> Dict[str, Any]:
@@ -118,7 +117,7 @@ async def _mongo_news_stats(mongo_db, start: datetime, start_today: datetime, la
     rows = await mongo_db.news.aggregate(
         [
             {"$match": {"created_at": {"$gte": start_naive}}},
-            {"$group": {"_id": "$iptc_category", "count": {"$sum": 1}}},
+            {"$group": {"_id": {"$ifNull": ["$category", "$iptc_category"]}, "count": {"$sum": 1}}},
         ]
     ).to_list(length=100)
 
@@ -175,6 +174,51 @@ _RSS_TO_IPTC_NAME: Dict[str, str] = {
 _IPTC_NAME_TO_RSS: Dict[str, set[str]] = {}
 for _rss_cat, _iptc_name in _RSS_TO_IPTC_NAME.items():
     _IPTC_NAME_TO_RSS.setdefault(_iptc_name, set()).add(_rss_cat)
+
+_CLASSIFIER_TO_IPTC_NAME = {
+    "Entertainment": _IPTC_ID_TO_NAME[1000000],
+    "Business": _IPTC_ID_TO_NAME[4000000],
+    "Economy": _IPTC_ID_TO_NAME[4000000],
+    "Health": _IPTC_ID_TO_NAME[7000000],
+    "Lifestyle": _IPTC_ID_TO_NAME[10000000],
+    "Politics": _IPTC_ID_TO_NAME[11000000],
+    "Technology": _IPTC_ID_TO_NAME[13000000],
+    "Science": _IPTC_ID_TO_NAME[13000000],
+    "Sports": _IPTC_ID_TO_NAME[15000000],
+    "World": _IPTC_ID_TO_NAME[16000000],
+}
+
+
+def _category_identity(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", _normalize_dashboard_category(value))
+    without_accents = "".join(char for char in normalized if not unicodedata.combining(char))
+    return without_accents.casefold()
+
+
+_DASHBOARD_CATEGORY_ALIASES: Dict[str, str] = {
+    _category_identity(name): name for name in _IPTC_ID_TO_NAME.values()
+}
+for _rss_cat, _iptc_name in _RSS_TO_IPTC_NAME.items():
+    _DASHBOARD_CATEGORY_ALIASES[_category_identity(_rss_cat)] = _iptc_name
+for _classifier_cat, _iptc_name in _CLASSIFIER_TO_IPTC_NAME.items():
+    _DASHBOARD_CATEGORY_ALIASES[_category_identity(_classifier_cat)] = _iptc_name
+
+
+def _canonical_dashboard_category(value: str) -> str:
+    label = _normalize_dashboard_category(value)
+    return _DASHBOARD_CATEGORY_ALIASES.get(_category_identity(label), label)
+
+
+def _alert_category_label(category: Dict[str, Any]) -> str:
+    category_id = category.get("id")
+    if category_id is not None:
+        try:
+            canonical_name = _IPTC_ID_TO_NAME.get(int(category_id))
+        except (TypeError, ValueError):
+            canonical_name = None
+        if canonical_name:
+            return canonical_name
+    return _canonical_dashboard_category(category.get("label") or category.get("name") or "")
 
 _CHANNEL_CATEGORY_TO_CLOUD = {
     "politica": "politics",
@@ -272,7 +316,7 @@ async def build_dashboard(
         for category in alert.categories or []:
             if not isinstance(category, dict):
                 continue
-            label = _normalize_dashboard_category(category.get("label") or category.get("name") or "")
+            label = _alert_category_label(category)
             if not label:
                 continue
             alert_bucket[label] = alert_bucket.get(label, 0) + 1

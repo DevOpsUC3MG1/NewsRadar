@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,18 +17,15 @@ const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [newsFilter, setNewsFilter] = useState('7D');
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
       const token = authService.getToken();
       if (!token) throw new Error('No hay token disponible');
 
-      const days = newsFilter === '1D' ? 1 : 7;
-
-      const response = await fetch(`${API_BASE}/api/v1/dashboard?days=${days}`, {
+      const response = await fetch(`${API_BASE}/api/v1/dashboard?days=7`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
@@ -54,11 +51,11 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [i18n.language, t]);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [t, newsFilter]);
+  }, [fetchDashboardData]);
 
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -124,22 +121,8 @@ const Dashboard = () => {
         <div className={styles.card}>
           <span className={styles.cardTitle}>{t('dashboard.newsCard.title')}</span>
           <span className={styles.metricValue}>
-            {newsFilter === '1D' ? (data.noticias?.hoy || 0) : (data.noticias?.semana || 0)}
+            {data.noticias?.semana || 0}
           </span>
-          <div className={styles.filterContainer}>
-            <button
-              className={newsFilter === '1D' ? styles.filterBtnActive : styles.filterBtnInactive}
-              onClick={() => setNewsFilter('1D')}
-            >
-              1D
-            </button>
-            <button
-              className={newsFilter === '7D' ? styles.filterBtnActive : styles.filterBtnInactive}
-              onClick={() => setNewsFilter('7D')}
-            >
-              7D
-            </button>
-          </div>
         </div>
 
         <div className={styles.card}>
