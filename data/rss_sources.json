@@ -16,7 +16,14 @@
         { "url": "http://mock_rss:8080/ciencia.xml", "category": "Ciencia" },
         { "url": "http://mock_rss:8080/viajes.xml", "category": "Viajes" },
         { "url": "http://mock_rss:8080/entretenimiento.xml", "category": "Entretenimiento" },
-        { "url": "http://mock_rss:8080/educacion.xml", "category": "Educacion" }
+        { "url": "http://mock_rss:8080/educacion.xml", "category": "Educacion" },
+        { "url": "http://mock_rss:8080/policia_justicia.xml", "category": "PoliciaJusticia" },
+        { "url": "http://mock_rss:8080/catastrofes.xml", "category": "Catastrofes" },
+        { "url": "http://mock_rss:8080/medio_ambiente.xml", "category": "MedioAmbiente" },
+        { "url": "http://mock_rss:8080/interes_humano.xml", "category": "InteresHumano" },
+        { "url": "http://mock_rss:8080/mano_obra.xml", "category": "ManoObra" },
+        { "url": "http://mock_rss:8080/religion.xml", "category": "Religion" },
+        { "url": "http://mock_rss:8080/meteorologia.xml", "category": "Meteorologia" }
       ]
     },
     {
@@ -66,10 +73,6 @@
         {
           "url": "https://api2.rtve.es/rss/temas_medioambiente.xml",
           "category": "Ciencia"
-        },
-        {
-          "url": "https://api2.rtve.es/rss/temas_educacion.xml",
-          "category": "Educacion"
         }
       ]
     },

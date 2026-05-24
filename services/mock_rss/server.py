@@ -69,6 +69,41 @@ TEMPLATES = {
         "actions": ["implanta un nuevo modelo de", "mejora los resultados en", "digitaliza los procesos de", "amplía la oferta de"],
         "objects": ["la educación infantil", "la formación online", "el bilingüismo escolar", "la investigación académica"]
     },
+    "Justice": {
+        "subjects": ["La Audiencia Nacional", "El Tribunal Supremo", "La Fiscalía", "Los juzgados", "La policía"],
+        "actions": ["investiga un caso de", "dicta sentencia sobre", "desarticula una red de", "abre diligencias por"],
+        "objects": ["corrupción urbanística", "delitos financieros", "tráfico de influencias", "blanqueo de capitales"]
+    },
+    "Disasters": {
+        "subjects": ["Protección Civil", "Los bomberos", "La DANA", "El seísmo", "El incendio forestal"],
+        "actions": ["evacúa a los residentes por", "rescata a decenas de afectados en", "moviliza recursos ante", "causa daños millonarios en"],
+        "objects": ["las inundaciones históricas", "el terremoto de magnitud 6", "la ola de calor extrema", "el deslizamiento de tierras"]
+    },
+    "Environment": {
+        "subjects": ["Greenpeace", "El cambio climático", "Las energías renovables", "El reciclaje", "La contaminación"],
+        "actions": ["alerta sobre el impacto de", "reduce las emisiones de", "promueve la economía circular en", "ame-naza los ecosistemas de"],
+        "objects": ["los plásticos de un solo uso", "la desforestación amazónica", "la calidad del aire urbano", "la pérdida de biodiversidad"]
+    },
+    "HumanInterest": {
+        "subjects": ["Una historia viral", "El rescate animal", "La solidaridad vecinal", "Un récord insólito", "La mascota del año"],
+        "actions": ["conmueve a las redes con", "moviliza a todo el país por", "demuestra que todavía existe", "sorprende al mundo con"],
+        "objects": ["la adopción masiva de perros", "la hazaña deportiva popular", "la campaña solidaria navideña", "la curiosa tradición local"]
+    },
+    "Labor": {
+        "subjects": ["Los sindicatos", "La patronal", "El Ministerio de Trabajo", "Los trabajadores", "La inspección laboral"],
+        "actions": ["convocan una huelga por", "negocian un convenio para", "denuncian la precariedad en", "logran un acuerdo histórico sobre"],
+        "objects": ["la subida salarial", "la reducción de jornada", "los despidos improcedentes", "la igualdad laboral"]
+    },
+    "Religion": {
+        "subjects": ["El Vaticano", "El Papa Francisco", "La Conferencia Episcopal", "Los fieles", "La peregrinación"],
+        "actions": ["convoca un encuentro mundial de", "emite una declaración sobre", "celebra con devoción la", "renueva el llamamiento a"],
+        "objects": ["la paz interreligiosa", "la doctrina social", "las festividades religiosas", "el diálogo ecuménico"]
+    },
+    "Weather": {
+        "subjects": ["La AEMET", "La borrasca", "El anticiclón", "Las temperaturas", "La sequía"],
+        "actions": ["activa la alerta por", "prevé un fin de semana de", "registra valores históricos de", "pone en riesgo las cosechas por"],
+        "objects": ["lluvias torrenciales", "nevadas copiosas", "calor extremo", "vientos huracanados"]
+    },
 }
 
 MOCK_ROUTES = {
@@ -84,6 +119,13 @@ MOCK_ROUTES = {
     "/viajes.xml": "Lifestyle",
     "/entretenimiento.xml": "Entertainment",
     "/educacion.xml": "Education",
+    "/policia_justicia.xml": "Justice",
+    "/catastrofes.xml": "Disasters",
+    "/medio_ambiente.xml": "Environment",
+    "/interes_humano.xml": "HumanInterest",
+    "/mano_obra.xml": "Labor",
+    "/religion.xml": "Religion",
+    "/meteorologia.xml": "Weather",
 }
 
 

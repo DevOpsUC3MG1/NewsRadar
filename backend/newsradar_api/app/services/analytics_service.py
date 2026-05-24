@@ -163,6 +163,13 @@ _RSS_TO_IPTC_NAME: Dict[str, str] = {
     "Ciencia": "Ciencia y tecnología",
     "Viajes": "Estilo de vida y tiempo libre",
     "Entretenimiento": "Artes, cultura, entretenimiento y medios",
+    "PoliciaJusticia": "Policía y justicia",
+    "Catastrofes": "Catástrofes y accidentes",
+    "MedioAmbiente": "Medio ambiente",
+    "InteresHumano": "Interés humano, animales, insólito",
+    "ManoObra": "Mano de obra",
+    "Religion": "Religión y culto",
+    "Meteorologia": "Meteorología",
 }
 
 _IPTC_NAME_TO_RSS: Dict[str, set[str]] = {}
