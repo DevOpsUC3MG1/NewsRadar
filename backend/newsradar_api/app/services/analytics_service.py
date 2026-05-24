@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +25,8 @@ def _start_of_day_utc(d: datetime) -> datetime:
 
 
 def _parse_lang(accept_language: Optional[str]) -> str:
+    if os.getenv("FEATURE_FLAG_BILINGUAL", "true").lower() == "false":
+        return "en"
     if not accept_language:
         return "en"
     al = accept_language.lower()
@@ -241,6 +245,8 @@ async def build_wordcloud(
     Lee de notifications.news (única colección poblada por el daemon).
     Se cachea en Mongo en `wordcloud_cache`.
     """
+    if os.getenv("FEATURE_FLAG_WORDCLOUD", "true").lower() == "false":
+        raise HTTPException(status_code=503, detail="Wordcloud feature disabled")
     lang = _parse_lang(accept_language)
     now = _now_utc()
     start = now - timedelta(days=max(1, min(days, 90)))
