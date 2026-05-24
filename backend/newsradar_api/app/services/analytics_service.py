@@ -220,6 +220,7 @@ def _alert_category_label(category: Dict[str, Any]) -> str:
             return canonical_name
     return _canonical_dashboard_category(category.get("label") or category.get("name") or "")
 
+
 _CHANNEL_CATEGORY_TO_CLOUD = {
     "politica": "politics",
     "economia": "economy",
