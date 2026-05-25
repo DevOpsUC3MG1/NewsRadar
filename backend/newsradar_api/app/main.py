@@ -1197,8 +1197,8 @@ async def create_user_alert(
         select(AlertModel).where(AlertModel.user_id == user_id)
     )
     existing_list = existing_alerts.scalars().all()
-    if len(existing_list) >= 20:
-        raise HTTPException(status_code=422, detail="Maximum of 20 alerts per user reached")
+    if len(existing_list) >= 2:
+        raise HTTPException(status_code=403, detail="Maximum of 2 alerts per user reached")
 
     normalized_name = payload.name.strip()
     for existing_alert in existing_list:
