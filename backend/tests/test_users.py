@@ -24,11 +24,13 @@ async def test_create_user(client, gestor_headers):
         "first_name": "New",
         "last_name": "User",
         "organization": "NewsRadar",
+        "phone": "123456789",
         "role_ids": [],
     }
     response = await client.post("/api/v1/users", json=payload, headers=gestor_headers)
     assert response.status_code == 201
     assert response.json()["email"] == "newuser@newsradar.es"
+    assert response.json()["phone"] == "123456789"
     assert "password" not in response.json()
 
 
@@ -55,6 +57,7 @@ async def test_delete_user(client, gestor_headers):
         "first_name": "Delete",
         "last_name": "Me",
         "organization": "NewsRadar",
+        "phone": "123456789",
     })
     user_id = resp.json()["id"]
 
@@ -77,6 +80,7 @@ async def test_create_user_invalid_role_id(client, gestor_headers):
         "first_name": "Bad",
         "last_name": "Role",
         "organization": "NewsRadar",
+        "phone": "123456789",
         "role_ids": [99999],
     }
     response = await client.post("/api/v1/users", json=payload, headers=gestor_headers)

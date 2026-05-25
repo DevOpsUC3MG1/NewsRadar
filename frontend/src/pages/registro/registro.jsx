@@ -18,6 +18,7 @@ const registerSchema = z.object({
   nombre: z.string().min(1, 'register.errors.nameRequired'),
   apellidos: z.string().min(1, 'register.errors.lastNameRequired'),
   organizacion: z.string().min(1, 'register.errors.orgRequired'),
+  telefono: z.string().regex(/^\d{9}$/, 'register.errors.phoneInvalid'),
   email: z.string().min(1, 'register.errors.emailRequired').email('register.errors.emailInvalid'),
   password: z.string().min(6, 'register.errors.passwordMin'),
   confirmPassword: z.string().min(1, 'register.errors.confirmRequired'),
@@ -55,6 +56,7 @@ export default function Registro() {
         first_name: data.nombre,
         last_name: data.apellidos,
         organization: data.organizacion,
+        phone: data.telefono,
         password: data.password,
         role_ids: [4]
       };
@@ -112,6 +114,16 @@ export default function Registro() {
                 labelClassName={styles.label}
                 error={errors.organizacion?.message ? t(errors.organizacion.message) : undefined}
                 {...register('organizacion')}
+              />
+
+              <Input
+                label={t('register.phoneLabel')}
+                type="tel"
+                placeholder="123456789"
+                className={styles.input}
+                labelClassName={styles.label}
+                error={errors.telefono?.message ? t(errors.telefono.message) : undefined}
+                {...register('telefono')}
               />
 
               <Input

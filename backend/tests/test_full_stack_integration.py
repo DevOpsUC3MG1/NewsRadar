@@ -9,6 +9,7 @@ async def test_flujo_registro_y_login_frontend_mock(client):
         "first_name": "Frontend",
         "last_name": "User",
         "organization": "NewsRadar",
+        "phone": "123456789",
     }
     res_reg = await client.post("/api/v1/auth/register", json=user_data)
 

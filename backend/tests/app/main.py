@@ -44,6 +44,7 @@ class UserBase(BaseModel):
     first_name: str = Field(default="Test", min_length=1, max_length=120)
     last_name: str = Field(default="User", min_length=1, max_length=120)
     organization: str = Field(default="TestOrg", min_length=1, max_length=180)
+    phone: str = Field(default="123456789", pattern=r"^\d{9}$", description="Exactly 9 digits")
     role_ids: List[int] = Field(default_factory=list)
 
 
@@ -56,6 +57,7 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=120)
     last_name: Optional[str] = Field(None, min_length=1, max_length=120)
     organization: Optional[str] = Field(None, min_length=1, max_length=180)
+    phone: Optional[str] = Field(None, pattern=r"^\d{9}$", description="Exactly 9 digits")
     role_ids: Optional[List[int]] = None
     password: Optional[str] = Field(None, min_length=6, max_length=128)
 
@@ -277,6 +279,7 @@ def sanitize_user(user: UserInDB) -> User:
         first_name=user.first_name,
         last_name=user.last_name,
         organization=user.organization,
+        phone=user.phone,
         role_ids=user.role_ids,
     )
 
@@ -315,6 +318,7 @@ def create_seed_data() -> None:
         first_name="Admin",
         last_name="Principal",
         organization="NewsRadar",
+        phone="123456789",
         role_ids=[admin_role_id],
         password="AdminPassword456!",
     )
@@ -326,6 +330,7 @@ def create_seed_data() -> None:
         first_name="Lector",
         last_name="Uno",
         organization="NewsRadar",
+        phone="987654321",
         role_ids=[user_role_id],
         password="PasswordSegura123!",
     )
