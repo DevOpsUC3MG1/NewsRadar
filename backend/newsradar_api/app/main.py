@@ -200,7 +200,7 @@ class UserBase(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=120)
     last_name: str = Field(..., min_length=1, max_length=120)
     organization: str = Field(..., min_length=1, max_length=180)
-    phone: str = Field(..., pattern=r"^\d{9}$", description="Exactly 9 digits")
+    phone: Optional[str] = Field(None, pattern=r"^\d{9}$", description="Exactly 9 digits")
     role_ids: List[int] = Field(default_factory=list)
 
 
