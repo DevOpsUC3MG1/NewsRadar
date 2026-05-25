@@ -15,5 +15,6 @@
   {"code": "14000000", "name": "Sociedad"},
   {"code": "15000000", "name": "Deporte"},
   {"code": "16000000", "name": "Conflicto, guerra y paz"},
-  {"code": "17000000", "name": "Meteorología"}
+  {"code": "17000000", "name": "Meteorología"},
+  {"code": "11110000", "name": "Sucesos"}
 ]
