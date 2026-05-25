@@ -13,10 +13,16 @@ async def test_auth_01_registro_exitoso(client):
         "first_name": "Nuevo",
         "last_name": "Tester",
         "organization": "NewsRadar",
+        "phone": "123456789",
     }
     response = await client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 200
+<<<<<<< HEAD
     assert response.json()["email"] == email
+=======
+    assert response.json()["email"] == "tester@newsradar.es"
+    assert response.json()["phone"] == "123456789"
+>>>>>>> refs/remotes/origin/main
     assert "password" not in response.json()
 
 
@@ -30,6 +36,7 @@ async def test_auth_02_email_duplicado(client):
         "first_name": "Test",
         "last_name": "User",
         "organization": "NewsRadar",
+        "phone": "123456789",
     }
     resp1 = await client.post("/api/v1/auth/register", json=payload)
     assert resp1.status_code == 200

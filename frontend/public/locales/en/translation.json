@@ -27,6 +27,7 @@
     "nameLabel": "FIRST NAME",
     "lastNameLabel": "LAST NAME",
     "orgLabel": "ORGANIZATION",
+    "phoneLabel": "PHONE",
     "emailLabel": "EMAIL",
     "passwordLabel": "PASSWORD",
     "confirmPasswordLabel": "CONFIRM PASSWORD",
@@ -38,6 +39,7 @@
       "nameRequired": "First name is required",
       "lastNameRequired": "Last name is required",
       "orgRequired": "Organization is required",
+      "phoneInvalid": "Phone must have exactly 9 digits",
       "emailRequired": "Email is required",
       "emailInvalid": "Invalid email format",
       "passwordMin": "Must be at least 6 characters",
@@ -147,6 +149,7 @@
       "first_name": "FIRST NAME",
       "last_name": "LAST NAME",
       "organization": "ORGANIZATION",
+      "phone": "PHONE",
       "email": "EMAIL ADDRESS"
     },
     "actions": {

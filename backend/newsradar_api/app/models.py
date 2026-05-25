@@ -16,6 +16,7 @@ class User(Base):
     first_name = Column(String(120))
     last_name = Column(String(120))
     organization = Column(String(180))
+    phone = Column(String(9), nullable=True)
     password = Column(String(128))
     role_ids = Column(JSON, default=[])   # lista de IDs
     is_verified = Column(Boolean, default=False)

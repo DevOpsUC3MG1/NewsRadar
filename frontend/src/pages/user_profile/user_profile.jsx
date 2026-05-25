@@ -11,7 +11,7 @@ const UserProfile = () => {
   const navigate = useNavigate();
 
   const [userData, setUserData] = useState({
-    id: null, first_name: '', last_name: '', email: '', organization: '', role_ids: []
+    id: null, first_name: '', last_name: '', email: '', organization: '', phone: '', role_ids: []
   });
 
   const [isEditingInfo, setIsEditingInfo] = useState(false);
@@ -34,6 +34,7 @@ const UserProfile = () => {
       last_name: '-',
       email: '-',
       organization: '-',
+      phone: '-',
       role_ids: []
     };
 
@@ -60,7 +61,8 @@ const UserProfile = () => {
       const updatePayload = {
         first_name: tempInfo.first_name,
         last_name: tempInfo.last_name,
-        organization: tempInfo.organization
+        organization: tempInfo.organization,
+        phone: tempInfo.phone
       };
 
       // Llamamos a la API
@@ -141,11 +143,11 @@ const UserProfile = () => {
             )}
 
             <div className={styles.infoGrid}>
-              {['first_name','last_name','organization'].map(field => (
+              {['first_name','last_name','organization','phone'].map(field => (
                 <div key={field} className={styles.inputGroup}>
                   <label>{t(`userProfile.personalInfo.${field}`)}</label>
                   <input
-                    type="text"
+                    type={field === 'phone' ? 'tel' : 'text'}
                     name={field}
                     value={tempInfo[field] || ''}
                     onChange={e => setTempInfo({...tempInfo, [field]: e.target.value})}

@@ -200,6 +200,7 @@ class UserBase(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=120)
     last_name: str = Field(..., min_length=1, max_length=120)
     organization: str = Field(..., min_length=1, max_length=180)
+    phone: str = Field(..., pattern=r"^\d{9}$", description="Exactly 9 digits")
     role_ids: List[int] = Field(default_factory=list)
 
 
@@ -212,6 +213,7 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=120)
     last_name: Optional[str] = Field(None, min_length=1, max_length=120)
     organization: Optional[str] = Field(None, min_length=1, max_length=180)
+    phone: Optional[str] = Field(None, pattern=r"^\d{9}$", description="Exactly 9 digits")
     role_ids: Optional[List[int]] = None
     password: Optional[str] = Field(None, min_length=6, max_length=128)
 
@@ -450,6 +452,7 @@ def sanitize_user(user: UserModel) -> User:
         first_name=user.first_name,
         last_name=user.last_name,
         organization=user.organization,
+        phone=user.phone,
         role_ids=user.role_ids or [],
     )
 
@@ -524,6 +527,7 @@ async def create_seed_data() -> None:
                 "first_name": "Admin",
                 "last_name": "NewsRadar",
                 "organization": "NewsRadar",
+                "phone": "123456789",
                 "password": "admin123",
                 "role_ids": [admin_role.id],
             },
@@ -533,6 +537,7 @@ async def create_seed_data() -> None:
                 "first_name": "ejemplo",
                 "last_name": "NewsRadar",
                 "organization": "NewsRadar",
+                "phone": "987654321",
                 "password": "adminadmin",
                 "role_ids": [admin_role.id],
             },
@@ -1197,8 +1202,8 @@ async def create_user_alert(
         select(AlertModel).where(AlertModel.user_id == user_id)
     )
     existing_list = existing_alerts.scalars().all()
-    if len(existing_list) >= 20:
-        raise HTTPException(status_code=422, detail="Maximum of 20 alerts per user reached")
+    if len(existing_list) >= 2:
+        raise HTTPException(status_code=403, detail="Maximum of 2 alerts per user reached")
 
     normalized_name = payload.name.strip()
     for existing_alert in existing_list:
