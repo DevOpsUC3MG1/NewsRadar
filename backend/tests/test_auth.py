@@ -1,11 +1,14 @@
 import os
 import pytest
+from uuid import uuid4
 
 
 async def test_auth_01_registro_exitoso(client):
     """Prueba que un usuario nuevo puede registrarse correctamente"""
+    suffix = uuid4().hex[:8]
+    email = f"tester-{suffix}@newsradar.es"
     payload = {
-        "email": "tester@newsradar.es",
+        "email": email,
         "password": "Password123!",
         "first_name": "Nuevo",
         "last_name": "Tester",
@@ -13,14 +16,16 @@ async def test_auth_01_registro_exitoso(client):
     }
     response = await client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 200
-    assert response.json()["email"] == "tester@newsradar.es"
+    assert response.json()["email"] == email
     assert "password" not in response.json()
 
 
 async def test_auth_02_email_duplicado(client):
     """Prueba que no se pueden registrar dos usuarios con el mismo email"""
+    suffix = uuid4().hex[:8]
+    email = f"duplicado-{suffix}@newsradar.es"
     payload = {
-        "email": "duplicado@newsradar.es",
+        "email": email,
         "password": "Password123!",
         "first_name": "Test",
         "last_name": "User",

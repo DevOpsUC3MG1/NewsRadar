@@ -52,21 +52,25 @@ async def test_list_rss_channels(client, gestor_headers):
 
 
 async def test_create_rss_channel(client, gestor_headers):
+    suffix = uuid4().hex[:8]
     src_id, cat_id = await _create_source_and_category(client, gestor_headers)
-    payload = {"url": "https://rss-test.com/feed", "category_id": cat_id}
+    url = f"https://rss-create-{suffix}.com/feed"
+    payload = {"url": url, "category_id": cat_id}
     response = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json=payload, headers=gestor_headers)
     assert response.status_code == 201
-    assert response.json()["url"] == "https://rss-test.com/feed"
+    assert response.json()["url"] == url
 
 
 async def test_get_rss_channel(client, gestor_headers):
+    suffix = uuid4().hex[:8]
     src_id, cat_id = await _create_source_and_category(client, gestor_headers)
-    create_resp = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": "https://rss-test.com/rss", "category_id": cat_id}, headers=gestor_headers)
+    url = f"https://rss-get-{suffix}.com/rss"
+    create_resp = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": url, "category_id": cat_id}, headers=gestor_headers)
     ch_id = create_resp.json()["id"]
 
     response = await client.get(f"/api/v1/information-sources/{src_id}/rss-channels/{ch_id}", headers=gestor_headers)
     assert response.status_code == 200
-    assert response.json()["url"] == "https://rss-test.com/rss"
+    assert response.json()["url"] == url
 
 
 async def test_get_rss_channel_not_found(client, gestor_headers):
@@ -76,13 +80,16 @@ async def test_get_rss_channel_not_found(client, gestor_headers):
 
 
 async def test_update_rss_channel(client, gestor_headers):
+    suffix = uuid4().hex[:8]
     src_id, cat_id = await _create_source_and_category(client, gestor_headers)
-    create_resp = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": "https://rss-test.com/old", "category_id": cat_id}, headers=gestor_headers)
+    create_resp = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": f"https://rss-old-{suffix}.com", "category_id": cat_id}, headers=gestor_headers)
     ch_id = create_resp.json()["id"]
 
-    response = await client.put(f"/api/v1/information-sources/{src_id}/rss-channels/{ch_id}", json={"url": "https://rss-test.com/new"}, headers=gestor_headers)
+    new_url = f"https://rss-new-{suffix}.com"
+    response = await client.put(f"/api/v1/information-sources/{src_id}/rss-channels/{ch_id}", json={"url": new_url}, headers=gestor_headers)
     assert response.status_code == 200
-    assert response.json()["url"] == "https://rss-test.com/new"
+    # Pydantic HttpUrl normalizes with trailing slash
+    assert response.json()["url"].rstrip("/") == new_url
 
 
 async def test_update_rss_channel_not_found(client, gestor_headers):
@@ -92,8 +99,10 @@ async def test_update_rss_channel_not_found(client, gestor_headers):
 
 
 async def test_delete_rss_channel(client, gestor_headers):
+    suffix = uuid4().hex[:8]
     src_id, cat_id = await _create_source_and_category(client, gestor_headers)
-    create_resp = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": "https://rss-test.com/del", "category_id": cat_id}, headers=gestor_headers)
+    url = f"https://rss-del-{suffix}.com"
+    create_resp = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": url, "category_id": cat_id}, headers=gestor_headers)
     ch_id = create_resp.json()["id"]
 
     response = await client.delete(f"/api/v1/information-sources/{src_id}/rss-channels/{ch_id}", headers=gestor_headers)

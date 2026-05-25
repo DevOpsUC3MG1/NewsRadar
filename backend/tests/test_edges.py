@@ -1,8 +1,14 @@
 """Edge-case and error-path tests to increase coverage"""
 
+from uuid import uuid4
+import pytest
+
+pytestmark = pytest.mark.usefixtures("clean_alerts")
+
 
 async def test_create_alert_duplicate_name(client, gestor_headers):
-    payload = {"name": "Duplicada", "cron_expression": "0 0 * * *", "descriptors": ["test"]}
+    suffix = uuid4().hex[:8]
+    payload = {"name": f"Duplicada-{suffix}", "cron_expression": "0 0 * * *", "descriptors": [f"tag-{suffix}"]}
     resp1 = await client.post("/api/v1/users/1/alerts", json=payload, headers=gestor_headers)
     assert resp1.status_code == 201
     resp2 = await client.post("/api/v1/users/1/alerts", json=payload, headers=gestor_headers)
@@ -10,15 +16,18 @@ async def test_create_alert_duplicate_name(client, gestor_headers):
 
 
 async def test_create_alert_duplicate_descriptors(client, gestor_headers):
-    payload = {"name": "Desc Dupe", "cron_expression": "0 0 * * *", "descriptors": ["dup", "dup"]}
+    suffix = uuid4().hex[:8]
+    payload = {"name": f"DescDupe-{suffix}", "cron_expression": "0 0 * * *", "descriptors": ["dup", "dup"]}
     response = await client.post("/api/v1/users/1/alerts", json=payload, headers=gestor_headers)
     assert response.status_code == 422
 
 
 async def test_create_role_duplicate(client, gestor_headers):
-    resp1 = await client.post("/api/v1/roles", json={"name": "test_dupe_role"}, headers=gestor_headers)
+    suffix = uuid4().hex[:8]
+    name = f"test_dupe_role_{suffix}"
+    resp1 = await client.post("/api/v1/roles", json={"name": name}, headers=gestor_headers)
     assert resp1.status_code == 201
-    resp2 = await client.post("/api/v1/roles", json={"name": "test_dupe_role"}, headers=gestor_headers)
+    resp2 = await client.post("/api/v1/roles", json={"name": name}, headers=gestor_headers)
     assert resp2.status_code == 409
 
 
@@ -53,8 +62,9 @@ async def test_unauthorized_access_alert_create(client):
 
 
 async def test_create_user_xss_sanitization(client, gestor_headers):
+    suffix = uuid4().hex[:8]
     payload = {
-        "email": "xss@newsradar.es", "password": "XssPass123!",
+        "email": f"xss-{suffix}@newsradar.es", "password": "XssPass123!",
         "first_name": "<script>alert('xss')</script>", "last_name": "User<script>",
         "organization": "NewsRadar",
     }
@@ -66,8 +76,9 @@ async def test_create_user_xss_sanitization(client, gestor_headers):
 
 
 async def test_create_user_multiple_roles_rejected(client, gestor_headers):
+    suffix = uuid4().hex[:8]
     payload = {
-        "email": "multirole@newsradar.es", "password": "Multi123!",
+        "email": f"multirole-{suffix}@newsradar.es", "password": "Multi123!",
         "first_name": "Multi", "last_name": "Role", "organization": "NewsRadar",
         "role_ids": [1, 2],
     }
@@ -86,7 +97,8 @@ async def test_create_role_name_with_control_chars(client, gestor_headers):
 
 
 async def test_create_alert_empty_descriptor_skipped(client, gestor_headers):
-    payload = {"name": "Empty Desc", "cron_expression": "0 0 * * *", "descriptors": ["", "valid"]}
+    suffix = uuid4().hex[:8]
+    payload = {"name": f"EmptyDesc-{suffix}", "cron_expression": "0 0 * * *", "descriptors": ["", "valid"]}
     response = await client.post("/api/v1/users/1/alerts", json=payload, headers=gestor_headers)
     assert response.status_code == 201
 

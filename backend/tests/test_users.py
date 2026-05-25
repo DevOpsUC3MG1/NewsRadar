@@ -17,9 +17,14 @@ async def test_get_user_not_found(client, gestor_headers):
     assert response.status_code == 404
 
 
+from uuid import uuid4
+
+
 async def test_create_user(client, gestor_headers):
+    suffix = uuid4().hex[:8]
+    email = f"newuser-{suffix}@newsradar.es"
     payload = {
-        "email": "newuser@newsradar.es",
+        "email": email,
         "password": "NewUser123!",
         "first_name": "New",
         "last_name": "User",
@@ -28,7 +33,7 @@ async def test_create_user(client, gestor_headers):
     }
     response = await client.post("/api/v1/users", json=payload, headers=gestor_headers)
     assert response.status_code == 201
-    assert response.json()["email"] == "newuser@newsradar.es"
+    assert response.json()["email"] == email
     assert "password" not in response.json()
 
 
@@ -49,8 +54,10 @@ async def test_update_user_not_found(client, gestor_headers):
 
 
 async def test_delete_user(client, gestor_headers):
+    suffix = uuid4().hex[:8]
+    email = f"delete_me_{suffix}@newsradar.es"
     resp = await client.post("/api/v1/auth/register", json={
-        "email": "delete_me@newsradar.es",
+        "email": email,
         "password": "Delete123!",
         "first_name": "Delete",
         "last_name": "Me",
@@ -71,8 +78,10 @@ async def test_delete_user_not_found(client, gestor_headers):
 
 
 async def test_create_user_invalid_role_id(client, gestor_headers):
+    suffix = uuid4().hex[:8]
+    email = f"badrole_{suffix}@newsradar.es"
     payload = {
-        "email": "badrole@newsradar.es",
+        "email": email,
         "password": "BadRole123!",
         "first_name": "Bad",
         "last_name": "Role",

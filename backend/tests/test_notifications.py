@@ -1,7 +1,9 @@
 """Tests for Notifications CRUD — MongoDB-backed, requires an alert"""
 
-
 from uuid import uuid4
+import pytest
+
+pytestmark = pytest.mark.usefixtures("clean_alerts")
 
 
 async def _create_alert(client, gestor_headers):

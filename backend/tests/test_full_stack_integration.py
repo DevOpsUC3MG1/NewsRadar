@@ -1,10 +1,14 @@
+from uuid import uuid4
+
+
 async def test_flujo_registro_y_login_frontend_mock(client):
     """
     Simula el flujo completo que haría el Frontend:
     1. Registro de usuario -> 2. Login -> 3. Obtención de perfil
     """
+    suffix = uuid4().hex[:8]
     user_data = {
-        "email": "frontend@newsradar.es",
+        "email": f"frontend-{suffix}@newsradar.es",
         "password": "SecurePassword123!",
         "first_name": "Frontend",
         "last_name": "User",
