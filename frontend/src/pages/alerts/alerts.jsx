@@ -29,7 +29,7 @@ const Alerts = () => {
   const [form, setForm] = useState({
     nombre: '', keyword: '', periodicidad: '',
     descriptores: [], categorias: [],
-    information_sources_ids: [], rss_channels_ids: []
+    information_sources_ids: [], rss_channels_ids: [], prioridad: 2
   });
   const [cronFields, setCronFields] = useState({ min: '', hour: '', dom: '', month: '', dow: '' });
 
@@ -75,7 +75,8 @@ const Alerts = () => {
           //         con rawCats.name, rompiendo la inferencia de canales.
           categorias: (a.categories || []).map(c => c.name ?? c.label).filter(Boolean),
           information_sources_ids: (a.information_sources_ids || []).map(String),
-          rss_channels_ids: (a.rss_channels_ids || []).map(String)
+          rss_channels_ids: (a.rss_channels_ids || []).map(String),
+          prioridad: a.prioridad || 2
         };
       });
       setAlerts(formattedAlerts);
@@ -187,7 +188,8 @@ const Alerts = () => {
       categories: finalCategories,
       information_sources_ids: form.information_sources_ids.map(String),
       rss_channels_ids: finalChannelIds,
-      cron_expression: cronExpr
+      cron_expression: cronExpr,
+      prioridad: parseInt(form.prioridad, 10)
     };
 
     try {
@@ -338,7 +340,7 @@ const Alerts = () => {
         </div>
         <button className={styles.newAlertBtn} onClick={() => {
           setEditingAlert(null);
-          setForm({nombre:'', keyword:'', periodicidad:'', descriptores:[], categorias:[], information_sources_ids:[], rss_channels_ids:[]});
+          setForm({nombre:'', keyword:'', periodicidad:'', descriptores:[], categorias:[], information_sources_ids:[], rss_channels_ids:[], prioridad: 2});
           setCronFields({ min: '', hour: '', dom: '', month: '', dow: '' });
           setSuggestedDescriptors([]);
           setErrorMsg("");
@@ -546,6 +548,38 @@ const Alerts = () => {
                   {suggestedDescriptors.length === 0 && form.descriptores.length === 0 && (
                     <p className={styles.emptyStateText} style={{ margin: 0, fontStyle: 'italic', fontSize: '0.85rem' }}>{t('alerts.form.iaHint')}</p>
                   )}
+                </div>
+              </div>
+
+              {/* ── Prioridad ── */}
+              <div className={styles.inputGroupFull}>
+                <label>{t('alerts.form.priorityLabel', 'Prioridad')}</label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {[
+                    { value: 1, label: t('alerts.form.priorityRed', 'Rojo'), color: '#EF4444' },
+                    { value: 2, label: t('alerts.form.priorityYellow', 'Amarillo'), color: '#FBBF24' },
+                    { value: 3, label: t('alerts.form.priorityGreen', 'Verde'), color: '#22C55E' }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setForm({...form, prioridad: option.value})}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: form.prioridad === option.value ? `3px solid ${option.color}` : '2px solid #ccc',
+                        backgroundColor: form.prioridad === option.value ? `${option.color}20` : '#f9f9f9',
+                        color: option.color,
+                        fontWeight: form.prioridad === option.value ? 'bold' : 'normal',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: option.color, marginRight: '8px' }}></span>
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

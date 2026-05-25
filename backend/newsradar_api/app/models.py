@@ -34,6 +34,7 @@ class Alert(Base):
     cron_expression = Column(String(120))
     information_sources_ids = Column(JSON, default=[])
     rss_channels_ids = Column(JSON, default=[])
+    prioridad = Column(Integer, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="alerts")
 

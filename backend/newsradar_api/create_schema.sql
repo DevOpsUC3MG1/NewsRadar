@@ -36,6 +36,9 @@ CREATE TABLE alerts (
     descriptors JSON DEFAULT '[]'::json,
     categories JSON DEFAULT '[]'::json,
     cron_expression VARCHAR(120),
+    information_sources_ids JSON DEFAULT '[]'::json,
+    rss_channels_ids JSON DEFAULT '[]'::json,
+    prioridad INTEGER,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 

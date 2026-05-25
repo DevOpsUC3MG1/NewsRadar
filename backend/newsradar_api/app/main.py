@@ -14,9 +14,12 @@ from uuid import uuid4
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response, status, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, EmailStr, Field, HttpUrl
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,6 +47,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Bad Request"}
+    )
+
 
 API_PREFIX = "/api/v1"
 security = HTTPBearer(auto_error=False)
@@ -239,6 +251,7 @@ class AlertBase(BaseModel):
     rss_channels_ids: List[str] = Field(default_factory=list)
     information_sources_ids: List[str] = Field(default_factory=list)
     cron_expression: str = Field(..., min_length=1, max_length=120)
+    prioridad: int = Field(..., ge=1, le=3)
 
 
 class AlertCreate(AlertBase):
@@ -252,6 +265,7 @@ class AlertUpdate(BaseModel):
     rss_channels_ids: List[str] = Field(default_factory=list)
     information_sources_ids: List[str] = Field(default_factory=list)
     cron_expression: Optional[str] = Field(None, min_length=1, max_length=120)
+    prioridad: Optional[int] = Field(None, ge=1, le=3)
 
 
 class SuggestSynonymsRequest(BaseModel):
@@ -1244,6 +1258,7 @@ async def create_user_alert(
         rss_channels_ids=alert.rss_channels_ids or [],
         information_sources_ids=alert.information_sources_ids or [],
         cron_expression=alert.cron_expression,
+        prioridad=alert.prioridad,
     )
 
 
@@ -1272,7 +1287,11 @@ async def get_user_alert(
         descriptors=alert.descriptors or [],
         categories=[AlertCategoryItem(**c) for c in (alert.categories or [])],
         cron_expression=alert.cron_expression,
+        rss_channels_ids=alert.rss_channels_ids or [],
+        information_sources_ids=alert.information_sources_ids or [],
+        prioridad=alert.prioridad,
     )
+
 
 
 @app.put(
@@ -1334,6 +1353,9 @@ async def update_user_alert(
         descriptors=alert.descriptors or [],
         categories=[AlertCategoryItem(**c) for c in (alert.categories or [])],
         cron_expression=alert.cron_expression,
+        rss_channels_ids=alert.rss_channels_ids or [],
+        information_sources_ids=alert.information_sources_ids or [],
+        prioridad=alert.prioridad,
     )
 
 
