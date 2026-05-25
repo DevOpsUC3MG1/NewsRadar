@@ -123,3 +123,37 @@ async def test_create_rss_channel_invalid_url(client, gestor_headers):
     payload = {"url": "not-a-url", "category_id": cat_id}
     response = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json=payload, headers=gestor_headers)
     assert response.status_code == 422
+
+
+async def test_rss_limit_per_source(client, gestor_headers):
+    """T4_RSS_LIMIT_MEDIA: Ensure no more than 5 RSS channels can be created per source."""
+    # Ensure category
+    cat_id = await _ensure_category(client, gestor_headers, "General")
+
+    # Ensure source FOXNews
+    source_name = "FOXNews"
+    source_url = "https://www.foxnews.com/"
+    src_id = await _ensure_source(client, gestor_headers, source_name, source_url)
+
+    # Five valid channels
+    urls = [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml",
+        "https://moxie.foxnews.com/google-publisher/politics.xml",
+        "https://moxie.foxnews.com/google-publisher/science.xml",
+        "https://moxie.foxnews.com/google-publisher/health.xml",
+    ]
+
+    for u in urls:
+        resp = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": u, "category_id": cat_id}, headers=gestor_headers)
+        assert resp.status_code == 201, f"Failed creating allowed channel {u}: {resp.text}"
+
+    # Sixth channel should fail with 400 or 403
+    sixth = "https://moxie.foxnews.com/google-publisher/sports.xml"
+    resp6 = await client.post(f"/api/v1/information-sources/{src_id}/rss-channels", json={"url": sixth, "category_id": cat_id}, headers=gestor_headers)
+    assert resp6.status_code in (400, 403), f"Expected 400/403 for sixth channel, got {resp6.status_code}: {resp6.text}"
+
+    # Verify there are exactly 5 channels for the source
+    list_resp = await client.get(f"/api/v1/information-sources/{src_id}/rss-channels", headers=gestor_headers)
+    assert list_resp.status_code == 200
+    assert len(list_resp.json()) == 5, f"Expected 5 channels, found {len(list_resp.json())}"

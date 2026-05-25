@@ -14,12 +14,9 @@ from uuid import uuid4
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response, status, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, EmailStr, Field, HttpUrl, ValidationError, field_validator
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -1754,6 +1751,56 @@ async def _check_rss_duplicate(db: AsyncSession, url: str, exclude_id: Optional[
             raise HTTPException(status_code=409, detail="RSS channel url already exists")
 
 
+# Business exception for RSS limit per information source
+class RSSLimitExceededException(Exception):
+    """Raised when an information source already reached the maximum allowed RSS channels."""
+    def __init__(self, source_id: int, limit: int = 5):
+        self.source_id = source_id
+        self.limit = limit
+        super().__init__(f"Maximum of {limit} RSS channels per source ({source_id}) exceeded")
+
+
+@app.exception_handler(RSSLimitExceededException)
+async def rss_limit_handler(request: Request, exc: RSSLimitExceededException):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+async def _count_rss_for_source(db: AsyncSession, source_id: int) -> int:
+    result = await db.execute(
+        select(func.count()).select_from(RSSChannelModel).where(RSSChannelModel.information_source_id == source_id)
+    )
+    return int(result.scalar() or 0)
+
+
+async def _create_rss_channel_with_limit(db: AsyncSession, source_id: int, data: dict, max_per_source: int = 5) -> RSSChannelModel:
+    """Create an RSSChannel within a DB transaction and enforce the per-source limit.
+
+    Locks the information source row (SELECT FOR UPDATE) to avoid race conditions
+    when multiple concurrent requests try to add channels to the same source.
+    """
+    async with db.begin():
+        # Lock the source row to serialize concurrent creations
+        result = await db.execute(select(InformationSourceModel).where(InformationSourceModel.id == source_id).with_for_update())
+        source = result.scalar_one_or_none()
+        if not source:
+            raise HTTPException(status_code=404, detail="Fuente de información no encontrada")
+
+        current_count = await _count_rss_for_source(db, source_id)
+        if current_count >= max_per_source:
+            raise RSSLimitExceededException(source_id=source_id, limit=max_per_source)
+
+        # Data is expected to already have url and category_id validated, but run duplicate check & url validation here
+        await _validate_rss_url(data["url"])
+        await _check_rss_duplicate(db, data["url"])
+
+        channel = RSSChannelModel(information_source_id=source_id, **data)
+        db.add(channel)
+        # flush to get id
+        await db.flush()
+        await db.refresh(channel)
+        return channel
+
+
 async def _validate_url_reachable(url: str) -> None:
     import ipaddress
     from urllib.parse import urlparse
@@ -1988,17 +2035,10 @@ async def create_source_channel(
     data = payload.model_dump()
     data["url"] = str(data["url"])
 
-    await _validate_rss_url(data["url"])
-    await _check_rss_duplicate(db, data["url"])
+    # Use helper that enforces per-source limit and is transactional
+    channel = await _create_rss_channel_with_limit(db=db, source_id=source_id, data=data, max_per_source=5)
 
-    channel = RSSChannelModel(
-        information_source_id=source_id,
-        **data,
-    )
-    db.add(channel)
-    await db.commit()
-    await db.refresh(channel)
-
+    # commit done by helper's transaction
     return RSSChannel(
         id=channel.id,
         information_source_id=channel.information_source_id,
